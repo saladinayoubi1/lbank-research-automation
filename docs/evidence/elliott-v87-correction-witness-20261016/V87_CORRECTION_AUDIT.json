@@ -1,0 +1,250 @@
+{
+  "already_inspected_historical_window": true,
+  "entry_signal": false,
+  "flat_fixed_interior_counts": [
+    2,
+    2,
+    4
+  ],
+  "live_enabled": false,
+  "new_pnl": null,
+  "observed_utc": "2026-10-16T20:41:11.998181+00:00",
+  "paper_eligible": false,
+  "prospective_holdout": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v87-correction-535-335-physical-skeleton.v1",
+  "strict_1m_inner_width": 1,
+  "symbols": {
+    "BTCUSDT": {
+      "exploratory_assessments": [
+        {
+          "ambiguous_dual_extrema_centers_ms": [],
+          "asof_ms": 1709285400000,
+          "complete_recursive_elliott": false,
+          "entry_signal": false,
+          "flat_335_skeleton": false,
+          "flat_subwave_geometry_proven": false,
+          "inner_counts_ABC": [
+            0,
+            1,
+            2
+          ],
+          "inner_width_1m": 1,
+          "live_enabled": false,
+          "new_pnl": null,
+          "observed_inner_pivots_all_legs": [
+            {
+              "all_interior_pivots": [],
+              "alternating": true,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709280480000,
+              "observed_interior_count": 0,
+              "right_center_ms": 1709281320000,
+              "right_confirmed_asof_ms": 1709285400000
+            },
+            {
+              "all_interior_pivots": [
+                {
+                  "center_ms": 1709281380000,
+                  "confirmed_ms": 1709281500000,
+                  "kind": "low",
+                  "price": "61738.60000000",
+                  "source_minute_index": 503
+                }
+              ],
+              "alternating": false,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709281320000,
+              "observed_interior_count": 1,
+              "right_center_ms": 1709281560000,
+              "right_confirmed_asof_ms": 1709285400000
+            },
+            {
+              "all_interior_pivots": [
+                {
+                  "center_ms": 1709281680000,
+                  "confirmed_ms": 1709281800000,
+                  "kind": "high",
+                  "price": "61862.87000000",
+                  "source_minute_index": 508
+                },
+                {
+                  "center_ms": 1709281800000,
+                  "confirmed_ms": 1709281920000,
+                  "kind": "low",
+                  "price": "61791.33000000",
+                  "source_minute_index": 510
+                }
+              ],
+              "alternating": true,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709281560000,
+              "observed_interior_count": 2,
+              "right_center_ms": 1709282460000,
+              "right_confirmed_asof_ms": 1709285400000
+            }
+          ],
+          "outer_B_retracement_of_A": "0.3100309355331934715357536536",
+          "outer_vertex_centers_ms": [
+            1709280480000,
+            1709281320000,
+            1709281560000,
+            1709282460000
+          ],
+          "outer_vertex_confirmations_ms": [
+            1709283600000,
+            1709281620000,
+            1709281800000,
+            1709285400000
+          ],
+          "paper_eligible": false,
+          "state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED",
+          "zigzag_535_skeleton": false,
+          "zigzag_subwave_geometry_proven": false
+        }
+      ],
+      "flat_335_complete_patterns": 0,
+      "new_trading_signals": 0,
+      "original_v82_three_leg_skeletons": 1,
+      "reason_counts": {
+        "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED": 1
+      },
+      "source_minute_bars": 2880,
+      "zigzag_535_complete_patterns": 0
+    },
+    "ETHUSDT": {
+      "exploratory_assessments": [
+        {
+          "ambiguous_dual_extrema_centers_ms": [],
+          "asof_ms": 1709343000000,
+          "complete_recursive_elliott": false,
+          "entry_signal": false,
+          "flat_335_skeleton": false,
+          "flat_subwave_geometry_proven": false,
+          "inner_counts_ABC": [
+            3,
+            2,
+            2
+          ],
+          "inner_width_1m": 1,
+          "live_enabled": false,
+          "new_pnl": null,
+          "observed_inner_pivots_all_legs": [
+            {
+              "all_interior_pivots": [
+                {
+                  "center_ms": 1709337960000,
+                  "confirmed_ms": 1709338080000,
+                  "kind": "low",
+                  "price": "3427.64000000",
+                  "source_minute_index": 1446
+                },
+                {
+                  "center_ms": 1709338080000,
+                  "confirmed_ms": 1709338200000,
+                  "kind": "high",
+                  "price": "3433.10000000",
+                  "source_minute_index": 1448
+                },
+                {
+                  "center_ms": 1709338140000,
+                  "confirmed_ms": 1709338260000,
+                  "kind": "low",
+                  "price": "3428.51000000",
+                  "source_minute_index": 1449
+                }
+              ],
+              "alternating": false,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709337780000,
+              "observed_interior_count": 3,
+              "right_center_ms": 1709338320000,
+              "right_confirmed_asof_ms": 1709343000000
+            },
+            {
+              "all_interior_pivots": [
+                {
+                  "center_ms": 1709338380000,
+                  "confirmed_ms": 1709338500000,
+                  "kind": "low",
+                  "price": "3431.61000000",
+                  "source_minute_index": 1453
+                },
+                {
+                  "center_ms": 1709338440000,
+                  "confirmed_ms": 1709338560000,
+                  "kind": "high",
+                  "price": "3434.95000000",
+                  "source_minute_index": 1454
+                }
+              ],
+              "alternating": true,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709338320000,
+              "observed_interior_count": 2,
+              "right_center_ms": 1709338500000,
+              "right_confirmed_asof_ms": 1709343000000
+            },
+            {
+              "all_interior_pivots": [
+                {
+                  "center_ms": 1709338620000,
+                  "confirmed_ms": 1709338740000,
+                  "kind": "low",
+                  "price": "3429.80000000",
+                  "source_minute_index": 1457
+                },
+                {
+                  "center_ms": 1709339100000,
+                  "confirmed_ms": 1709339220000,
+                  "kind": "low",
+                  "price": "3438.54000000",
+                  "source_minute_index": 1465
+                }
+              ],
+              "alternating": false,
+              "ambiguous_dual_center_ms": [],
+              "left_center_ms": 1709338500000,
+              "observed_interior_count": 2,
+              "right_center_ms": 1709339520000,
+              "right_confirmed_asof_ms": 1709343000000
+            }
+          ],
+          "outer_B_retracement_of_A": "0.9097839898348157560355781449",
+          "outer_vertex_centers_ms": [
+            1709337780000,
+            1709338320000,
+            1709338500000,
+            1709339520000
+          ],
+          "outer_vertex_confirmations_ms": [
+            1709341200000,
+            1709338680000,
+            1709338860000,
+            1709343000000
+          ],
+          "paper_eligible": false,
+          "state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED",
+          "zigzag_535_skeleton": false,
+          "zigzag_subwave_geometry_proven": false
+        }
+      ],
+      "flat_335_complete_patterns": 0,
+      "new_trading_signals": 0,
+      "original_v82_three_leg_skeletons": 1,
+      "reason_counts": {
+        "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED": 1
+      },
+      "source_minute_bars": 2880,
+      "zigzag_535_complete_patterns": 0
+    }
+  },
+  "v52_changed": false,
+  "v80_source_receipt_sha256": "5c3e77533a2792bb1b76c1e14424fed3b3076ed3f31594fca934dd9e19829b88",
+  "v82_pivot_receipt_sha256": "a886e8e24706a0eecaddd041be871964570fbdc5eada6e42305834f8d7f2013a",
+  "zigzag_fixed_interior_counts": [
+    4,
+    2,
+    4
+  ]
+}

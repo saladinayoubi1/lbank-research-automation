@@ -1,0 +1,1635 @@
+{
+  "entry_signals": 0,
+  "frozen_v52_untouched": true,
+  "live_enabled": false,
+  "no_uninspected_market_data_seen": true,
+  "official_v89_sha256": "e1c3988f6112ccd12883e35704b63024dc56bf52cc7a38f36ef42e743c2ed7df",
+  "orders": 0,
+  "paper_eligible": false,
+  "real_pnl": null,
+  "recorded_utc": "2026-10-16T22:50:59.042211+00:00",
+  "research_only": true,
+  "schema": "nexus.elliott-v97-restricted-family-geometry-posthoc-diagnostics.v1",
+  "scope": "OLD_JULY_2024_POSTHOC_DIAGNOSTIC_ONLY_NOT_A_BACKTEST",
+  "source_v90_sha256": "1db892fcfe75699ded97151501e538d04c2fd8ae4084765c9e1cd4aa9fd4683a",
+  "source_v96_commit": "c633fffd6daccfa6b56e5227bfbc16198a30b3f1",
+  "source_v96_sha256": "cfc29e8ed2cac611ffb09d0bf9847894dc4e935daacc2d6ae4c379c8dda78a01",
+  "symbols": {
+    "BTCUSDT": {
+      "all_original_hypotheses_preserved": true,
+      "cases": [
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720091700000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720086300000,
+                1720086660000,
+                1720087260000,
+                1720088580000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720091700000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720086300000,
+                1720086660000,
+                1720087260000,
+                1720088580000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720091700000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720143900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720139880000,
+                1720140000000,
+                1720140300000,
+                1720140600000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720143900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720139880000,
+                1720140000000,
+                1720140300000,
+                1720140600000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720143900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720206900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720200720000,
+                1720200960000,
+                1720201860000,
+                1720203480000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720206900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720200720000,
+                1720200960000,
+                1720201860000,
+                1720203480000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720206900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720391400000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720385400000,
+                1720385460000,
+                1720385880000,
+                1720387920000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720391400000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720385400000,
+                1720385460000,
+                1720385880000,
+                1720387920000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720391400000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720491300000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE4_OVERLAP_NONDIAGONAL",
+                "WAVE3_IS_SHORTEST",
+                "LEG2_WICK_HIGH_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720485060000,
+                1720485480000,
+                1720486260000,
+                1720486620000,
+                1720486920000,
+                1720487760000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720491300000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720538100000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720533120000,
+                1720533720000,
+                1720533840000,
+                1720534560000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720538100000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720533120000,
+                1720533720000,
+                1720533840000,
+                1720534560000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720538100000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720554300000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720547100000,
+                1720548060000,
+                1720548180000,
+                1720549260000,
+                1720549740000,
+                1720550700000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720554300000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720581300000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE3_NOT_BEYOND_WAVE1",
+                "WAVE4_OVERLAP_NONDIAGONAL",
+                "LEG1_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720575300000,
+                1720576440000,
+                1720577100000,
+                1720577640000,
+                1720577760000,
+                1720577940000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720581300000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720593000000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720588080000,
+                1720588740000,
+                1720589220000,
+                1720590060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720593000000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720588080000,
+                1720588740000,
+                1720589220000,
+                1720590060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720593000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720611000000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720606440000,
+                1720607160000,
+                1720607340000,
+                1720607880000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720611000000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720606440000,
+                1720607160000,
+                1720607340000,
+                1720607880000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720611000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720627200000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720621920000,
+                1720622280000,
+                1720623480000,
+                1720624020000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720627200000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720621920000,
+                1720622280000,
+                1720623480000,
+                1720624020000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720627200000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720629900000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE4_OVERLAP_NONDIAGONAL",
+                "WAVE3_IS_SHORTEST",
+                "LEG4_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720624020000,
+                1720625040000,
+                1720625460000,
+                1720625700000,
+                1720626120000,
+                1720626300000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720629900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720813500000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE4_OVERLAP_NONDIAGONAL"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720807680000,
+                1720808220000,
+                1720808760000,
+                1720809360000,
+                1720809720000,
+                1720810140000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720813500000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720897200000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "LEG2_WICK_LOW_BEYOND_END",
+                "LEG2_WICK_HIGH_BEFORE_START",
+                "LEG4_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720891800000,
+                1720892100000,
+                1720892520000,
+                1720892700000,
+                1720893360000,
+                1720893720000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720897200000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720917900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720912680000,
+                1720913880000,
+                1720914120000,
+                1720914720000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720917900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720912680000,
+                1720913880000,
+                1720914120000,
+                1720914720000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720917900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        }
+      ],
+      "complete_elliott_patterns": 0,
+      "diagnostic_counts": {
+        "FLAT_FLAT_B_RETRACE_LESS_THAN_90_PERCENT": 9,
+        "FLAT_LEG2_WICK_HIGH_BEYOND_END": 2,
+        "FLAT_LEG2_WICK_LOW_BEFORE_START": 2,
+        "GEOMETRY_REJECTED": 7,
+        "IMPULSE_LEG1_WICK_LOW_BEYOND_END": 1,
+        "IMPULSE_LEG2_WICK_HIGH_BEFORE_START": 2,
+        "IMPULSE_LEG2_WICK_LOW_BEYOND_END": 1,
+        "IMPULSE_LEG4_WICK_LOW_BEYOND_END": 2,
+        "IMPULSE_RESTRICTED_GEOMETRY_PASS": 1,
+        "IMPULSE_WAVE3_IS_SHORTEST": 2,
+        "IMPULSE_WAVE3_NOT_BEYOND_WAVE1": 1,
+        "IMPULSE_WAVE4_OVERLAP_NONDIAGONAL": 4,
+        "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION": 8,
+        "ZIGZAG_LEG2_WICK_HIGH_BEYOND_END": 2,
+        "ZIGZAG_LEG2_WICK_LOW_BEFORE_START": 2,
+        "ZIGZAG_RESTRICTED_GEOMETRY_PASS": 7,
+        "candidate_intervals": 15,
+        "correction_candidates": 9,
+        "impulse_candidates": 6
+      },
+      "necessary_geometry_only": true,
+      "new_positions": 0,
+      "original_correction_candidates": 9,
+      "original_impulse_candidates": 6,
+      "source_1m_candles": 20160
+    },
+    "ETHUSDT": {
+      "all_original_hypotheses_preserved": true,
+      "cases": [
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1719804600000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                "LEG1_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719799200000,
+                1719800640000,
+                1719801060000,
+                1719801360000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1719804600000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "LEG1_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719799200000,
+                1719800640000,
+                1719801060000,
+                1719801360000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1719804600000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1719819900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719813840000,
+                1719814560000,
+                1719814740000,
+                1719816300000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1719819900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719813840000,
+                1719814560000,
+                1719814740000,
+                1719816300000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1719819900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1719901800000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719896280000,
+                1719897300000,
+                1719897660000,
+                1719898260000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1719901800000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1719896280000,
+                1719897300000,
+                1719897660000,
+                1719898260000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1719901800000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720089000000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720084320000,
+                1720085640000,
+                1720085880000,
+                1720086060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720089000000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720084320000,
+                1720085640000,
+                1720085880000,
+                1720086060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720089000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720170900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720165020000,
+                1720165980000,
+                1720166880000,
+                1720167300000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720170900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720165020000,
+                1720165980000,
+                1720166880000,
+                1720167300000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720170900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720189800000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720184640000,
+                1720185120000,
+                1720185780000,
+                1720186320000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720189800000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720184640000,
+                1720185120000,
+                1720185780000,
+                1720186320000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720189800000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720206900000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720201860000,
+                1720202220000,
+                1720202400000,
+                1720203480000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720206900000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720201860000,
+                1720202220000,
+                1720202400000,
+                1720203480000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720206900000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720229400000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720224720000,
+                1720225260000,
+                1720225500000,
+                1720226280000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720229400000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720224720000,
+                1720225260000,
+                1720225500000,
+                1720226280000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720229400000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720278000000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720273740000,
+                1720274280000,
+                1720274520000,
+                1720275060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720278000000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720273740000,
+                1720274280000,
+                1720274520000,
+                1720275060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720278000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "A"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720426500000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE3_IS_SHORTEST",
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720419960000,
+                1720420980000,
+                1720422000000,
+                1720422240000,
+                1720422360000,
+                1720423020000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720426500000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720528200000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720523460000,
+                1720524660000,
+                1720524900000,
+                1720525320000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720528200000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720523460000,
+                1720524660000,
+                1720524900000,
+                1720525320000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720528200000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720538100000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720533180000,
+                1720533600000,
+                1720533840000,
+                1720534560000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720538100000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720533180000,
+                1720533600000,
+                1720533840000,
+                1720534560000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720538100000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720705500000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                "LEG2_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720700940000,
+                1720701060000,
+                1720701360000,
+                1720702260000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720705500000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "LEG2_WICK_LOW_BEYOND_END"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720700940000,
+                1720701060000,
+                1720701360000,
+                1720702260000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720705500000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720791000000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720786260000,
+                1720786560000,
+                1720787280000,
+                1720787400000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720791000000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720786260000,
+                1720786560000,
+                1720787280000,
+                1720787400000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720791000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "AMBIGUOUS_FAMILIES_NO_SELECTION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "FLAT": {
+              "asof_ms": 1720813500000,
+              "entry_signal": false,
+              "family": "FLAT",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720808880000,
+                1720809600000,
+                1720809780000,
+                1720810200000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            },
+            "ZIGZAG": {
+              "asof_ms": 1720813500000,
+              "entry_signal": false,
+              "family": "ZIGZAG",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [],
+              "restricted_geometry_pass": true,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720808880000,
+                1720809600000,
+                1720809780000,
+                1720810200000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720813500000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION",
+          "original_V82_candidate_type": "CORRECTION",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        },
+        {
+          "entry_signal": false,
+          "families_diagnosed": {
+            "IMPULSE": {
+              "asof_ms": 1720899000000,
+              "entry_signal": false,
+              "family": "IMPULSE",
+              "family_scope": "RESTRICTED_NECESSARY_GEOMETRY_ONLY",
+              "live_enabled": false,
+              "net_pnl": null,
+              "paper_eligible": false,
+              "pattern_position_proven": false,
+              "rejections": [
+                "WAVE3_IS_SHORTEST",
+                "LEG2_WICK_HIGH_BEYOND_END",
+                "LEG2_WICK_LOW_BEFORE_START"
+              ],
+              "restricted_geometry_pass": false,
+              "source_1m_wicks_verified": true,
+              "vertex_centers_ms": [
+                1720893720000,
+                1720893960000,
+                1720894860000,
+                1720895400000,
+                1720895760000,
+                1720896060000
+              ],
+              "wave_degree_or_recursive_elliott_proven": false
+            }
+          },
+          "first_observable_ms": 1720899000000,
+          "independent_recursive_market_wave_proven": false,
+          "narrow_family_diagnostic_resolution": "GEOMETRY_REJECTED",
+          "original_V82_candidate_type": "IMPULSE",
+          "paper_eligible": false,
+          "pnl": null,
+          "week": "B"
+        }
+      ],
+      "complete_elliott_patterns": 0,
+      "diagnostic_counts": {
+        "AMBIGUOUS_FAMILIES_NO_SELECTION": 1,
+        "FLAT_FLAT_B_RETRACE_LESS_THAN_90_PERCENT": 13,
+        "FLAT_LEG1_WICK_LOW_BEYOND_END": 1,
+        "FLAT_LEG2_WICK_LOW_BEYOND_END": 1,
+        "FLAT_RESTRICTED_GEOMETRY_PASS": 1,
+        "GEOMETRY_REJECTED": 4,
+        "IMPULSE_LEG2_WICK_HIGH_BEYOND_END": 2,
+        "IMPULSE_LEG2_WICK_LOW_BEFORE_START": 2,
+        "IMPULSE_WAVE3_IS_SHORTEST": 2,
+        "RESTRICTED_GEOMETRY_ONLY_NO_RECURSION": 11,
+        "ZIGZAG_LEG1_WICK_LOW_BEYOND_END": 1,
+        "ZIGZAG_LEG2_WICK_LOW_BEYOND_END": 1,
+        "ZIGZAG_RESTRICTED_GEOMETRY_PASS": 12,
+        "candidate_intervals": 16,
+        "correction_candidates": 14,
+        "impulse_candidates": 2
+      },
+      "necessary_geometry_only": true,
+      "new_positions": 0,
+      "original_correction_candidates": 14,
+      "original_impulse_candidates": 2,
+      "source_1m_candles": 20160
+    }
+  },
+  "thresholds_optimized_or_prior_outcomes_tuned": false
+}

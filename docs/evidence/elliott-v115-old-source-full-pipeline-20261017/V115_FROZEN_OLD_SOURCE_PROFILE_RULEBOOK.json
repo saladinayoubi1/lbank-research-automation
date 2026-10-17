@@ -1,0 +1,40 @@
+{
+  "all_v107_windows_no_skips": true,
+  "benchmark_sections": [
+    "load_original_28_zip",
+    "full_V99_swings",
+    "full_V107_census_and_V111_portfolio",
+    "full_V113_causal_stream"
+  ],
+  "data_status": "REPEATEDLY_INSPECTED_NOT_INDEPENDENT_HOLDOUT",
+  "entry_signal": false,
+  "first_week_original_1m_per_pair": 10080,
+  "first_week_replay_matured_candidate_invariance": true,
+  "full_original_1m_per_pair": 20160,
+  "full_v111_cash_and_v113_stream_proof": true,
+  "live_enabled": false,
+  "memory_is_windows_process_working_set_current_and_lifetime_peak": true,
+  "no_code_paths_modify_v52_or_demo": true,
+  "no_manual_wave_labeling_or_posthoc_threshold_tuning": true,
+  "no_python_tracemalloc_per_allocation_in_benchmark": true,
+  "no_trading_return_or_pnl": true,
+  "not_prospective_elliott_signal_validation": true,
+  "orders": 0,
+  "pairs": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "paper_eligible": false,
+  "previous_v114_commit": "d4152cdf9e970ce69c1f0be2b09886a20e25e4f9",
+  "previous_v114_sha256": "563ce5201a17192b7fffc70d797d5f0cacc4b31000390cd3ce867b99356f02cc",
+  "schema": "nexus.elliott-v115-preinspected-binance-full-pipeline-performance.v1",
+  "source_authentication": "V89_28_OFFICIAL_ZIP_PLUS_CHECKSUM_RECEIPTS",
+  "source_exchange": "BINANCE_SPOT_NOT_BYBIT",
+  "source_period": "2024-07-01_to_2024-07-15_exclusive_UTC",
+  "stage": "FROZEN_HISTORICAL_PERFORMANCE_STUDY_NO_MARKET_VALIDATION",
+  "times_are_one_laptop_single_runs_not_guarantees": true,
+  "two_scales_from_v99_without_tuning": true,
+  "v52_unchanged": true,
+  "zero_bybit_future_market_candles": true,
+  "zero_real_market_orders": true
+}

@@ -1,0 +1,143 @@
+{
+  "accepted_necessary_hypotheses_not_wave_certificates": 9,
+  "by_symbol": {
+    "BTCUSDT": {
+      "actual_elliott_waves_certified": 0,
+      "all_original_candidate_outcomes_sha256": "a55da9dcbdb4c1c160e2bc132b045be98471defc987898ed4c0b17175e83b7d5",
+      "all_rejection_reasons_overlapping_counts": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 282,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 323,
+        "WAVE1_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE1_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 506,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 281,
+        "WAVE2_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE2_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 443
+      },
+      "first_rejection_mutually_exclusive_counts": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 282,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 132,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 92,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 77,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 17
+      },
+      "orders": 0,
+      "original_full_six_coarse_windows": 604,
+      "original_necessary_passes": 4,
+      "original_necessary_rejections": 600,
+      "original_rejection_fraction": "600/604",
+      "overlapping_category_combinations": {
+        "fine_boundary_causality+fine_subdivision_exact_counts+prior_context": 3,
+        "fine_boundary_causality+fine_subdivision_exact_counts+prior_context+wave_price_geometry": 1,
+        "fine_boundary_causality+fine_subdivision_exact_counts+wave_price_geometry": 2,
+        "fine_subdivision_exact_counts": 109,
+        "fine_subdivision_exact_counts+prior_context": 188,
+        "fine_subdivision_exact_counts+prior_context+wave_price_geometry": 200,
+        "fine_subdivision_exact_counts+wave_price_geometry": 73,
+        "prior_context": 19,
+        "prior_context+wave_price_geometry": 3,
+        "wave_price_geometry": 2
+      },
+      "real_source_profit_or_loss": null,
+      "rejected_candidates_with_each_fixed_category": {
+        "fine_boundary_causality": 6,
+        "fine_subdivision_exact_counts": 576,
+        "prior_context": 414,
+        "wave_price_geometry": 281
+      },
+      "rejection_reason_count_sum_not_unique_denominator": 1843,
+      "single_exact_rejection_reason_cases": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 6,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 6,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 20,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 2,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 17
+      }
+    },
+    "ETHUSDT": {
+      "actual_elliott_waves_certified": 0,
+      "all_original_candidate_outcomes_sha256": "9ce1ae6401f7b5b381bae1c6d1f10b5b40a0f3d3a89a720ef66190a092535b1d",
+      "all_rejection_reasons_overlapping_counts": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 281,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 326,
+        "WAVE1_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE1_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 509,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 283,
+        "WAVE2_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE2_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 2,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 462
+      },
+      "first_rejection_mutually_exclusive_counts": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 281,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 129,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 85,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 93,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 15
+      },
+      "orders": 0,
+      "original_full_six_coarse_windows": 608,
+      "original_necessary_passes": 5,
+      "original_necessary_rejections": 603,
+      "original_rejection_fraction": "603/608",
+      "overlapping_category_combinations": {
+        "fine_boundary_causality+fine_subdivision_exact_counts+prior_context": 3,
+        "fine_boundary_causality+fine_subdivision_exact_counts+prior_context+wave_price_geometry": 1,
+        "fine_boundary_causality+fine_subdivision_exact_counts+wave_price_geometry": 2,
+        "fine_subdivision_exact_counts": 100,
+        "fine_subdivision_exact_counts+prior_context": 205,
+        "fine_subdivision_exact_counts+prior_context+wave_price_geometry": 184,
+        "fine_subdivision_exact_counts+wave_price_geometry": 88,
+        "prior_context": 12,
+        "prior_context+wave_price_geometry": 5,
+        "wave_price_geometry": 3
+      },
+      "real_source_profit_or_loss": null,
+      "rejected_candidates_with_each_fixed_category": {
+        "fine_boundary_causality": 6,
+        "fine_subdivision_exact_counts": 583,
+        "prior_context": 410,
+        "wave_price_geometry": 283
+      },
+      "rejection_reason_count_sum_not_unique_denominator": 1869,
+      "single_exact_rejection_reason_cases": {
+        "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 1,
+        "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 6,
+        "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 29,
+        "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 3,
+        "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 15
+      }
+    }
+  },
+  "combined_overlapping_rejection_causes": {
+    "PRIOR_TREND_LOWER_HIGH_NOT_ATTESTED": 563,
+    "PRIOR_TREND_LOWER_LOW_NOT_ATTESTED": 649,
+    "WAVE1_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 4,
+    "WAVE1_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 4,
+    "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 1015,
+    "WAVE2_BREACHES_OR_TOUCHES_WAVE0_ORIGIN": 564,
+    "WAVE2_LEFT_CAUSAL_FINE_BOUNDARY_MISMATCH": 4,
+    "WAVE2_RIGHT_CAUSAL_FINE_BOUNDARY_MISMATCH": 4,
+    "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED": 905
+  },
+  "historical_rejection_fraction": "1203/1212",
+  "independent_holdout": false,
+  "live_enabled": false,
+  "measured_single_run_ms": 36321.198,
+  "no_real_PnL_or_bybit_orders": true,
+  "no_threshold_or_selection_change": true,
+  "orders": 0,
+  "original_denominator": 1212,
+  "paper_eligible": false,
+  "previous_full_source_event_sha256": {
+    "BTCUSDT": "3fb700ea94b31331523354f48c8f2972756017e2e9a85be18e08da3a0b80dcff",
+    "ETHUSDT": "2a9a999a0e857732a282ca61b555e3653aefcc428a7ef42457b643940d3958b1"
+  },
+  "previous_measured_full_pipeline_commit": "b33faed4036f6bf0f5b10887333233ee49d3beb9",
+  "real_net_pnl": null,
+  "rejected_necessary_hypotheses_not_false_positives": 1203,
+  "schema": "nexus.elliott-v116-unchanged-necessary-screen-full-rejection-taxonomy.v1",
+  "source_archive_receipt_sha256": "e1c3988f6112ccd12883e35704b63024dc56bf52cc7a38f36ef42e743c2ed7df",
+  "source_kind": "PREINSPECTED_BINANCE_SPOT_JULY_2024_NOT_BYBIT"
+}

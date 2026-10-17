@@ -1,0 +1,425 @@
+{
+  "created_utc": "2026-10-16T20:30:40.723497+00:00",
+  "frozen_v52_changed": false,
+  "historically_inspected": true,
+  "live_enabled": false,
+  "one_minute_inner_width": 1,
+  "paper_eligible": false,
+  "pnl": null,
+  "prospective_holdout": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v86-historical-strict-1m-inner-census.v1",
+  "signals": 0,
+  "symbols": {
+    "BTCUSDT": {
+      "candidates": [
+        {
+          "asof_ms": 1709375400000,
+          "ending_diagonal_proven": false,
+          "entry_signal": false,
+          "five_legs_exact_two_alternating": false,
+          "flat_or_zigzag_proven": false,
+          "global_dual_extremum_abstentions": {
+            "DUAL_EXTREMUM_UNORDERED_OHLC": 21,
+            "dual_center_ms": [
+              1709257560000,
+              1709266260000,
+              1709271720000,
+              1709275800000,
+              1709285220000,
+              1709286840000,
+              1709287500000,
+              1709290920000,
+              1709291700000,
+              1709293500000,
+              1709300820000,
+              1709304300000,
+              1709319180000,
+              1709323380000,
+              1709328420000,
+              1709332680000,
+              1709338080000,
+              1709338620000,
+              1709339100000,
+              1709344800000,
+              1709346060000
+            ]
+          },
+          "leading_diagonal_proven": false,
+          "legs": [
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709369460000,
+                  "confirmed_ms": 1709369580000,
+                  "kind": "high",
+                  "price": "62048.76000000",
+                  "source_minute_index": 1971
+                },
+                {
+                  "center_ms": 1709369640000,
+                  "confirmed_ms": 1709369760000,
+                  "kind": "low",
+                  "price": "61957.61000000",
+                  "source_minute_index": 1974
+                },
+                {
+                  "center_ms": 1709369700000,
+                  "confirmed_ms": 1709369820000,
+                  "kind": "high",
+                  "price": "62005.36000000",
+                  "source_minute_index": 1975
+                },
+                {
+                  "center_ms": 1709369820000,
+                  "confirmed_ms": 1709369940000,
+                  "kind": "low",
+                  "price": "61934.84000000",
+                  "source_minute_index": 1977
+                },
+                {
+                  "center_ms": 1709370000000,
+                  "confirmed_ms": 1709370120000,
+                  "kind": "low",
+                  "price": "61939.30000000",
+                  "source_minute_index": 1980
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709375400000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 5,
+              "left_center_ms": 1709369160000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709370180000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709370300000,
+                  "confirmed_ms": 1709370420000,
+                  "kind": "high",
+                  "price": "61950.00000000",
+                  "source_minute_index": 1985
+                },
+                {
+                  "center_ms": 1709370360000,
+                  "confirmed_ms": 1709370480000,
+                  "kind": "low",
+                  "price": "61908.17000000",
+                  "source_minute_index": 1986
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709375400000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": true,
+              "interior_count": 2,
+              "left_center_ms": 1709370180000,
+              "reason": "THREE_LEG_SKELETON_ONLY_NO_RECURSIVE_ABC_PROOF",
+              "right_center_ms": 1709370840000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709371140000,
+                  "confirmed_ms": 1709371260000,
+                  "kind": "low",
+                  "price": "61817.06000000",
+                  "source_minute_index": 1999
+                },
+                {
+                  "center_ms": 1709371200000,
+                  "confirmed_ms": 1709371320000,
+                  "kind": "high",
+                  "price": "61887.57000000",
+                  "source_minute_index": 2000
+                },
+                {
+                  "center_ms": 1709371380000,
+                  "confirmed_ms": 1709371500000,
+                  "kind": "low",
+                  "price": "61810.00000000",
+                  "source_minute_index": 2003
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709375400000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 3,
+              "left_center_ms": 1709370840000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709371500000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709375400000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 0,
+              "left_center_ms": 1709371500000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709371620000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709375400000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 0,
+              "left_center_ms": 1709371620000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709371920000
+            }
+          ],
+          "live_enabled": false,
+          "observed_full_prefix_1m_strict_points": 660,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "per_leg_inner_counts": [
+            5,
+            2,
+            3,
+            0,
+            0
+          ],
+          "per_leg_reasons": {
+            "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA": 4,
+            "THREE_LEG_SKELETON_ONLY_NO_RECURSIVE_ABC_PROOF": 1
+          },
+          "pnl": null,
+          "state": "HARD_VETO_PERSISTS"
+        }
+      ],
+      "diagonal_patterns_proven": 0,
+      "paper_signal_count": 0,
+      "reason_counts": {
+        "HARD_VETO_PERSISTS": 1
+      },
+      "source_minute_bars": 2880
+    },
+    "ETHUSDT": {
+      "candidates": [
+        {
+          "asof_ms": 1709345700000,
+          "ending_diagonal_proven": false,
+          "entry_signal": false,
+          "five_legs_exact_two_alternating": false,
+          "flat_or_zigzag_proven": false,
+          "global_dual_extremum_abstentions": {
+            "DUAL_EXTREMUM_UNORDERED_OHLC": 12,
+            "dual_center_ms": [
+              1709263080000,
+              1709265180000,
+              1709271480000,
+              1709272860000,
+              1709281380000,
+              1709284980000,
+              1709292960000,
+              1709293500000,
+              1709293680000,
+              1709328060000,
+              1709331360000,
+              1709344860000
+            ]
+          },
+          "leading_diagonal_proven": false,
+          "legs": [
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709339700000,
+                  "confirmed_ms": 1709339820000,
+                  "kind": "low",
+                  "price": "3450.16000000",
+                  "source_minute_index": 1475
+                },
+                {
+                  "center_ms": 1709339760000,
+                  "confirmed_ms": 1709339880000,
+                  "kind": "high",
+                  "price": "3456.50000000",
+                  "source_minute_index": 1476
+                },
+                {
+                  "center_ms": 1709339820000,
+                  "confirmed_ms": 1709339940000,
+                  "kind": "low",
+                  "price": "3452.89000000",
+                  "source_minute_index": 1477
+                },
+                {
+                  "center_ms": 1709339880000,
+                  "confirmed_ms": 1709340000000,
+                  "kind": "high",
+                  "price": "3458.44000000",
+                  "source_minute_index": 1478
+                },
+                {
+                  "center_ms": 1709340000000,
+                  "confirmed_ms": 1709340120000,
+                  "kind": "low",
+                  "price": "3450.40000000",
+                  "source_minute_index": 1480
+                },
+                {
+                  "center_ms": 1709340120000,
+                  "confirmed_ms": 1709340240000,
+                  "kind": "low",
+                  "price": "3449.58000000",
+                  "source_minute_index": 1482
+                },
+                {
+                  "center_ms": 1709340240000,
+                  "confirmed_ms": 1709340360000,
+                  "kind": "high",
+                  "price": "3456.32000000",
+                  "source_minute_index": 1484
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709345700000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 7,
+              "left_center_ms": 1709339520000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709340360000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709340540000,
+                  "confirmed_ms": 1709340660000,
+                  "kind": "high",
+                  "price": "3454.44000000",
+                  "source_minute_index": 1489
+                },
+                {
+                  "center_ms": 1709340660000,
+                  "confirmed_ms": 1709340780000,
+                  "kind": "low",
+                  "price": "3448.42000000",
+                  "source_minute_index": 1491
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709345700000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": true,
+              "interior_count": 2,
+              "left_center_ms": 1709340360000,
+              "reason": "THREE_LEG_SKELETON_ONLY_NO_RECURSIVE_ABC_PROOF",
+              "right_center_ms": 1709341080000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [
+                {
+                  "center_ms": 1709341500000,
+                  "confirmed_ms": 1709341620000,
+                  "kind": "low",
+                  "price": "3444.92000000",
+                  "source_minute_index": 1505
+                },
+                {
+                  "center_ms": 1709341800000,
+                  "confirmed_ms": 1709341920000,
+                  "kind": "low",
+                  "price": "3435.21000000",
+                  "source_minute_index": 1510
+                },
+                {
+                  "center_ms": 1709341920000,
+                  "confirmed_ms": 1709342040000,
+                  "kind": "high",
+                  "price": "3440.82000000",
+                  "source_minute_index": 1512
+                }
+              ],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709345700000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 3,
+              "left_center_ms": 1709341080000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709342040000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709345700000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 0,
+              "left_center_ms": 1709342040000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709342220000
+            },
+            {
+              "abc_geometry_proven": false,
+              "all_interior_strict_pivots": [],
+              "ambiguous_unordered_1m_center_ms": [],
+              "asof_ms": 1709345700000,
+              "diagonal_proven": false,
+              "entry_signal": false,
+              "exact_two_alternating": false,
+              "interior_count": 0,
+              "left_center_ms": 1709342220000,
+              "reason": "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA",
+              "right_center_ms": 1709342700000
+            }
+          ],
+          "live_enabled": false,
+          "observed_full_prefix_1m_strict_points": 570,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "per_leg_inner_counts": [
+            7,
+            2,
+            3,
+            0,
+            0
+          ],
+          "per_leg_reasons": {
+            "NOT_EXACTLY_TWO_STRICT_1M_INTERIOR_EXTREMA": 4,
+            "THREE_LEG_SKELETON_ONLY_NO_RECURSIVE_ABC_PROOF": 1
+          },
+          "pnl": null,
+          "state": "INNER_DEGREE_WITNESS_NOT_ESTABLISHED"
+        }
+      ],
+      "diagonal_patterns_proven": 0,
+      "paper_signal_count": 0,
+      "reason_counts": {
+        "INNER_DEGREE_WITNESS_NOT_ESTABLISHED": 1
+      },
+      "source_minute_bars": 2880
+    }
+  },
+  "v80_receipt_sha256": "5c3e77533a2792bb1b76c1e14424fed3b3076ed3f31594fca934dd9e19829b88",
+  "v83_receipt_sha256": "768186dbbad99ca4570a5c0f4ddc5bfd5f754b3fa1135ed2d10cbacc7a67855b",
+  "v85_receipt_sha256": "8577e51e9f857b805d54e3ccd12e8a8471d13e05521c186ba06febb9c4f51499"
+}

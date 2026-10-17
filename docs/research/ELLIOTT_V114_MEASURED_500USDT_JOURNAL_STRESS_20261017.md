@@ -1,0 +1,45 @@
+# NEXUS Elliott V114 — measured synthetic 500-USDT event-ledger scalability and anti-tampering QA
+
+**Research-only, no real data, no trades.** V114 measures the **event journal and cash/risk reconciliation slice** of the causal Elliott research pipeline. It does **not** benchmark 9,000 actual V99/V107 source-derived Elliott pivots, the full V111 source reconstruction, actual Bybit connectivity, or any predictive profitability. A large synthetic all-event test must never be used to assert that the entire V113 research pipeline has proven large-scale throughput.
+
+## Locked upstream and scope
+
+- Source of truth: `saladinayoubi1/lbank-research-automation`, branch `codex/elliott-causal-quality-research-20261015`, **Draft PR #2673, unmerged**. Parent V113 Git commit `8eeaa49a4827491d8020182919f47a7b1dc501bd`. Frozen V113 SHA256 `254319942369dfb314df07c488d84724de5a5b7c095fb737c6210f821a06a6d7`; the V114 rulebook verifies its Git object bytes and no-sampling/no-orders invariants before freezing.
+- Future uninspected public **Bybit Spot BTCUSDT/ETHUSDT, 1-minute 2026-11-16 00:00 through 2026-11-30 00:00 UTC exclusive**, untouched. V52's distinct Oct 18–Nov 15 prospective installation and Laptop1 Demo are unchanged. Live Trading is disabled.
+- New fixed stress rules: `research/elliott_v114_load_profile/profile_v114.py`; adversarial synthetic unit tests: `tests/test_nexus_elliott_v114_load_profile.py`; immutable rulebook: `docs/evidence/elliott-v114-synthetic-load-20261017/V114_FROZEN_LOAD_STRESS_RULEBOOK.json` SHA256 **`563ce5201a17192b7fffc70d797d5f0cacc4b31000390cd3ce867b99356f02cc`**. No observed market candles are involved.
+
+## Deterministic adversarial workload
+
+Use three predeclared workload sizes: **600, 4,200 and 9,000** original hypothetical Spot BUY `Intent` objects. A 30-minute synthetic block proposes one new original intent each minute, alternates the two original pairs, and deliberately makes the first BTC and ETH slot eligible for the single shared **500 USDT** cash / stressed gapless loss budget from frozen V110. All later intents in the block remain in the denominator and are denied by capacity. At the next block boundary exactly two previously admitted reservations receive **fabricated, explicitly known** same-minute closure events, before new admissions, mirroring original V110's deterministic ordering. The source prices are fabricated `100`/Wave0 `99` decimal references. A synthetic closure is not an actual filled stop, target, profit or signed Bybit market observation.
+
+For every workload, execute the frozen V110 original cash allocator once, then a separately implemented linear event reconciliation that validates **every** original intent and resolution, timestamp, same-minute release-before-admission order, source-candidate identity, original admission or denial, risk fraction, eight-decimal conservative notional rounding, 17bps each-side artificial cost stress, buy-side cost cash reservation, at most 2 simultaneous reservations, at most 1 per symbol, 250 USDT notional cap, 2.5 USDT per-candidate and 5 USDT aggregate synthetic gapless risk cap, 500 USDT shared cash, and entire exact original journal row shape and totals. All created source intents and closure events are counted, including unsuccessful capacity proposals.
+
+At each event checkpoint, create a cryptographically reproducible **streaming SHA256 of the full original JSON event prefix**, and accumulate every checkpoint digest into one final digest chain. No checkpoint is skipped to satisfy timing. As an independent implementation sanity check, compute conventional full-prefix JSON SHA256 for the **first 64 event prefixes plus the middle and last prefix**; the other checkpoints are processed individually with the streaming digest. Do not describe these few full-prefix recomputations as exhaustive V112 source replay. Original per-event cash and risk are instead recalculated and checked for **every** event.
+
+## Integrity tests / threat model
+
+Adversarial tests deliberately mutate one original candidate's timestamp or ID, add/drop an event, alter a denied event into a purported reservation, inject future-profit metadata, fabricate an entry cash balance or risk reserve, move a closure's physical known-at timestamp, reverse original same-minute release order, invent an unknown cancellation reason, duplicate a closure, tamper with the final unreserved cash or provide a future original event. Each must be rejected without opening any real position. The original dataset cannot be selected based on future success: fixed workload sizes, prices, symbol allocation and closure cadence were frozen before measurement.
+
+**Measurement contract:** report Laptop2 Windows host and Python version, monotonic elapsed milliseconds for fixture construction, original V110 allocation, independent all-event proof and combined duration, plus Python `tracemalloc` current and peak MiB per single run. Tracemalloc reports *tracked Python allocations*, **not total process RSS, memory of GitHub CI, physical laptop RAM usage, or peak memory of the full pipeline**. A single run per size does not establish robust latency percentiles or a hardware-independent throughput guarantee. No arbitrary success threshold based on unknown hardware load is introduced.
+
+**Scientific limitation:** the fixed V101 source period remains unobserved. Synthetic ledger efficiency does not establish genuine wave degree, false-signal rate, real net USDT return, Bybit fee/min-notional eligibility, or whether 9,000 real V99/V107 pivots can be processed within the same budget. True end-to-end scaling requires a separately measured, fully source-audited benchmark. V114 cannot authorize merger, runner changes, Demo promotion or Live trading.
+
+## Verified Windows Laptop2 measured results (one run per size)
+
+Machine as reported by Python: `Windows-10-10.0.19045-SP0`, Python **3.12.10**. `perf_counter_ns` walltime and `tracemalloc` tracked peak MiB are observed figures on this machine and **not service-level guarantees**. The original V110 allocator, independent V114 exact event audit and synthetic fixture generation were all included in total time:
+
+| Synthetic intents | Known synthetic releases | Mandatory cash events/hash checkpoints | Original V110 replay ms | Independent audit ms | Total measured ms | Python traced peak MiB |
+|---:|---:|---:|---:|---:|---:|---:|
+| 600 | 40 | 640 | 51.341 | 311.568 | 379.857 | 1.109 |
+| 4,200 | 280 | 4,480 | 355.923 | 1750.996 | 2222.802 | 7.443 |
+| 9,000 | 600 | 9,600 | 762.093 | 3698.036 | 4713.345 | 15.604 |
+
+- The 9,000-intent workload yielded **600 hypothetical accepted**, **8,400 capacity-denied**, **600 explicit synthetic closure events**; all original 9,000 proposals remain in the denominator. Original final cash and gapless synthetic risk reserves both return to mathematical zero after these invented closures. There are **0 real exchange orders**.
+- No V112 `4096` checkpoint limit was applied: all **4,480** and **9,600** original journal events were processed and SHA256 state was copied and accumulated at every single checkpoint. The entire 9,600-prefix chain SHA256 is `7116c240e5d71dba15bbd3ec9dadf7e2ed9d2c7c49e5ee3c8925134e57fb55d0`.
+- The measured benchmark JSON includes physical Python/runtime identification, fixed workload counts and component-level durations. Immutable measured evidence: `docs/evidence/elliott-v114-synthetic-load-20261017/V114_MEASURED_EVENT_JOURNAL_PROFILE.json` SHA256 **`9ba9b602afe264deee205a0a928c20aff758cce61ee1e82a42b283e7c8f93ffd`**. This file is a *single* original run captured on Laptop2, **not** a target performance commitment, proof of full original market-source scaling or performance averaged over repetitions.
+- Locked rulebook SHA256 **`563ce5201a17192b7fffc70d797d5f0cacc4b31000390cd3ce867b99356f02cc`**; `V114_FREEZE_EXIT=0` and `V114_PROFILE_EXIT=0`.
+- **21/21 synthetic V114 dedicated tests PASS** with `V114_DEDICATED_EXIT=0`. A first duplicate-closure negative control originally tripped the stronger global event-count gate; the fixture was changed to use an actual replacement duplicate, preserving the event denominator, and then the full dedicated suite passed.
+- Laptop2 full Elliott suite **1141/1141 tests PASS**, `Ran 1141 tests in 64.147s`, `OK`, `V114_FULL_EXIT=0`. Local test log `$env:TEMP\V114_FULL_ELLIOTT_REGRESSION.txt` SHA256 `7d0a1d4c48de03ec3579341d4af5257684ef0215af7f5a5cca2c3b6c445c1979`.
+- The predecessor V113 GitHub CI — `Test`, `Research Evidence Refresh`, and `Workflow Permissions Policy` — completed **successfully** at Git SHA `8eeaa49a4827491d8020182919f47a7b1dc501bd`. V114's own remote CI is a separate post-push gate and is not implied by local QA.
+
+**Important next scientific task:** bench full original V99/V100/V107 source and V111/V113 candidate construction on an appropriately labeled, **already-inspected** complete physical sample (not call it independent/holdout), then obtain genuine by-design untouched future Bybit Spot archival data only after its predeclared period. Synthetic journal throughput cannot be used to estimate Elliott strategy P/L.

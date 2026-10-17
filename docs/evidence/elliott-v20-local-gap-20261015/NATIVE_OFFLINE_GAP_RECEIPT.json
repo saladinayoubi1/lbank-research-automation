@@ -1,0 +1,204 @@
+{
+  "auto_demo": false,
+  "continuation_accepted": false,
+  "disposition": "BLOCKED_MISSING_LOCAL_RAW_TRADE_DAYS",
+  "existing_archives_modified": false,
+  "external_network_requests": 0,
+  "live_enabled": false,
+  "market_evaluations": 0,
+  "orders_placed": 0,
+  "provider_authenticity_rechecked": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v20-local-raw-source-gap.v1",
+  "source_coverage": {
+    "all_source_days_available_from_local_cache": false,
+    "candidate_covered_day_slots": 60,
+    "coverage_by_symbol": {
+      "BTCUSDT": 30,
+      "ETHUSDT": 30
+    },
+    "expected_daily_pair_slots": 150,
+    "first_missing_day": "2026-08-02",
+    "local_file_candidates": [
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-08",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-08",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-09",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-09",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-10",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-10",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-11",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-11",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-12",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-12",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-13",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-13",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-14",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-14",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-15",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "BTCUSDT"
+      },
+      {
+        "candidate_file_type": "daily",
+        "date_utc": "2026-09-15",
+        "file_name_only_unverified": true,
+        "matching_local_candidates": 1,
+        "symbol": "ETHUSDT"
+      }
+    ],
+    "missing_day_slots": 90,
+    "missing_examples": [
+      {
+        "date_utc": "2026-08-02",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "BTCUSDT"
+      },
+      {
+        "date_utc": "2026-08-02",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "ETHUSDT"
+      },
+      {
+        "date_utc": "2026-08-03",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "BTCUSDT"
+      },
+      {
+        "date_utc": "2026-08-03",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "ETHUSDT"
+      },
+      {
+        "date_utc": "2026-08-04",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "BTCUSDT"
+      },
+      {
+        "date_utc": "2026-08-04",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "ETHUSDT"
+      },
+      {
+        "date_utc": "2026-08-05",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "BTCUSDT"
+      },
+      {
+        "date_utc": "2026-08-05",
+        "reason": "NO_LOCAL_DAILY_OR_MONTHLY_RAW_GZIP_FOUND",
+        "symbol": "ETHUSDT"
+      }
+    ],
+    "required_date_range_utc": {
+      "end": "2026-10-15",
+      "start": "2026-08-02"
+    },
+    "search_roots_unavailable": []
+  },
+  "source_search_roots": [
+    "C:\\NEXUS\\research-cache",
+    "E:\\NEXUS-QA"
+  ],
+  "v19_integrity": {
+    "frozen_parquet_hashes": [
+      "36e3150528f0c11bf1fecc6cb32ddbdef2b2c1e82733f98e28feea249792838e",
+      "5c689c538aa3e42e92f455731f5a0f406df0845d8b6af3dc342b99c213aedc9b",
+      "735089b5df25eb44de36a87cfb1e9e560ee26aff6cf9be8e6a37c52655c98590",
+      "b614c1afc8a1153fb2d54569e39e80bd3a9a4d1a4df3e8a2c96d9215064042b8",
+      "fe0da8446839d480e95ce30f0eb22c511dfccc18339e43486f2eb93b9a9ee2be",
+      "81869ac865b5013f0b4ad9da98cacb8c7691213c2327bcd10eeef886b4a786a7"
+    ],
+    "future_source_proven": false,
+    "source_files_reported": 4,
+    "two_day_range": "2026-07-31..2026-08-01",
+    "v19_pilot_6_parquet_hashes_verified": true,
+    "v19_pilot_present": true
+  }
+}

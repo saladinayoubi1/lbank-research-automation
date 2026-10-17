@@ -1,0 +1,153 @@
+{
+  "auto_demo": false,
+  "disposition": "BLOCKED_UNRESOLVED_OBSERVED_SOURCE_CONFLICT",
+  "immutable_original_archive": true,
+  "live_enabled": false,
+  "not_exchange_authenticity_proof": true,
+  "orders_placed": 0,
+  "repair_performed": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v18-overlap-forensic-disposition.v1",
+  "source_status": "QUARANTINED_TRANSCRIPTION_NOT_RAW_HTTP_ATTESTED",
+  "symbols": {
+    "BTCUSDT": {
+      "field_mismatch_counts": {
+        "close": 0,
+        "high": 0,
+        "low": 0,
+        "open": 6,
+        "volume": 0
+      },
+      "frozen_archive_sha256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+      "mismatches": [
+        {
+          "field": "open",
+          "frozen_archive_value": "62948.8",
+          "observed_minus_frozen": "-0.1",
+          "observed_stdout_value": "62948.7",
+          "open_ms": 1785541500000,
+          "open_utc": "2026-07-31T23:45:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "62975.6",
+          "observed_minus_frozen": "-1.0",
+          "observed_stdout_value": "62974.6",
+          "open_ms": 1785539700000,
+          "open_utc": "2026-07-31T23:15:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "62946.0",
+          "observed_minus_frozen": "0.1",
+          "observed_stdout_value": "62946.1",
+          "open_ms": 1785538800000,
+          "open_utc": "2026-07-31T23:00:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "62944.9",
+          "observed_minus_frozen": "0.2",
+          "observed_stdout_value": "62945.1",
+          "open_ms": 1785537900000,
+          "open_utc": "2026-07-31T22:45:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "62985.8",
+          "observed_minus_frozen": "0.1",
+          "observed_stdout_value": "62985.9",
+          "open_ms": 1785537000000,
+          "open_utc": "2026-07-31T22:30:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "62951.8",
+          "observed_minus_frozen": "-1.2",
+          "observed_stdout_value": "62950.6",
+          "open_ms": 1785535200000,
+          "open_utc": "2026-07-31T22:00:00+00:00"
+        }
+      ],
+      "overlap_bars": 8
+    },
+    "ETHUSDT": {
+      "field_mismatch_counts": {
+        "close": 0,
+        "high": 0,
+        "low": 1,
+        "open": 7,
+        "volume": 0
+      },
+      "frozen_archive_sha256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+      "mismatches": [
+        {
+          "field": "open",
+          "frozen_archive_value": "1863.43",
+          "observed_minus_frozen": "0.07",
+          "observed_stdout_value": "1863.5",
+          "open_ms": 1785541500000,
+          "open_utc": "2026-07-31T23:45:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1864.09",
+          "observed_minus_frozen": "-0.10",
+          "observed_stdout_value": "1863.99",
+          "open_ms": 1785540600000,
+          "open_utc": "2026-07-31T23:30:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1862.5",
+          "observed_minus_frozen": "0.01",
+          "observed_stdout_value": "1862.51",
+          "open_ms": 1785539700000,
+          "open_utc": "2026-07-31T23:15:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1861.36",
+          "observed_minus_frozen": "-0.01",
+          "observed_stdout_value": "1861.35",
+          "open_ms": 1785538800000,
+          "open_utc": "2026-07-31T23:00:00+00:00"
+        },
+        {
+          "field": "low",
+          "frozen_archive_value": "1861.36",
+          "observed_minus_frozen": "-0.01",
+          "observed_stdout_value": "1861.35",
+          "open_ms": 1785538800000,
+          "open_utc": "2026-07-31T23:00:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1863.1",
+          "observed_minus_frozen": "0.03",
+          "observed_stdout_value": "1863.13",
+          "open_ms": 1785537900000,
+          "open_utc": "2026-07-31T22:45:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1863.52",
+          "observed_minus_frozen": "0.02",
+          "observed_stdout_value": "1863.54",
+          "open_ms": 1785537000000,
+          "open_utc": "2026-07-31T22:30:00+00:00"
+        },
+        {
+          "field": "open",
+          "frozen_archive_value": "1861.85",
+          "observed_minus_frozen": "-0.05",
+          "observed_stdout_value": "1861.8",
+          "open_ms": 1785535200000,
+          "open_utc": "2026-07-31T22:00:00+00:00"
+        }
+      ],
+      "overlap_bars": 8
+    }
+  },
+  "total_ohlcv_field_mismatches": 14
+}

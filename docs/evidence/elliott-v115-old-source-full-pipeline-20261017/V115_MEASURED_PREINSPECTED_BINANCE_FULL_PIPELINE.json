@@ -1,0 +1,99 @@
+{
+  "by_symbol_source_events": {
+    "BTCUSDT": {
+      "all_coarse_candidate_windows": 604,
+      "coarse_SHA256": "3fb700ea94b31331523354f48c8f2972756017e2e9a85be18e08da3a0b80dcff",
+      "coarse_confirmed": 609,
+      "fine_SHA256": "f5a1f2b2dabed9a5e9644887c9cd1c3418083a69a3a01e5f46d429ee1d00ea87",
+      "fine_confirmed": 2212,
+      "original_closed_1m_bars": 20160
+    },
+    "ETHUSDT": {
+      "all_coarse_candidate_windows": 608,
+      "coarse_SHA256": "2a9a999a0e857732a282ca61b555e3653aefcc428a7ef42457b643940d3958b1",
+      "coarse_confirmed": 613,
+      "fine_SHA256": "b34f45ae6f13539106c863d942c9ddfeb487bb16529ac460a3d5da9d34d10319",
+      "fine_confirmed": 2206,
+      "original_closed_1m_bars": 20160
+    }
+  },
+  "data_source": "BINANCE_SPOT_HISTORICAL_JULY_2024_NO_HOLDOUT",
+  "elliott_degree_certificates": 0,
+  "first_week_causal_invariance": {
+    "all_first_week_mature_screens_unchanged": true,
+    "original_mature_first_week_candidates": 574
+  },
+  "first_week_source_to_capacity": {
+    "all_hypothetical_source_proposals": 1,
+    "all_original_six_coarse_windows": 574,
+    "all_reference_abstentions": 573,
+    "cash_candidate_admitted_count": 1,
+    "cash_candidate_denied_count": 0,
+    "cash_journal_events": 2,
+    "cash_journal_sha256": "1f278aad2fcf3932f1edbb202524a8b55d367b258b17df8332f83685c2515fed",
+    "end_reserved_cash_usdt": "0.000000000000",
+    "end_reserved_gapless_risk_usdt": "0.000000000000000000000000000",
+    "known_later_barrier_release_count": 1,
+    "orders": 0,
+    "real_pnl": null,
+    "reference_screen_counts": {
+      "BEAR_CANNOT_OPEN_SPOT_SHORT": 1,
+      "ORIGINAL_V107_NECESSARY_SCREEN_REJECTED": 572,
+      "SOURCE_CAUSAL_SPOT_LONG_REFERENCE_ONLY": 1
+    }
+  },
+  "full_source_stream_proof": {
+    "cash_events": 8,
+    "event_digest": "a1cac6405de6ff892b72f08f36783bf08664e0510b8c8c9207f4c0806d6e1d95",
+    "mandatory_timing_checkpoints": 2112,
+    "no_checkpoint_silently_dropped": true,
+    "original_causal_candidates": 1212
+  },
+  "full_two_week_source_to_capacity": {
+    "all_hypothetical_source_proposals": 4,
+    "all_original_six_coarse_windows": 1212,
+    "all_reference_abstentions": 1208,
+    "cash_candidate_admitted_count": 4,
+    "cash_candidate_denied_count": 0,
+    "cash_journal_events": 8,
+    "cash_journal_sha256": "a1cac6405de6ff892b72f08f36783bf08664e0510b8c8c9207f4c0806d6e1d95",
+    "end_reserved_cash_usdt": "0.000000000000",
+    "end_reserved_gapless_risk_usdt": "0.000000000000000000000000000",
+    "known_later_barrier_release_count": 4,
+    "orders": 0,
+    "real_pnl": null,
+    "reference_screen_counts": {
+      "BARRIER_TOUCHED_BEFORE_CLOSED_REFERENCE": 1,
+      "BEAR_CANNOT_OPEN_SPOT_SHORT": 4,
+      "ORIGINAL_V107_NECESSARY_SCREEN_REJECTED": 1203,
+      "SOURCE_CAUSAL_SPOT_LONG_REFERENCE_ONLY": 4
+    }
+  },
+  "historical_archive_count": 28,
+  "laptop2_os": "Windows-10-10.0.19045-SP0",
+  "live_enabled": false,
+  "market_profitability_certified": false,
+  "measured_single_run_ms": {
+    "all_study_walltime": 73897.731,
+    "first_week_source_to_portfolio_extra_study": 6422.075,
+    "original_archives_receipt_and_7field_reopen": 5642.322,
+    "original_full_v107_v111_source_to_capacity": 19187.666,
+    "original_full_v113_incremental_causal_audit": 38493.803,
+    "original_full_v99_two_scales": 4151.865
+  },
+  "measurement_does_not_use_python_tracemalloc": true,
+  "not_bybit_spot_or_market_execution": true,
+  "not_independent_holdout": true,
+  "orders": 0,
+  "original_1m_candles_total": 40320,
+  "original_market_was_already_researched": true,
+  "original_official_archive_receipt_sha256": "e1c3988f6112ccd12883e35704b63024dc56bf52cc7a38f36ef42e743c2ed7df",
+  "paper_eligible": false,
+  "python_version": "3.12.10",
+  "real_net_pnl": null,
+  "schema": "nexus.elliott-v115-preinspected-binance-full-pipeline-performance.v1",
+  "source_period": "2024-07-01-to-2024-07-15-exclusive-UTC",
+  "unmodified_demo_v52": true,
+  "windows_process_current_working_set_mib": 68.191,
+  "windows_process_peak_working_set_mib": 70.602
+}

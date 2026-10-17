@@ -1,0 +1,155 @@
+{
+  "entry_signal": false,
+  "future_holdout": false,
+  "historical_exploratory": true,
+  "live_enabled": false,
+  "new_pnl": null,
+  "paper_eligible": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v83-historical-motive-hard-geometry.v1",
+  "stage": "V83",
+  "symbols": {
+    "BTCUSDT": {
+      "correction_skeleton_candidates": 1,
+      "full_recursive_elliott_proven": 0,
+      "motive_skeleton_candidates": 1,
+      "parent_intervals": 32,
+      "rejection_and_abstention_reasons": {
+        "CORRECTION_SKELETON_UNCLASSIFIED_NO_INNER_WITNESS": 1,
+        "REJECT_HARD_MOTIVE_GEOMETRY": 1,
+        "UNRESOLVED_PARENT_INTERVAL": 30,
+        "WAVE3_IS_SHORTEST": 1,
+        "WAVE4_OVERLAPS_WAVE1_NONDIAGONAL": 1
+      },
+      "results": [
+        {
+          "entry_signal": false,
+          "first_observable_ms": 1709285400000,
+          "flat_proven": false,
+          "paper_eligible": false,
+          "parent_left_center_ms": 1709280480000,
+          "parent_right_center_ms": 1709282460000,
+          "pnl": null,
+          "state": "CORRECTION_SKELETON_UNCLASSIFIED_NO_INNER_WITNESS",
+          "triangle_proven": false,
+          "zigzag_proven": false
+        },
+        {
+          "complete_recursive_elliott": false,
+          "entry_signal": false,
+          "first_observable_ms": 1709375400000,
+          "live_enabled": false,
+          "motive_geometry_pass": false,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "physical_failures": [],
+          "pnl": null,
+          "price_vertices": [
+            "62123.00000000",
+            "61884.80000000",
+            "61966.29000000",
+            "61790.97000000",
+            "61898.00000000",
+            "61641.10000000"
+          ],
+          "rule_failures": [
+            "WAVE4_OVERLAPS_WAVE1_NONDIAGONAL",
+            "WAVE3_IS_SHORTEST"
+          ],
+          "state": "REJECT_HARD_MOTIVE_GEOMETRY",
+          "vertex_center_ms": [
+            1709369160000,
+            1709370180000,
+            1709370840000,
+            1709371500000,
+            1709371620000,
+            1709371920000
+          ],
+          "vertex_confirmed_ms": [
+            1709372700000,
+            1709370540000,
+            1709371080000,
+            1709371800000,
+            1709371980000,
+            1709375400000
+          ]
+        }
+      ],
+      "signals": 0,
+      "source_1m_bars": 2880,
+      "verified_profit_usdt": null
+    },
+    "ETHUSDT": {
+      "correction_skeleton_candidates": 1,
+      "full_recursive_elliott_proven": 0,
+      "motive_skeleton_candidates": 1,
+      "parent_intervals": 36,
+      "rejection_and_abstention_reasons": {
+        "CORRECTION_SKELETON_UNCLASSIFIED_NO_INNER_WITNESS": 1,
+        "REJECT_HARD_MOTIVE_GEOMETRY": 1,
+        "UNRESOLVED_PARENT_INTERVAL": 34,
+        "WAVE4_OVERLAPS_WAVE1_NONDIAGONAL": 1
+      },
+      "results": [
+        {
+          "entry_signal": false,
+          "first_observable_ms": 1709343000000,
+          "flat_proven": false,
+          "paper_eligible": false,
+          "parent_left_center_ms": 1709337780000,
+          "parent_right_center_ms": 1709339520000,
+          "pnl": null,
+          "state": "CORRECTION_SKELETON_UNCLASSIFIED_NO_INNER_WITNESS",
+          "triangle_proven": false,
+          "zigzag_proven": false
+        },
+        {
+          "complete_recursive_elliott": false,
+          "entry_signal": false,
+          "first_observable_ms": 1709345700000,
+          "live_enabled": false,
+          "motive_geometry_pass": false,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "physical_failures": [],
+          "pnl": null,
+          "price_vertices": [
+            "3460.04000000",
+            "3441.97000000",
+            "3460.00000000",
+            "3434.73000000",
+            "3446.80000000",
+            "3424.71000000"
+          ],
+          "rule_failures": [
+            "WAVE4_OVERLAPS_WAVE1_NONDIAGONAL"
+          ],
+          "state": "REJECT_HARD_MOTIVE_GEOMETRY",
+          "vertex_center_ms": [
+            1709339520000,
+            1709340360000,
+            1709341080000,
+            1709342040000,
+            1709342220000,
+            1709342700000
+          ],
+          "vertex_confirmed_ms": [
+            1709343000000,
+            1709340660000,
+            1709341380000,
+            1709342280000,
+            1709342460000,
+            1709345700000
+          ]
+        }
+      ],
+      "signals": 0,
+      "source_1m_bars": 2880,
+      "verified_profit_usdt": null
+    }
+  },
+  "utc_recorded": "2026-10-16T18:19:01.576046+00:00",
+  "v52_unchanged": true,
+  "v80_receipt_sha256": "5c3e77533a2792bb1b76c1e14424fed3b3076ed3f31594fca934dd9e19829b88",
+  "v82_receipt_sha256": "a886e8e24706a0eecaddd041be871964570fbdc5eada6e42305834f8d7f2013a"
+}
