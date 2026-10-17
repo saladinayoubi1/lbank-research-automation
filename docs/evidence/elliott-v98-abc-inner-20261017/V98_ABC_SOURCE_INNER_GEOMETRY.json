@@ -1,0 +1,4331 @@
+{
+  "all_1m_primitives_retained": true,
+  "live_enabled": false,
+  "net_pnl": null,
+  "new_orders": 0,
+  "new_signals": 0,
+  "original_thresholds_not_retuned": true,
+  "paper_eligible": false,
+  "period": "ALREADY_INSPECTED_JULY_2024_NOT_PROSPECTIVE",
+  "recorded_utc": "2026-10-16T22:58:48.838565+00:00",
+  "recursive_elliott_certificates": 0,
+  "research_only": true,
+  "schema": "nexus.elliott-v98-physical-abc-inner-geometry-diagnostics.v1",
+  "symbols": {
+    "BTCUSDT": {
+      "all_V87_all_1m_strict_primitives_matched": true,
+      "cases": [
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720091700000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "5201dab65b8acc38212b6cbb7d16fec30d317c60920637c9d20735c1f87d73f2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720086660000,
+                  "first_center_ms": 1720086300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e6c5963099d1af0dc501414c8c4dbe0a88746b85879b3b8c5bcadce7a5dfc300",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720087260000,
+                  "first_center_ms": 1720086660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "fe0a50f51479b7dce1a604befd71db636bb70b44faa92a9c7ca0b4a8f6f95333",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720088580000,
+                  "first_center_ms": 1720087260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                10
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "5201dab65b8acc38212b6cbb7d16fec30d317c60920637c9d20735c1f87d73f2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720086660000,
+                  "first_center_ms": 1720086300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e6c5963099d1af0dc501414c8c4dbe0a88746b85879b3b8c5bcadce7a5dfc300",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720087260000,
+                  "first_center_ms": 1720086660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "fe0a50f51479b7dce1a604befd71db636bb70b44faa92a9c7ca0b4a8f6f95333",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720088580000,
+                  "first_center_ms": 1720087260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                10
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            1,
+            5,
+            10
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720143900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140000000,
+                  "first_center_ms": 1720139880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "3a9ccedc560cbd6d4e3d4707a56f14de83581cd0aed09a418899208a8eebb640",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140300000,
+                  "first_center_ms": 1720140000000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "5b12ff4aae0bc65e9e6a6c30bbf25e68d3d5883365f6d0f757d6c1420d551fa4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140600000,
+                  "first_center_ms": 1720140300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                1,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140000000,
+                  "first_center_ms": 1720139880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "3a9ccedc560cbd6d4e3d4707a56f14de83581cd0aed09a418899208a8eebb640",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140300000,
+                  "first_center_ms": 1720140000000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "5b12ff4aae0bc65e9e6a6c30bbf25e68d3d5883365f6d0f757d6c1420d551fa4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720140600000,
+                  "first_center_ms": 1720140300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                1,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            0,
+            1,
+            2
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720206900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "d15c05b5c1dee761432327629c090a066f883202a1ae0048025837159565b251",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720200960000,
+                  "first_center_ms": 1720200720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "d9165a2e6198e929f013863ff493ae00e89477aa9a0641824c92247847985a89",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720201860000,
+                  "first_center_ms": 1720200960000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 7,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e961bc53144ca0ef7097d652f1514f67525cfb5019ea4c9711bf0530393e73b2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720203480000,
+                  "first_center_ms": 1720201860000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                7,
+                10
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "d15c05b5c1dee761432327629c090a066f883202a1ae0048025837159565b251",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720200960000,
+                  "first_center_ms": 1720200720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "d9165a2e6198e929f013863ff493ae00e89477aa9a0641824c92247847985a89",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720201860000,
+                  "first_center_ms": 1720200960000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 7,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e961bc53144ca0ef7097d652f1514f67525cfb5019ea4c9711bf0530393e73b2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720203480000,
+                  "first_center_ms": 1720201860000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                7,
+                10
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            1,
+            7,
+            10
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720391400000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720385460000,
+                  "first_center_ms": 1720385400000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "c90762cddc6278fe801a2218678e5d727bd282761c3131f1cd0cf449e9ea8765",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720385880000,
+                  "first_center_ms": 1720385460000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "931e57e541788c8860031470eccd7203e1cc83a0ea9091c0639f62fe8fd71871",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720387920000,
+                  "first_center_ms": 1720385880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 11,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                1,
+                11
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720385460000,
+                  "first_center_ms": 1720385400000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "c90762cddc6278fe801a2218678e5d727bd282761c3131f1cd0cf449e9ea8765",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720385880000,
+                  "first_center_ms": 1720385460000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "931e57e541788c8860031470eccd7203e1cc83a0ea9091c0639f62fe8fd71871",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720387920000,
+                  "first_center_ms": 1720385880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 11,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                1,
+                11
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            0,
+            1,
+            11
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720538100000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "9d831ad5b3c2e574c486a19f5043960fc1445e7fd49529440040842e2b93a488",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533720000,
+                  "first_center_ms": 1720533120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533840000,
+                  "first_center_ms": 1720533720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "11a08e365b7126047c4fcdb614fa061b145778c9ec2d2480011cf50a0d85c421",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720534560000,
+                  "first_center_ms": 1720533840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                0,
+                3
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "9d831ad5b3c2e574c486a19f5043960fc1445e7fd49529440040842e2b93a488",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533720000,
+                  "first_center_ms": 1720533120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533840000,
+                  "first_center_ms": 1720533720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "11a08e365b7126047c4fcdb614fa061b145778c9ec2d2480011cf50a0d85c421",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720534560000,
+                  "first_center_ms": 1720533840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                0,
+                3
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            3,
+            0,
+            3
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720593000000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "2b999470e6eb1f456ebc53d78beddf8491ed49e70df811dcf54bbae05b40de0d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720588740000,
+                  "first_center_ms": 1720588080000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "252876c3759c9b4784ae3c6cbdc8eae3a5ce22e5e5751c7470e85083e6219de4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [],
+                      "restricted_necessary_geometry_pass": true
+                    }
+                  },
+                  "final_center_ms": 1720589220000,
+                  "first_center_ms": 1720588740000,
+                  "necessary_shape_and_geometry_pass": true,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "80de57bcd7779f1bf7bf2f43d2b02e2df8be3b58ecea9eaaa9cc378323a55927",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720590060000,
+                  "first_center_ms": 1720589220000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                2,
+                4
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "2b999470e6eb1f456ebc53d78beddf8491ed49e70df811dcf54bbae05b40de0d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720588740000,
+                  "first_center_ms": 1720588080000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "252876c3759c9b4784ae3c6cbdc8eae3a5ce22e5e5751c7470e85083e6219de4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [],
+                      "restricted_necessary_geometry_pass": true
+                    }
+                  },
+                  "final_center_ms": 1720589220000,
+                  "first_center_ms": 1720588740000,
+                  "necessary_shape_and_geometry_pass": true,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "80de57bcd7779f1bf7bf2f43d2b02e2df8be3b58ecea9eaaa9cc378323a55927",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720590060000,
+                  "first_center_ms": 1720589220000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                2,
+                4
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            3,
+            2,
+            4
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720611000000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "dc00482dda0d61f9d2b7e025151a074a712777586d4cac23cc3f760459b5c4e5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607160000,
+                  "first_center_ms": 1720606440000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607340000,
+                  "first_center_ms": 1720607160000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "0481f2ffe707f38548aecc52e6b58a46c9a103e99acd7eed4f557017560f0c5d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607880000,
+                  "first_center_ms": 1720607340000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                1
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "dc00482dda0d61f9d2b7e025151a074a712777586d4cac23cc3f760459b5c4e5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607160000,
+                  "first_center_ms": 1720606440000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607340000,
+                  "first_center_ms": 1720607160000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "0481f2ffe707f38548aecc52e6b58a46c9a103e99acd7eed4f557017560f0c5d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720607880000,
+                  "first_center_ms": 1720607340000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                1
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            2,
+            0,
+            1
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720627200000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "58d9a075603ef872e2d779c505d89198b97df5095a78ba491675a34484414e37",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720622280000,
+                  "first_center_ms": 1720621920000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "71c72d2ef9ca3098f8f017ff47e8190a6703a69b61049c395d89a13bf180bc16",
+                  "ambiguous_dual_centers_ms": [
+                    1720622580000,
+                    1720623000000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720623480000,
+                  "first_center_ms": 1720622280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "ba86c281ac648f7bf25416116d821d1ff420a866dce38259cb009df9eb43307d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720624020000,
+                  "first_center_ms": 1720623480000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                3
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "58d9a075603ef872e2d779c505d89198b97df5095a78ba491675a34484414e37",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720622280000,
+                  "first_center_ms": 1720621920000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "71c72d2ef9ca3098f8f017ff47e8190a6703a69b61049c395d89a13bf180bc16",
+                  "ambiguous_dual_centers_ms": [
+                    1720622580000,
+                    1720623000000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720623480000,
+                  "first_center_ms": 1720622280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "ba86c281ac648f7bf25416116d821d1ff420a866dce38259cb009df9eb43307d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720624020000,
+                  "first_center_ms": 1720623480000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                3
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            1,
+            5,
+            3
+          ],
+          "v87_state": "AMBIGUOUS_UNORDERED_1M_EXTREMA_ABSTAIN"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720917900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "acf679e4435cda7f4c36358f830db6f4cee1c74bec6c4bc0493552a1486af149",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720913880000,
+                  "first_center_ms": 1720912680000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "344dbf6a679ac2090b26a57f3298fde1f82b6ce20595bdee0bcc6ca99cfc6076",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720914120000,
+                  "first_center_ms": 1720913880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "a1f9a3ee61b5b2f040e75228091a981aa76693f60e59cf7d637a2ae8f05e60d2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720914720000,
+                  "first_center_ms": 1720914120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                4,
+                1,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "acf679e4435cda7f4c36358f830db6f4cee1c74bec6c4bc0493552a1486af149",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {
+                    "IMPULSE": {
+                      "reject_reasons": [
+                        "WAVE4_OVERLAP_NONDIAGONAL",
+                        "WAVE3_IS_SHORTEST"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720913880000,
+                  "first_center_ms": 1720912680000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "344dbf6a679ac2090b26a57f3298fde1f82b6ce20595bdee0bcc6ca99cfc6076",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720914120000,
+                  "first_center_ms": 1720913880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "a1f9a3ee61b5b2f040e75228091a981aa76693f60e59cf7d637a2ae8f05e60d2",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720914720000,
+                  "first_center_ms": 1720914120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                4,
+                1,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            4,
+            1,
+            2
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        }
+      ],
+      "certified_market_recursive_elliott_patterns": 0,
+      "family_diagnostic_frequency": {
+        "FLAT_A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "FLAT_A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "FLAT_B_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "FLAT_B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "FLAT_B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "FLAT_C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 8,
+        "FLAT_C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "FLAT_PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL": 9,
+        "ZIGZAG_A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "ZIGZAG_A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY": 1,
+        "ZIGZAG_A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "ZIGZAG_B_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "ZIGZAG_B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "ZIGZAG_B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "ZIGZAG_C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 8,
+        "ZIGZAG_C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 8,
+        "ZIGZAG_OUTER_GEOMETRY_PASS": 7,
+        "ZIGZAG_PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL": 2
+      },
+      "original_ABC_skeletons": 9,
+      "physical_1m_source_rows": 20160,
+      "qualified_demo_positions": 0,
+      "source_verified_ABC_diagnostics": 9
+    },
+    "ETHUSDT": {
+      "all_V87_all_1m_strict_primitives_matched": true,
+      "cases": [
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1719804600000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "d27d97d584eb5ab0943e610e1ef3c231e2eb3096d79114a31c2bd18084054b65",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719800640000,
+                  "first_center_ms": 1719799200000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "44b57156c2cefe837bb5db6ec7be0856086b16298182dfc47f427d44cea73ac4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719801060000,
+                  "first_center_ms": 1719800640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719801360000,
+                  "first_center_ms": 1719801060000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                10,
+                2,
+                0
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "d27d97d584eb5ab0943e610e1ef3c231e2eb3096d79114a31c2bd18084054b65",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719800640000,
+                  "first_center_ms": 1719799200000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 10,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "44b57156c2cefe837bb5db6ec7be0856086b16298182dfc47f427d44cea73ac4",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719801060000,
+                  "first_center_ms": 1719800640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719801360000,
+                  "first_center_ms": 1719801060000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                10,
+                2,
+                0
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            10,
+            2,
+            0
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1719819900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "644c96ded90d84a2d6134f3831d3c2bff31b1885d9c2cbaf7fcaa3175da90219",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719814560000,
+                  "first_center_ms": 1719813840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719814740000,
+                  "first_center_ms": 1719814560000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "223d71c4bfd73e63b750205c51c0244657fe9b883aae0a6e5232042add3adea0",
+                  "ambiguous_dual_centers_ms": [
+                    1719815820000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719816300000,
+                  "first_center_ms": 1719814740000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                0,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "644c96ded90d84a2d6134f3831d3c2bff31b1885d9c2cbaf7fcaa3175da90219",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719814560000,
+                  "first_center_ms": 1719813840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719814740000,
+                  "first_center_ms": 1719814560000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "223d71c4bfd73e63b750205c51c0244657fe9b883aae0a6e5232042add3adea0",
+                  "ambiguous_dual_centers_ms": [
+                    1719815820000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719816300000,
+                  "first_center_ms": 1719814740000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                3,
+                0,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            3,
+            0,
+            2
+          ],
+          "v87_state": "AMBIGUOUS_UNORDERED_1M_EXTREMA_ABSTAIN"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1719901800000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "c975851580fe9a19dca5d2f274116dc4b80d7217cb8f0b835023eb790003acde",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719897300000,
+                  "first_center_ms": 1719896280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "d55e97a87a7b4da8e9910f53a1591d328fbf4a0f83f833f8341c945a22c1db6d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719897660000,
+                  "first_center_ms": 1719897300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719898260000,
+                  "first_center_ms": 1719897660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                1,
+                0
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "c975851580fe9a19dca5d2f274116dc4b80d7217cb8f0b835023eb790003acde",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719897300000,
+                  "first_center_ms": 1719896280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "d55e97a87a7b4da8e9910f53a1591d328fbf4a0f83f833f8341c945a22c1db6d",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1719897660000,
+                  "first_center_ms": 1719897300000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1719898260000,
+                  "first_center_ms": 1719897660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                1,
+                0
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            2,
+            1,
+            0
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720089000000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "7c2442e9f35fd6f830643b9ac0eba4fc270bad41a9598866658fe6e9724859df",
+                  "ambiguous_dual_centers_ms": [
+                    1720084980000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720085640000,
+                  "first_center_ms": 1720084320000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 9,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "855625451264fee20d17eba3d8a4a8b6310a8f9c1d96820677fe68bcfcb220e9",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720085880000,
+                  "first_center_ms": 1720085640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720086060000,
+                  "first_center_ms": 1720085880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                9,
+                1,
+                0
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "7c2442e9f35fd6f830643b9ac0eba4fc270bad41a9598866658fe6e9724859df",
+                  "ambiguous_dual_centers_ms": [
+                    1720084980000
+                  ],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "INTRA_1M_HIGH_LOW_ORDER_UNKNOWN",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720085640000,
+                  "first_center_ms": 1720084320000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 9,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "855625451264fee20d17eba3d8a4a8b6310a8f9c1d96820677fe68bcfcb220e9",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720085880000,
+                  "first_center_ms": 1720085640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720086060000,
+                  "first_center_ms": 1720085880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                9,
+                1,
+                0
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            9,
+            1,
+            0
+          ],
+          "v87_state": "AMBIGUOUS_UNORDERED_1M_EXTREMA_ABSTAIN"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720170900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "82f3d9625fe7bee57358582631b372518a92913dd58fcf0d3f10d713e7ac6003",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720165980000,
+                  "first_center_ms": 1720165020000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "4d7c0fc945401e5351742dc2514fd115b1e0c4dc0294b6492aed40607eeac222",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720166880000,
+                  "first_center_ms": 1720165980000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "b942f425f326001d17b281582fc6667e45826a67be8e8434e28a9d45ebfbafde",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720167300000,
+                  "first_center_ms": 1720166880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                5,
+                4,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "82f3d9625fe7bee57358582631b372518a92913dd58fcf0d3f10d713e7ac6003",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720165980000,
+                  "first_center_ms": 1720165020000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "4d7c0fc945401e5351742dc2514fd115b1e0c4dc0294b6492aed40607eeac222",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720166880000,
+                  "first_center_ms": 1720165980000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "b942f425f326001d17b281582fc6667e45826a67be8e8434e28a9d45ebfbafde",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720167300000,
+                  "first_center_ms": 1720166880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                5,
+                4,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            5,
+            4,
+            2
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720189800000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "94b9c7024b812ca00e4b466a49b62c34a38c2281b00ba86038384651b54a0389",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720185120000,
+                  "first_center_ms": 1720184640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "7ae15ee11e3dcd3c8a9e7579e1acf0b1b044010fa47ff81e8634eac6e53b614b",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720185780000,
+                  "first_center_ms": 1720185120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "9b66f9658476168bd2634eb40bd56fb0775f5bb2c46f9780057dba42a8a4a2f5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720186320000,
+                  "first_center_ms": 1720185780000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "94b9c7024b812ca00e4b466a49b62c34a38c2281b00ba86038384651b54a0389",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720185120000,
+                  "first_center_ms": 1720184640000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "7ae15ee11e3dcd3c8a9e7579e1acf0b1b044010fa47ff81e8634eac6e53b614b",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720185780000,
+                  "first_center_ms": 1720185120000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "9b66f9658476168bd2634eb40bd56fb0775f5bb2c46f9780057dba42a8a4a2f5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720186320000,
+                  "first_center_ms": 1720185780000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                1,
+                5,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            1,
+            5,
+            2
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720206900000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "039ee78fd12e6ae69d7d07d7a6e3b4e852a7768e4da1f02afbbe91073ae75265",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [],
+                      "restricted_necessary_geometry_pass": true
+                    }
+                  },
+                  "final_center_ms": 1720202220000,
+                  "first_center_ms": 1720201860000,
+                  "necessary_shape_and_geometry_pass": true,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720202400000,
+                  "first_center_ms": 1720202220000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "df1521d00baae74d6cac03a1b148652187d68be615c771a7df187cadeff5418a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720203480000,
+                  "first_center_ms": 1720202400000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 6,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                6
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "039ee78fd12e6ae69d7d07d7a6e3b4e852a7768e4da1f02afbbe91073ae75265",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720202220000,
+                  "first_center_ms": 1720201860000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720202400000,
+                  "first_center_ms": 1720202220000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "df1521d00baae74d6cac03a1b148652187d68be615c771a7df187cadeff5418a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720203480000,
+                  "first_center_ms": 1720202400000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 6,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                6
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            2,
+            0,
+            6
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720229400000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "850d25280aaaeef413a3c42e5edd33f8f4cf83e6510e83f8ceb5a4a668603261",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720225260000,
+                  "first_center_ms": 1720224720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e39f9aba7d01a728c38e8b7710349a02950943ffddd5fece3a06c7ed9a169eec",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720225500000,
+                  "first_center_ms": 1720225260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "b4b1fa14f1b4c7c59a86415cb357d91280a16c88c6a088c69c049a7fe53f4615",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {
+                    "IMPULSE": {
+                      "reject_reasons": [
+                        "LEG4_WICK_LOW_BEYOND_END",
+                        "LEG4_WICK_HIGH_BEFORE_START"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720226280000,
+                  "first_center_ms": 1720225500000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                4,
+                1,
+                4
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "850d25280aaaeef413a3c42e5edd33f8f4cf83e6510e83f8ceb5a4a668603261",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {
+                    "IMPULSE": {
+                      "reject_reasons": [
+                        "WAVE3_NOT_BEYOND_WAVE1",
+                        "WAVE4_OVERLAP_NONDIAGONAL",
+                        "WAVE3_IS_SHORTEST",
+                        "LEG3_WICK_HIGH_BEYOND_END"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720225260000,
+                  "first_center_ms": 1720224720000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "e39f9aba7d01a728c38e8b7710349a02950943ffddd5fece3a06c7ed9a169eec",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720225500000,
+                  "first_center_ms": 1720225260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "b4b1fa14f1b4c7c59a86415cb357d91280a16c88c6a088c69c049a7fe53f4615",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {
+                    "IMPULSE": {
+                      "reject_reasons": [
+                        "LEG4_WICK_LOW_BEYOND_END",
+                        "LEG4_WICK_HIGH_BEFORE_START"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720226280000,
+                  "first_center_ms": 1720225500000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                4,
+                1,
+                4
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            4,
+            1,
+            4
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720278000000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "83ae385215f665bd963fa695b651f6b3c06a1b74570f526a1bf011416ed9cf95",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                        "LEG1_WICK_LOW_BEYOND_END"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [
+                        "LEG1_WICK_LOW_BEYOND_END"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720274280000,
+                  "first_center_ms": 1720273740000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720274520000,
+                  "first_center_ms": 1720274280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "c9b6338a31baed85366a21aa337001dd136bc4dc6b444acbc8ec38b9174bbc1a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720275060000,
+                  "first_center_ms": 1720274520000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                4
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "83ae385215f665bd963fa695b651f6b3c06a1b74570f526a1bf011416ed9cf95",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720274280000,
+                  "first_center_ms": 1720273740000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720274520000,
+                  "first_center_ms": 1720274280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "c9b6338a31baed85366a21aa337001dd136bc4dc6b444acbc8ec38b9174bbc1a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720275060000,
+                  "first_center_ms": 1720274520000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 4,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                4
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "A",
+          "v87_original_inner_counts": [
+            2,
+            0,
+            4
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720528200000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "f62191d41babeff5f5af4ac60ef5e9b6303d2516c4d89fcaf85a675880a72f48",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720524660000,
+                  "first_center_ms": 1720523460000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 6,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "79248fa24eb7b0894c06aa1cfdef12c06378b895892217232e69a31195a152e6",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720524900000,
+                  "first_center_ms": 1720524660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "ea3d8d79b59375059e25f14e2f9645ac1163a96aaa61fe0c8bd58a1e235dd2cc",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720525320000,
+                  "first_center_ms": 1720524900000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                6,
+                1,
+                3
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "f62191d41babeff5f5af4ac60ef5e9b6303d2516c4d89fcaf85a675880a72f48",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720524660000,
+                  "first_center_ms": 1720523460000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 6,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "79248fa24eb7b0894c06aa1cfdef12c06378b895892217232e69a31195a152e6",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720524900000,
+                  "first_center_ms": 1720524660000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "ea3d8d79b59375059e25f14e2f9645ac1163a96aaa61fe0c8bd58a1e235dd2cc",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720525320000,
+                  "first_center_ms": 1720524900000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                6,
+                1,
+                3
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            6,
+            1,
+            3
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720538100000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "31c4a26b9c4cdbd48497bc26b4940755e67bafc84975dd55c942d3c7f7f8d879",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NO_ALLOWED_LOWER_DEGREE_GEOMETRY"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT",
+                        "LEG2_WICK_LOW_BEYOND_END",
+                        "LEG2_WICK_HIGH_BEFORE_START"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [
+                        "LEG2_WICK_LOW_BEYOND_END",
+                        "LEG2_WICK_HIGH_BEFORE_START"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    }
+                  },
+                  "final_center_ms": 1720533600000,
+                  "first_center_ms": 1720533180000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "155550e79be6f66787b85ead3299252650b3274259341eb6929ad5b825c2d629",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533840000,
+                  "first_center_ms": 1720533600000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "8b6a7bc2cbe5f0289ef10e85c90e5694b44aee998f6e51c2e0bf36d4df2b344a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720534560000,
+                  "first_center_ms": 1720533840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                1,
+                3
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "31c4a26b9c4cdbd48497bc26b4940755e67bafc84975dd55c942d3c7f7f8d879",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533600000,
+                  "first_center_ms": 1720533180000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "155550e79be6f66787b85ead3299252650b3274259341eb6929ad5b825c2d629",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720533840000,
+                  "first_center_ms": 1720533600000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 1,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "8b6a7bc2cbe5f0289ef10e85c90e5694b44aee998f6e51c2e0bf36d4df2b344a",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720534560000,
+                  "first_center_ms": 1720533840000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 3,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                1,
+                3
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            2,
+            1,
+            3
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720705500000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720701060000,
+                  "first_center_ms": 1720700940000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "50538d8d9524b327ede7edf722f8139a047927b2c51bc451255edd0274c88de1",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720701360000,
+                  "first_center_ms": 1720701060000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "8c4907ec152bd11ed20252533bebd93e4d33a14ab9401bf3c90597ba10c33d92",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720702260000,
+                  "first_center_ms": 1720701360000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                2,
+                5
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720701060000,
+                  "first_center_ms": 1720700940000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "50538d8d9524b327ede7edf722f8139a047927b2c51bc451255edd0274c88de1",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720701360000,
+                  "first_center_ms": 1720701060000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "8c4907ec152bd11ed20252533bebd93e4d33a14ab9401bf3c90597ba10c33d92",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720702260000,
+                  "first_center_ms": 1720701360000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 5,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                2,
+                5
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            0,
+            2,
+            5
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720791000000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720786560000,
+                  "first_center_ms": 1720786260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "0b9d07a73565769141da28e0961b84f561f650ce132077928ee369c3b606477c",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720787280000,
+                  "first_center_ms": 1720786560000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 7,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720787400000,
+                  "first_center_ms": 1720787280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                7,
+                0
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720786560000,
+                  "first_center_ms": 1720786260000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "0b9d07a73565769141da28e0961b84f561f650ce132077928ee369c3b606477c",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                    "NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720787280000,
+                  "first_center_ms": 1720786560000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 7,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720787400000,
+                  "first_center_ms": 1720787280000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                0,
+                7,
+                0
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            0,
+            7,
+            0
+          ],
+          "v87_state": "NONALTERNATING_ALL_INNER_PIVOTS_RETAINED"
+        },
+        {
+          "all_ABC_inner_1m_pivots_exactly_match_V87": true,
+          "all_source_strict_1m_pivots_replayed": true,
+          "asof_ms": 1720813500000,
+          "full_recursive_elliott_certified": false,
+          "independent_ABC_motive_and_correction_geometry": {
+            "FLAT": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                2,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "e337168396369e2fa02b26aeeeebad71c1fab08b782146df54c375001b5696e5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {
+                    "FLAT": {
+                      "reject_reasons": [
+                        "FLAT_B_RETRACE_LESS_THAN_90_PERCENT"
+                      ],
+                      "restricted_necessary_geometry_pass": false
+                    },
+                    "ZIGZAG": {
+                      "reject_reasons": [],
+                      "restricted_necessary_geometry_pass": true
+                    }
+                  },
+                  "final_center_ms": 1720809600000,
+                  "first_center_ms": 1720808880000,
+                  "necessary_shape_and_geometry_pass": true,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720809780000,
+                  "first_center_ms": 1720809600000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "71c85c1df99a03720174614fcba616dace7f0c0b3fe3ce4e37a1dc92bde751da",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720810200000,
+                  "first_center_ms": 1720809780000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                2
+              ],
+              "outer_restricted_geometry_only": false,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            },
+            "ZIGZAG": {
+              "actual_recursive_wave_certificate": false,
+              "blockers": [
+                "A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED",
+                "C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+              ],
+              "entry_signal": false,
+              "frozen_counts_expected": [
+                4,
+                2,
+                4
+              ],
+              "lower_constituent_diagnostics": [
+                {
+                  "all_interior_source_pivots_sha256": "e337168396369e2fa02b26aeeeebad71c1fab08b782146df54c375001b5696e5",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720809600000,
+                  "first_center_ms": 1720808880000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 2,
+                  "family_geometry": {},
+                  "final_center_ms": 1720809780000,
+                  "first_center_ms": 1720809600000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 0,
+                  "role": "CORRECTION",
+                  "strict_physical_1m_observed": true
+                },
+                {
+                  "all_interior_source_pivots_sha256": "71c85c1df99a03720174614fcba616dace7f0c0b3fe3ce4e37a1dc92bde751da",
+                  "ambiguous_dual_centers_ms": [],
+                  "certified_elliott_subwave": false,
+                  "degree_geometry_reject_reasons": [
+                    "UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED"
+                  ],
+                  "expected_1m_interior_count": 4,
+                  "family_geometry": {},
+                  "final_center_ms": 1720810200000,
+                  "first_center_ms": 1720809780000,
+                  "necessary_shape_and_geometry_pass": false,
+                  "new_entry_signal": false,
+                  "observed_unpruned_1m_interior_count": 2,
+                  "role": "MOTIVE",
+                  "strict_physical_1m_observed": true
+                }
+              ],
+              "necessary_fixed_degree_family_diagnostics_pass": false,
+              "observed_unpruned_counts": [
+                2,
+                0,
+                2
+              ],
+              "outer_restricted_geometry_only": true,
+              "paper_eligible": false,
+              "pattern_position_certificate": false
+            }
+          },
+          "live_enabled": false,
+          "net_pnl": null,
+          "new_entry_signal": false,
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "source_week": "B",
+          "v87_original_inner_counts": [
+            2,
+            0,
+            2
+          ],
+          "v87_state": "NO_COMPLETE_FIXED_DEGREE_CORRECTION_WITNESS"
+        }
+      ],
+      "certified_market_recursive_elliott_patterns": 0,
+      "family_diagnostic_frequency": {
+        "FLAT_A_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "FLAT_A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 5,
+        "FLAT_A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY": 2,
+        "FLAT_A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 9,
+        "FLAT_B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 9,
+        "FLAT_B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 12,
+        "FLAT_C_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "FLAT_C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "FLAT_C_NO_ALLOWED_LOWER_DEGREE_GEOMETRY": 1,
+        "FLAT_C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 12,
+        "FLAT_OUTER_GEOMETRY_PASS": 1,
+        "FLAT_PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL": 13,
+        "ZIGZAG_A_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "ZIGZAG_A_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 5,
+        "ZIGZAG_A_NO_ALLOWED_LOWER_DEGREE_GEOMETRY": 1,
+        "ZIGZAG_A_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 13,
+        "ZIGZAG_B_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 9,
+        "ZIGZAG_B_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 12,
+        "ZIGZAG_C_INTRA_1M_HIGH_LOW_ORDER_UNKNOWN": 1,
+        "ZIGZAG_C_NONALTERNATING_OR_OUT_OF_ORDER_1M_TERMINALS": 6,
+        "ZIGZAG_C_NO_ALLOWED_LOWER_DEGREE_GEOMETRY": 1,
+        "ZIGZAG_C_UNPRUNED_STRICT_1M_COUNT_NOT_EXPECTED": 12,
+        "ZIGZAG_OUTER_GEOMETRY_PASS": 12,
+        "ZIGZAG_PARENT_RESTRICTED_OUTER_GEOMETRY_FAIL": 2
+      },
+      "original_ABC_skeletons": 14,
+      "physical_1m_source_rows": 20160,
+      "qualified_demo_positions": 0,
+      "source_verified_ABC_diagnostics": 14
+    }
+  },
+  "v52_unchanged": true,
+  "v89_official_source_receipt_sha256": "e1c3988f6112ccd12883e35704b63024dc56bf52cc7a38f36ef42e743c2ed7df",
+  "v90_source_immutable_sha256": "1db892fcfe75699ded97151501e538d04c2fd8ae4084765c9e1cd4aa9fd4683a",
+  "v97_immutable_commit": "faa7ba39ecc83a65ad78c1e3ed297c80a37316b3",
+  "v97_immutable_receipt_sha256": "672af410f645ca9e9430558dace50a1c3476a2ed62c97235b6c76f1de3320fcb"
+}

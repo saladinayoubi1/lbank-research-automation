@@ -1,0 +1,60 @@
+{
+  "auto_demo": false,
+  "direct_public_host": "https://public.bybit.com/spot",
+  "disposition": "PASS_TWO_AUGUST_ARCHIVES_TRANSPORT_ONLY",
+  "existing_legacy_v19_v20_v21_mutated": false,
+  "files": [
+    {
+      "content_length_header": 109705306,
+      "download_bytes": 109705306,
+      "fetched_at_utc": "2026-10-15T18:53:42.479668+00:00",
+      "filename": "BTCUSDT-2026-08.csv.gz",
+      "gzip_validation": {
+        "first_row_preview": "id,timestamp,price,volume,side",
+        "full_gzip_crc_and_footer_checked": true,
+        "last_chunk_ends_newline": true,
+        "newline_count": 15618766,
+        "uncompressed_bytes": 698395889
+      },
+      "http_status": 200,
+      "last_modified": "Tue, 01 Sep 2026 03:06:26 GMT",
+      "redirects_followed": 0,
+      "retries": 0,
+      "sha256": "08fe0babad662446591593c5b7b709460823b629567b7f6db28f7a2f3f295f3f",
+      "symbol": "BTCUSDT",
+      "trade_parser_audit_complete": false,
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-08.csv.gz",
+      "verified_on_disk_sha256": "08fe0babad662446591593c5b7b709460823b629567b7f6db28f7a2f3f295f3f"
+    },
+    {
+      "content_length_header": 52869747,
+      "download_bytes": 52869747,
+      "fetched_at_utc": "2026-10-15T18:55:03.064267+00:00",
+      "filename": "ETHUSDT-2026-08.csv.gz",
+      "gzip_validation": {
+        "first_row_preview": "id,timestamp,price,volume,side",
+        "full_gzip_crc_and_footer_checked": true,
+        "last_chunk_ends_newline": true,
+        "newline_count": 6256096,
+        "uncompressed_bytes": 271420194
+      },
+      "http_status": 200,
+      "last_modified": "Tue, 01 Sep 2026 03:11:33 GMT",
+      "redirects_followed": 0,
+      "retries": 0,
+      "sha256": "9a07649b8d5a67d8a3b786e032e933e8b3848f3c95af2be0800d7564aea7b14b",
+      "symbol": "ETHUSDT",
+      "trade_parser_audit_complete": false,
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT-2026-08.csv.gz",
+      "verified_on_disk_sha256": "9a07649b8d5a67d8a3b786e032e933e8b3848f3c95af2be0800d7564aea7b14b"
+    }
+  ],
+  "live_enabled": false,
+  "month": "2026-08",
+  "network_call_scope": "two direct public archive GET requests; zero redirects and retries",
+  "orders_placed": 0,
+  "raw_trade_semantics_validated": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v22-official-august-gzip-acquisition.v1",
+  "source_continuity_and_future_study_ready": false
+}

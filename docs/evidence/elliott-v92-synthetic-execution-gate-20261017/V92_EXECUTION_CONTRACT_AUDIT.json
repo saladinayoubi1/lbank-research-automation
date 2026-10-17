@@ -1,0 +1,102 @@
+{
+  "created_utc": "2026-10-16T21:29:08.047047+00:00",
+  "data_is_historical_not_prospective": true,
+  "denied_cases": [
+    {
+      "admission": "DENY",
+      "asof_ms": 1720491300000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720554300000,
+      "pattern_state": "UNORDERED_OHLC_WITHIN_NESTED_LEG_ABSTAIN",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720581300000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720629900000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720813500000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720897200000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720426500000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "DENY",
+      "asof_ms": 1720899000000,
+      "pattern_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+      "reason_count": 7,
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "deployed_to_demo_runner": false,
+  "history_used": "V91 locked structural admissions only, no OHLC replay",
+  "live_enabled": false,
+  "new_entry_signals": 0,
+  "no_real_trade_backtest": true,
+  "no_symbol_risk_or_fee_parameters_optimized": true,
+  "orders": 0,
+  "paper_eligible": false,
+  "real_pnl": null,
+  "remaining_unverified_requirements": [
+    "independently verified multi-degree recursive structure",
+    "unambiguous market source ordering and wave degree context",
+    "precommitted post-confirmation entry trigger with physical candle",
+    "protective stop and strategy invalidation",
+    "time and target exit semantics with gap/SL-TP worst-first handling",
+    "Bybit Demo market spread/slippage/fee and actual fills",
+    "prospective risk controls and held-out net trade validation"
+  ],
+  "research_only": true,
+  "schema": "nexus.elliott-v92-synthetic-execution-contract-v1",
+  "sources": {
+    "BTCUSDT": {
+      "admitted": 0,
+      "denied": 6,
+      "illustrative_fill_count": 0,
+      "real_pnl": null,
+      "total_candidates": 6
+    },
+    "ETHUSDT": {
+      "admitted": 0,
+      "denied": 2,
+      "illustrative_fill_count": 0,
+      "real_pnl": null,
+      "total_candidates": 2
+    }
+  },
+  "synthetic_fill_math_checked_in_tests_only": true,
+  "v52_unchanged": true,
+  "v91_immutable_source_sha256": "d4401a5606dee6a0842d1ee3752375dc95de732b9189eb3e65983640ec1715c0",
+  "v91_prior_commit": "1fa94b9432be9d13782f3f76c0bb48737c3bc445"
+}

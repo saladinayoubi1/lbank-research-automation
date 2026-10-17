@@ -1,0 +1,82 @@
+{
+  "auto_demo": false,
+  "direct_public_host": "https://public.bybit.com/spot",
+  "disposition": "PASS_TWO_SEPTEMBER_ARCHIVES_TRANSPORT_ONLY",
+  "existing_legacy_v19_v20_v21_mutated": false,
+  "files": [
+    {
+      "content_length_header": 128140828,
+      "download_bytes": 128140828,
+      "fetched_at_utc": "2026-10-15T19:07:28.609158+00:00",
+      "filename": "BTCUSDT-2026-09.csv.gz",
+      "gzip_validation": {
+        "first_row_preview": "id,timestamp,price,volume,side",
+        "full_gzip_crc_and_footer_checked": true,
+        "last_chunk_ends_newline": true,
+        "newline_count": 19355496,
+        "uncompressed_bytes": 872753585
+      },
+      "http_status": 200,
+      "last_modified": "Thu, 01 Oct 2026 03:07:36 GMT",
+      "redirects_followed": 0,
+      "retries": 0,
+      "sha256": "b45655ffb9069e97925905d51fbfd02fe0ff8ef0298d7ecfc501111110fd64d8",
+      "symbol": "BTCUSDT",
+      "trade_parser_audit_complete": false,
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-09.csv.gz",
+      "verified_on_disk_sha256": "b45655ffb9069e97925905d51fbfd02fe0ff8ef0298d7ecfc501111110fd64d8"
+    },
+    {
+      "content_length_header": 64310937,
+      "download_bytes": 64310937,
+      "fetched_at_utc": "2026-10-15T19:09:35.918680+00:00",
+      "filename": "ETHUSDT-2026-09.csv.gz",
+      "gzip_validation": {
+        "first_row_preview": "id,timestamp,price,volume,side",
+        "full_gzip_crc_and_footer_checked": true,
+        "last_chunk_ends_newline": true,
+        "newline_count": 7884597,
+        "uncompressed_bytes": 341360932
+      },
+      "http_status": 200,
+      "last_modified": "Thu, 01 Oct 2026 03:13:00 GMT",
+      "redirects_followed": 0,
+      "retries": 0,
+      "sha256": "ec85644bf1de1e7de9dc0906a8042ff4d1517a33a05233ee797b96951b5ce044",
+      "symbol": "ETHUSDT",
+      "trade_parser_audit_complete": false,
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT-2026-09.csv.gz",
+      "verified_on_disk_sha256": "ec85644bf1de1e7de9dc0906a8042ff4d1517a33a05233ee797b96951b5ce044"
+    }
+  ],
+  "live_enabled": false,
+  "month": "2026-09",
+  "network_call_scope": "two direct public archive GET requests; zero redirects and retries",
+  "orders_placed": 0,
+  "provenance_correction": {
+    "audit_mode": "offline_read_only_source_verification",
+    "independently_reconciled_files": [
+      {
+        "bytes": 128140828,
+        "gzip_lines": 19355496,
+        "source_sha256": "b45655ffb9069e97925905d51fbfd02fe0ff8ef0298d7ecfc501111110fd64d8",
+        "symbol": "BTCUSDT"
+      },
+      {
+        "bytes": 64310937,
+        "gzip_lines": 7884597,
+        "source_sha256": "ec85644bf1de1e7de9dc0906a8042ff4d1517a33a05233ee797b96951b5ce044",
+        "symbol": "ETHUSDT"
+      }
+    ],
+    "original_disposition": "PASS_TWO_AUGUST_ARCHIVES_TRANSPORT_ONLY",
+    "original_receipt_sha256": "0d9f7cd0e93e1da5a253e0d32b8bfe5cae904e22d1611bbc8cda055a9a4fd9f4",
+    "reason": "The first-run September source script inherited an uppercase AUGUST status constant from the earlier V22 script. The original unmodified receipt remains on disk.",
+    "sha_and_size_recomputed_from_disk": true,
+    "source_files_bytes_changed": false
+  },
+  "raw_trade_semantics_validated": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v23-official-september-gzip-acquisition.v1",
+  "source_continuity_and_future_study_ready": false
+}

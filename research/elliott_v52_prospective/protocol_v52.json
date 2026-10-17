@@ -1,0 +1,58 @@
+{
+  "schema": "nexus.elliott.v52.predeclared-prospective-qa.v1",
+  "capture_window_utc": {
+    "start_inclusive": "2026-10-16T00:00:00Z",
+    "end_exclusive": "2026-11-16T00:00:00Z"
+  },
+  "scored_qa_window_utc": {
+    "start_inclusive": "2026-10-18T00:00:00Z",
+    "end_exclusive": "2026-11-16T00:00:00Z"
+  },
+  "warmup_only_utc": "2026-10-16T00:00:00Z through 2026-10-18T00:00:00Z; never treated as scored prospective evidence",
+  "markets": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "exchange": "Bybit public Spot raw trade archives",
+  "time_basis": "UTC",
+  "source": {
+    "bar_minutes": 1,
+    "source_type": "original daily CSV.gz trades, verified SHA-256 and independently reconstructed OHLCV+count",
+    "day_complete_only": true,
+    "missing_minutes_policy": "REJECT_NO_FILL",
+    "tie_order": "timestamp_ms then original CSV row position",
+    "source_file_scope": "immutable isolated research folder"
+  },
+  "wave_protocol": {
+    "parent_timeframe_minutes": 15,
+    "strict_parent_pivot_width_bars": 3,
+    "strict_minute_pivot_width_bars": 3,
+    "child_timeframe_minutes": 3,
+    "strict_coarse_child_pivot_width_bars": 1,
+    "frozen_child_segments": [
+      5,
+      3,
+      5,
+      3,
+      5,
+      5,
+      3,
+      5
+    ],
+    "unconfirmed_or_ambiguous_policy": "REJECT",
+    "nonmatching_child_counts_policy": "REJECT_NO_PRUNING",
+    "partial_parent_or_ABC_policy": "REJECT",
+    "full_recursive_classifier": false
+  },
+  "output_contract": {
+    "evaluation": "source integrity and bounded wave-proposal diagnostics only",
+    "entry_signal": false,
+    "paper_eligible": false,
+    "live_enabled": false,
+    "auto_demo": false,
+    "order_creation": false,
+    "trade_pnl": null,
+    "allow_parameter_tuning_after_scoring_start": false
+  },
+  "scientific_limitations": "Rules chosen after inspecting historical October market data. This is a new, delayed-start preregistered scoring subwindow; earlier Oct16-17 is warm-up/excluded, and even later historical replay is not proof of realistic fills or profitability."
+}

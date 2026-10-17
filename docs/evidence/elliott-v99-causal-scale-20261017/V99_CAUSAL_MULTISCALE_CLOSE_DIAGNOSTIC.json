@@ -1,0 +1,103 @@
+{
+  "causal_close_stream_only": true,
+  "future_forward_validation_on_uninspected_data": false,
+  "live_enabled": false,
+  "minimum_threshold_fraction_prior_price": "0.0003",
+  "multiple_scales_independent_not_force_nested": true,
+  "net_pnl": null,
+  "no_discretionary_pivot_deletion": true,
+  "no_elliott_family_or_degree_certification": true,
+  "no_ohlc_intrabar_order_inferred": true,
+  "old_period": "2024-07-01--2024-07-14-UTC_PREINSPECTED_ONLY",
+  "orders": 0,
+  "paper_eligible": false,
+  "recorded_utc": "2026-10-16T23:08:35.152114+00:00",
+  "research_only": true,
+  "research_rulebook_only_not_tuned_on_july_outcomes": true,
+  "scale_multipliers": [
+    "3",
+    "8"
+  ],
+  "schema": "nexus.elliott-v99-causal-close-multiscale-diagnostic.v1",
+  "signals": 0,
+  "source_kind": "28 official Binance Spot 1m ZIPs validated against V89 receipts",
+  "symbols": {
+    "BTCUSDT": {
+      "confirmed_elliott_pattern": false,
+      "official_complete_1m_close_candles": 20160,
+      "scales": {
+        "3": {
+          "confirmed_A": 1099,
+          "confirmed_B": 1113,
+          "confirmed_swings": 2212,
+          "elliott_degree_certificate": false,
+          "high_swings": 1106,
+          "low_swings": 1106,
+          "maximum_confirmation_lag_minutes": 22,
+          "minimum_confirmation_lag_minutes": 2,
+          "order_or_entry_eligible": false,
+          "source_validated_event_digest": "f5a1f2b2dabed9a5e9644887c9cd1c3418083a69a3a01e5f46d429ee1d00ea87",
+          "week_A_prefix_invariant": true
+        },
+        "8": {
+          "confirmed_A": 275,
+          "confirmed_B": 334,
+          "confirmed_swings": 609,
+          "elliott_degree_certificate": false,
+          "high_swings": 305,
+          "low_swings": 304,
+          "maximum_confirmation_lag_minutes": 64,
+          "minimum_confirmation_lag_minutes": 2,
+          "order_or_entry_eligible": false,
+          "source_validated_event_digest": "3fb700ea94b31331523354f48c8f2972756017e2e9a85be18e08da3a0b80dcff",
+          "week_A_prefix_invariant": true
+        }
+      },
+      "signals": 0,
+      "source_closes_sha256": "f09d3ac220191634aa1e7b72b21f4519af5694256184053d391633b2e8126eb1",
+      "verified_end_exclusive_ms": 1721001600000,
+      "verified_first_open_ms": 1719792000000
+    },
+    "ETHUSDT": {
+      "confirmed_elliott_pattern": false,
+      "official_complete_1m_close_candles": 20160,
+      "scales": {
+        "3": {
+          "confirmed_A": 1088,
+          "confirmed_B": 1118,
+          "confirmed_swings": 2206,
+          "elliott_degree_certificate": false,
+          "high_swings": 1103,
+          "low_swings": 1103,
+          "maximum_confirmation_lag_minutes": 22,
+          "minimum_confirmation_lag_minutes": 2,
+          "order_or_entry_eligible": false,
+          "source_validated_event_digest": "b34f45ae6f13539106c863d942c9ddfeb487bb16529ac460a3d5da9d34d10319",
+          "week_A_prefix_invariant": true
+        },
+        "8": {
+          "confirmed_A": 309,
+          "confirmed_B": 304,
+          "confirmed_swings": 613,
+          "elliott_degree_certificate": false,
+          "high_swings": 307,
+          "low_swings": 306,
+          "maximum_confirmation_lag_minutes": 65,
+          "minimum_confirmation_lag_minutes": 2,
+          "order_or_entry_eligible": false,
+          "source_validated_event_digest": "2a9a999a0e857732a282ca61b555e3653aefcc428a7ef42457b643940d3958b1",
+          "week_A_prefix_invariant": true
+        }
+      },
+      "signals": 0,
+      "source_closes_sha256": "12fecfab4075c9910410492b421ccd847e975b3e8b6636e72a0769be25c3ac57",
+      "verified_end_exclusive_ms": 1721001600000,
+      "verified_first_open_ms": 1719792000000
+    }
+  },
+  "v52_unchanged": true,
+  "v89_source_receipt_sha256": "e1c3988f6112ccd12883e35704b63024dc56bf52cc7a38f36ef42e743c2ed7df",
+  "v98_immutable_commit": "545e705a710fad5ec185c334a66216bdbf5c76f8",
+  "v98_immutable_sha256": "dd6dd322ac84c80559dadc54f439ded417f1befd24b0c611310a06e4b080f490",
+  "volatility_window_prior_closed_1m_returns": 60
+}

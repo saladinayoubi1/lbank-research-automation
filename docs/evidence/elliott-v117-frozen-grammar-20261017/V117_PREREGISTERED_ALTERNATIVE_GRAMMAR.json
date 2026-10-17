@@ -1,0 +1,79 @@
+{
+  "all_arms_original_same_candidate_denominator": true,
+  "all_non_fine_count_v106_rejections_hard_for_all_arms": true,
+  "all_original_consecutive_six_coarse_events_preserved": true,
+  "all_prior_context_origin_breach_fine_boundary_source_gates_preserved": true,
+  "alternative_family_motivated_by_v116_old_source_failure_taxonomy": true,
+  "arms": [
+    {
+      "allowed_wave1_unpruned_fine_interior": [
+        4
+      ],
+      "allowed_wave2_unpruned_fine_interior": [
+        2
+      ],
+      "decision": "ALL_OTHER_CAUSAL_HARD_GATES_STILL_MUST_PASS",
+      "name": "LOCKED_V106_EXACT_4_2"
+    },
+    {
+      "allowed_wave1_unpruned_fine_interior": [
+        2,
+        4,
+        6
+      ],
+      "allowed_wave2_unpruned_fine_interior": [
+        2,
+        4
+      ],
+      "decision": "ALL_OTHER_CAUSAL_HARD_GATES_STILL_MUST_PASS",
+      "name": "EXPLORATORY_EVEN_NEAR_W1_2_4_6_W2_2_4"
+    },
+    {
+      "allowed_wave1_unpruned_fine_interior": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "allowed_wave2_unpruned_fine_interior": [
+        2,
+        4,
+        6
+      ],
+      "decision": "ALL_OTHER_CAUSAL_HARD_GATES_STILL_MUST_PASS",
+      "name": "EXPLORATORY_EVEN_BROAD_W1_2_4_6_8_W2_2_4_6"
+    }
+  ],
+  "control_unchanged": true,
+  "entry_signal": false,
+  "even_fine_counts_preserve_source_extremum_kind_parity": true,
+  "exploratory_multi_arm_selection_not_allowed_without_new_holdout": true,
+  "fine_events_cutoff_at_original_w2_right_confirmation": true,
+  "frozen_source_end_exclusive": "2026-11-30T00:00:00Z",
+  "frozen_source_start": "2026-11-16T00:00:00Z",
+  "future_archive_two_parsers_same_bytes_not_signed_by_venue": true,
+  "historical_july_2024_market_returns_not_used_to_choose_alternatives": true,
+  "live_enabled": false,
+  "no_independent_market_elliott_truth_labels": true,
+  "no_pivot_deletion_or_relabeling": true,
+  "no_realized_returns_win_rate_or_statistical_significance_claim": true,
+  "only_two_mutable_necessary_reasons": [
+    "WAVE1_UNPRUNED_FINE_COUNT_NOT_PREDECLARED",
+    "WAVE2_UNPRUNED_FINE_COUNT_NOT_PREDECLARED"
+  ],
+  "orders": 0,
+  "paper_eligible": false,
+  "previous_v116_commit": "a0196e1f3b5b9f107d67045db5bd1a54d423c817",
+  "previous_v116_frozen_SHA256": "0dab31a3f68086ae7c31fe880eae1543db081312afb03cb32c8b562ebf71bbe7",
+  "report_counts_not_elliott_waves_or_signals": true,
+  "scales": [
+    "3",
+    "8"
+  ],
+  "schema": "nexus.elliott-v117-prospective-unchanged-control-vs-even-subdivision-candidates.v1",
+  "source_bybit_public_spot_only_after_frozen_period": true,
+  "source_market_candles_examined_during_v117": 0,
+  "status": "PROSPECTIVELY_LOCKED_BEFORE_NOV_2026_BYBIT_SOURCE",
+  "two_exploratory_families_fixed_a_priori": true,
+  "v52_unchanged": true
+}

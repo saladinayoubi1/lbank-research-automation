@@ -1,0 +1,45 @@
+{
+  "all_consecutive_coarse_window_size": 6,
+  "all_hard_rejection_reasons_recorded": true,
+  "candidate_selection": "NO_SKIPS_ALL_SLIDING_WINDOWS_WITH_SIX_COARSE_EVENTS",
+  "coarse_windows_before_six_pivots_not_candidates": true,
+  "decision_at_last_coarse_event_confirmation_not_center": true,
+  "eligible_fine_events_unpruned": true,
+  "entry_signal": false,
+  "fine_source_confirmation_cutoff_at_each_candidate": true,
+  "first_five_coarse_events_context_only": true,
+  "fixed_bybit_public_spot_symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "future_source_not_read_or_fetched_during_v107": true,
+  "ledger_denominator_includes_every_six_event_window": true,
+  "live_enabled": false,
+  "no_broker_or_order_adapter": true,
+  "not_measured_outcomes": [
+    "false_positive_rate",
+    "prediction_precision",
+    "winning_rate",
+    "net_pnl",
+    "bybit_fills"
+  ],
+  "only_future_complete_archived_source_may_enter_production_census": true,
+  "orders": 0,
+  "paper_eligible": false,
+  "primary_rejection_is_first_fixed_source_grammar_reason": true,
+  "real_market_census_evaluated": false,
+  "schema": "nexus.elliott-v107-complete-closed-prefix-early-contour-census.v1",
+  "source_must_pass_both_v103_and_v104_auditors": true,
+  "state": "FROZEN_EXHAUSTIVE_PREFIX_CENSUS_NOT_PROSPECTIVELY_EVALUATED",
+  "two_independent_close_swings": [
+    "3",
+    "8"
+  ],
+  "two_parsers_same_archive_not_two_independent_exchanges": true,
+  "unknown_latest_pivot_never_counted": true,
+  "v101_future_end_exclusive": "2026-11-30T00:00:00Z",
+  "v101_future_start": "2026-11-16T00:00:00Z",
+  "v106_upstream_commit": "82cf2694dc99d40e2b6d3f09e25bdebe4409f0c7",
+  "v106_upstream_sha256": "b5621cc22df287ea16e1cbcfaf0b94da4a6bb0a682b9ed3962ec69f08508b948",
+  "v52_unchanged": true
+}

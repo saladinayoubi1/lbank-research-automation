@@ -1,0 +1,20 @@
+﻿{
+    "schema":  "nexus.elliott-v84-asof-regression.v1",
+    "utc_recorded":  "2026-10-16T19:20:07.4691636Z",
+    "source_head":  "91de74b5a39fc9e869e31b0fb7c272c89ed0a361",
+    "dedicated_tests":  11,
+    "dedicated_tests_status":  "PASS",
+    "full_elliott_tests":  594,
+    "full_elliott_tests_status":  "PASS",
+    "full_elliott_native_exit_code":  0,
+    "full_regression_text_sha256":  "1113cc21119101fccd079b810114b22f63dd96a31701a1eead4990d528a93308",
+    "legacy_v83_receipt_sha256":  "768186dbbad99ca4570a5c0f4ddc5bfd5f754b3fa1135ed2d10cbacc7a67855b",
+    "replay_result":  {
+                          "BTCUSDT":  "UNCHANGED",
+                          "ETHUSDT":  "UNCHANGED"
+                      },
+    "research_only":  true,
+    "paper_eligible":  false,
+    "live_enabled":  false,
+    "v52_changed":  false
+}

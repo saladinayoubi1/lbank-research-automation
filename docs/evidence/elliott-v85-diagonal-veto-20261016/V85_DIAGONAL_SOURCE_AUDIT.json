@@ -1,0 +1,91 @@
+{
+  "created_utc": "2026-10-16T19:38:11.561674+00:00",
+  "historical_exploratory": true,
+  "live_enabled": false,
+  "no_v52_change": true,
+  "paper_eligible": false,
+  "pnl": null,
+  "prospective_holdout": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v85-diagonal-veto.v1",
+  "signals": 0,
+  "symbols": {
+    "BTCUSDT": {
+      "candidates": [
+        {
+          "complete_recursive_elliott": false,
+          "contracting_or_expanding_wedge_verified": false,
+          "correct_structural_position_verified": false,
+          "ending_diagonal_proven": false,
+          "entry_signal": false,
+          "first_observable_ms": 1709375400000,
+          "hard_veto_reasons": [
+            "WAVE3_SHORTEST_FORBIDDEN_IN_DIAGONAL"
+          ],
+          "leading_diagonal_proven": false,
+          "live_enabled": false,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "pnl": null,
+          "source_price_vertices": [
+            "62123.00000000",
+            "61884.80000000",
+            "61966.29000000",
+            "61790.97000000",
+            "61898.00000000",
+            "61641.10000000"
+          ],
+          "state": "DIAGONAL_HARD_VETO",
+          "three_subwaves_per_leg_verified": false,
+          "wave4_overlaps_wave1": true,
+          "wave5_extends_wave3": true
+        }
+      ],
+      "evaluated_source_bound_five_leg_skeletons": 1,
+      "new_elliott_signals": 0,
+      "proven_diagonals": 0,
+      "reason_counts": {
+        "DIAGONAL_HARD_VETO": 1,
+        "WAVE3_SHORTEST_FORBIDDEN_IN_DIAGONAL": 1
+      }
+    },
+    "ETHUSDT": {
+      "candidates": [
+        {
+          "complete_recursive_elliott": false,
+          "contracting_or_expanding_wedge_verified": false,
+          "correct_structural_position_verified": false,
+          "ending_diagonal_proven": false,
+          "entry_signal": false,
+          "first_observable_ms": 1709345700000,
+          "hard_veto_reasons": [],
+          "leading_diagonal_proven": false,
+          "live_enabled": false,
+          "orientation": "bearish",
+          "paper_eligible": false,
+          "pnl": null,
+          "source_price_vertices": [
+            "3460.04000000",
+            "3441.97000000",
+            "3460.00000000",
+            "3434.73000000",
+            "3446.80000000",
+            "3424.71000000"
+          ],
+          "state": "PRELIMINARY_GEOMETRY_ONLY_DIAGONAL_NOT_PROVEN",
+          "three_subwaves_per_leg_verified": false,
+          "wave4_overlaps_wave1": true,
+          "wave5_extends_wave3": true
+        }
+      ],
+      "evaluated_source_bound_five_leg_skeletons": 1,
+      "new_elliott_signals": 0,
+      "proven_diagonals": 0,
+      "reason_counts": {
+        "PRELIMINARY_GEOMETRY_ONLY_DIAGONAL_NOT_PROVEN": 1
+      }
+    }
+  },
+  "v80_source_receipt_sha256": "5c3e77533a2792bb1b76c1e14424fed3b3076ed3f31594fca934dd9e19829b88",
+  "v83_immutable_receipt_sha256": "768186dbbad99ca4570a5c0f4ddc5bfd5f754b3fa1135ed2d10cbacc7a67855b"
+}

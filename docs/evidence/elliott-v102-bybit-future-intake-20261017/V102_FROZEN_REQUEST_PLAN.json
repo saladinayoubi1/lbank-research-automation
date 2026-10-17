@@ -1,0 +1,542 @@
+{
+  "all_minutes_closed_before_acceptance": true,
+  "api": "Bybit V5 public Get Kline",
+  "api_host": "api.bybit.com",
+  "api_method": "GET",
+  "api_path": "/v5/market/kline",
+  "api_responses_not_cryptographically_signed": true,
+  "collection_requires_independent_provenance_and_audit": true,
+  "end_exclusive_ms": 1795996800000,
+  "entry_signal": false,
+  "expected_total_1m_candles": 40320,
+  "future_candidate_evaluation_performed": false,
+  "live_enabled": false,
+  "max_public_page_limit": 1000,
+  "net_pnl": null,
+  "no_market_data_opened": true,
+  "no_network_in_v102": true,
+  "official_docs": "https://bybit-exchange.github.io/docs/v5/market/kline",
+  "orders": 0,
+  "paper_eligible": false,
+  "public_only_no_api_keys": true,
+  "raw_http_response_hash_required": true,
+  "reverse_sorted_1m_pages_expected": true,
+  "schema": "nexus.elliott-v102-bybit-v5-public-spot-one-minute-future-intake.v1",
+  "source_authenticity_certified": false,
+  "source_window_inclusive_start_exclusive_end": true,
+  "start_ms": 1794787200000,
+  "status": "PLANNED_ONLY_DATA_NOT_FETCHED",
+  "symbols": {
+    "BTCUSDT": [
+      {
+        "expected_rows": 1000,
+        "page": 0,
+        "params": {
+          "category": "spot",
+          "end": 1794847140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794787200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 1,
+        "params": {
+          "category": "spot",
+          "end": 1794907140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794847200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 2,
+        "params": {
+          "category": "spot",
+          "end": 1794967140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794907200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 3,
+        "params": {
+          "category": "spot",
+          "end": 1795027140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794967200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 4,
+        "params": {
+          "category": "spot",
+          "end": 1795087140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795027200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 5,
+        "params": {
+          "category": "spot",
+          "end": 1795147140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795087200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 6,
+        "params": {
+          "category": "spot",
+          "end": 1795207140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795147200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 7,
+        "params": {
+          "category": "spot",
+          "end": 1795267140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795207200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 8,
+        "params": {
+          "category": "spot",
+          "end": 1795327140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795267200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 9,
+        "params": {
+          "category": "spot",
+          "end": 1795387140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795327200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 10,
+        "params": {
+          "category": "spot",
+          "end": 1795447140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795387200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 11,
+        "params": {
+          "category": "spot",
+          "end": 1795507140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795447200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 12,
+        "params": {
+          "category": "spot",
+          "end": 1795567140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795507200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 13,
+        "params": {
+          "category": "spot",
+          "end": 1795627140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795567200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 14,
+        "params": {
+          "category": "spot",
+          "end": 1795687140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795627200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 15,
+        "params": {
+          "category": "spot",
+          "end": 1795747140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795687200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 16,
+        "params": {
+          "category": "spot",
+          "end": 1795807140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795747200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 17,
+        "params": {
+          "category": "spot",
+          "end": 1795867140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795807200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 18,
+        "params": {
+          "category": "spot",
+          "end": 1795927140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795867200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 19,
+        "params": {
+          "category": "spot",
+          "end": 1795987140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795927200000,
+          "symbol": "BTCUSDT"
+        }
+      },
+      {
+        "expected_rows": 160,
+        "page": 20,
+        "params": {
+          "category": "spot",
+          "end": 1795996740000,
+          "interval": "1",
+          "limit": 160,
+          "start": 1795987200000,
+          "symbol": "BTCUSDT"
+        }
+      }
+    ],
+    "ETHUSDT": [
+      {
+        "expected_rows": 1000,
+        "page": 0,
+        "params": {
+          "category": "spot",
+          "end": 1794847140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794787200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 1,
+        "params": {
+          "category": "spot",
+          "end": 1794907140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794847200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 2,
+        "params": {
+          "category": "spot",
+          "end": 1794967140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794907200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 3,
+        "params": {
+          "category": "spot",
+          "end": 1795027140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1794967200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 4,
+        "params": {
+          "category": "spot",
+          "end": 1795087140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795027200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 5,
+        "params": {
+          "category": "spot",
+          "end": 1795147140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795087200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 6,
+        "params": {
+          "category": "spot",
+          "end": 1795207140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795147200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 7,
+        "params": {
+          "category": "spot",
+          "end": 1795267140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795207200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 8,
+        "params": {
+          "category": "spot",
+          "end": 1795327140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795267200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 9,
+        "params": {
+          "category": "spot",
+          "end": 1795387140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795327200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 10,
+        "params": {
+          "category": "spot",
+          "end": 1795447140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795387200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 11,
+        "params": {
+          "category": "spot",
+          "end": 1795507140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795447200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 12,
+        "params": {
+          "category": "spot",
+          "end": 1795567140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795507200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 13,
+        "params": {
+          "category": "spot",
+          "end": 1795627140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795567200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 14,
+        "params": {
+          "category": "spot",
+          "end": 1795687140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795627200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 15,
+        "params": {
+          "category": "spot",
+          "end": 1795747140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795687200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 16,
+        "params": {
+          "category": "spot",
+          "end": 1795807140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795747200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 17,
+        "params": {
+          "category": "spot",
+          "end": 1795867140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795807200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 18,
+        "params": {
+          "category": "spot",
+          "end": 1795927140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795867200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 1000,
+        "page": 19,
+        "params": {
+          "category": "spot",
+          "end": 1795987140000,
+          "interval": "1",
+          "limit": 1000,
+          "start": 1795927200000,
+          "symbol": "ETHUSDT"
+        }
+      },
+      {
+        "expected_rows": 160,
+        "page": 20,
+        "params": {
+          "category": "spot",
+          "end": 1795996740000,
+          "interval": "1",
+          "limit": 160,
+          "start": 1795987200000,
+          "symbol": "ETHUSDT"
+        }
+      }
+    ]
+  },
+  "total_pages": 42,
+  "v101_rulebook_sha256": "735d942cdcbf802f6079e5435473e91b7d5b597831087ab4a7439ab04984e221",
+  "v52_unchanged": true
+}

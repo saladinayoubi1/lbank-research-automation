@@ -1,0 +1,537 @@
+{
+  "historical_research_only": true,
+  "live_enabled": false,
+  "not_prospective_performance": true,
+  "observed_utc": "2026-10-16T21:19:05.355890+00:00",
+  "orders": 0,
+  "paper_eligible": false,
+  "pnl": null,
+  "research_only": true,
+  "schema": "nexus.elliott-v91-causal-nested-impulse-entry-exit-gate.v1",
+  "signals": 0,
+  "symbols": {
+    "BTCUSDT": {
+      "cases": [
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720491300000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720491300000,
+          "nesting": {
+            "asof_ms": 1720491300000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG1_END_POLARITY",
+              "LEG2_INNER_POLARITY",
+              "LEG2_END_POLARITY",
+              "LEG4_INNER_POLARITY",
+              "LEG4_END_POLARITY"
+            ],
+            "observed_counts": [
+              1,
+              9,
+              2,
+              1,
+              4
+            ],
+            "orientation": "bullish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720554300000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720554300000,
+          "nesting": {
+            "asof_ms": 1720554300000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 1,
+            "nonalternating_reasons": [
+              "LEG4_INNER_POLARITY",
+              "LEG4_INNER_POLARITY",
+              "LEG4_END_POLARITY",
+              "LEG5_INNER_POLARITY",
+              "LEG5_END_POLARITY"
+            ],
+            "observed_counts": [
+              2,
+              0,
+              4,
+              3,
+              3
+            ],
+            "orientation": "bullish",
+            "outer_geometry_pass": true,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "UNORDERED_OHLC_WITHIN_NESTED_LEG_ABSTAIN",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720581300000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720581300000,
+          "nesting": {
+            "asof_ms": 1720581300000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 1,
+            "nonalternating_reasons": [
+              "LEG2_END_POLARITY",
+              "LEG3_INNER_POLARITY",
+              "LEG3_INNER_POLARITY",
+              "LEG3_INNER_POLARITY",
+              "LEG3_INNER_POLARITY",
+              "LEG3_END_POLARITY"
+            ],
+            "observed_counts": [
+              6,
+              3,
+              5,
+              0,
+              0
+            ],
+            "orientation": "bearish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720629900000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720629900000,
+          "nesting": {
+            "asof_ms": 1720629900000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG1_INNER_POLARITY",
+              "LEG1_INNER_POLARITY",
+              "LEG1_END_POLARITY",
+              "LEG2_END_POLARITY",
+              "LEG4_INNER_POLARITY",
+              "LEG4_INNER_POLARITY"
+            ],
+            "observed_counts": [
+              3,
+              1,
+              2,
+              2,
+              0
+            ],
+            "orientation": "bullish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720813500000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720813500000,
+          "nesting": {
+            "asof_ms": 1720813500000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG1_INNER_POLARITY",
+              "LEG1_END_POLARITY",
+              "LEG4_INNER_POLARITY",
+              "LEG4_END_POLARITY"
+            ],
+            "observed_counts": [
+              1,
+              2,
+              2,
+              3,
+              2
+            ],
+            "orientation": "bullish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720897200000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720897200000,
+          "nesting": {
+            "asof_ms": 1720897200000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG4_INNER_POLARITY"
+            ],
+            "observed_counts": [
+              0,
+              2,
+              0,
+              4,
+              0
+            ],
+            "orientation": "bullish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        }
+      ],
+      "new_demo_positions": 0,
+      "proven_full_elliott": 0,
+      "source_bound_five_leg_cases": 6,
+      "state_counts": {
+        "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL": 5,
+        "UNORDERED_OHLC_WITHIN_NESTED_LEG_ABSTAIN": 1
+      },
+      "states_by_week": {
+        "A": {},
+        "B": {
+          "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL": 5,
+          "UNORDERED_OHLC_WITHIN_NESTED_LEG_ABSTAIN": 1
+        }
+      }
+    },
+    "ETHUSDT": {
+      "cases": [
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720426500000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720426500000,
+          "nesting": {
+            "asof_ms": 1720426500000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG1_INNER_POLARITY",
+              "LEG1_INNER_POLARITY",
+              "LEG1_END_POLARITY",
+              "LEG2_INNER_POLARITY",
+              "LEG3_END_POLARITY",
+              "LEG5_INNER_POLARITY",
+              "LEG5_INNER_POLARITY",
+              "LEG5_INNER_POLARITY",
+              "LEG5_END_POLARITY"
+            ],
+            "observed_counts": [
+              7,
+              4,
+              1,
+              0,
+              3
+            ],
+            "orientation": "bearish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        },
+        {
+          "execution_gate": {
+            "earliest_bar_open_after_confirmation_ms": 1720899000000,
+            "entry_price": null,
+            "live_enabled": false,
+            "missing_requirements": [
+              "RECURSIVE_ELLiOTT_SUBDEGREE_PROOF_NOT_AVAILABLE",
+              "CONTEXT_AND_PATTERN_POSITION_NOT_CERTIFIED",
+              "POST_CONFIRMATION_ENTRY_TRIGGER_NOT_DEFINED",
+              "PREDECLARED_STOP_INVALIDATION_NOT_DEFINED",
+              "PREDECLARED_EXIT_TAKE_PROFIT_TIMEOUT_NOT_DEFINED",
+              "DEMO_ORDERBOOK_SPREAD_FEES_SLIPPAGE_UNVERIFIED",
+              "BYBIT_DEMO_FILL_SL_TP_SEQUENCE_NOT_TESTED"
+            ],
+            "must_not_use_pivot_center_as_entry_time": true,
+            "net_pnl": null,
+            "new_entry_signal": false,
+            "order_admission": "DENY",
+            "paper_eligible": false,
+            "protective_stop": null,
+            "quantity": null,
+            "take_profit": null,
+            "timeout_exit": null
+          },
+          "first_observable_ms": 1720899000000,
+          "nesting": {
+            "asof_ms": 1720899000000,
+            "complete_recursive_elliott_proven": false,
+            "entry_signal": false,
+            "expected_counts": [
+              4,
+              2,
+              4,
+              2,
+              4
+            ],
+            "five_three_five_three_five_inner_skeleton_only": false,
+            "intraminute_dual_extremum_count": 0,
+            "nonalternating_reasons": [
+              "LEG2_END_POLARITY",
+              "LEG3_END_POLARITY"
+            ],
+            "observed_counts": [
+              0,
+              1,
+              1,
+              0,
+              0
+            ],
+            "orientation": "bearish",
+            "outer_geometry_pass": false,
+            "paper_eligible": false,
+            "pnl": null,
+            "state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+            "week": "B"
+          },
+          "week": "B"
+        }
+      ],
+      "new_demo_positions": 0,
+      "proven_full_elliott": 0,
+      "source_bound_five_leg_cases": 2,
+      "state_counts": {
+        "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL": 2
+      },
+      "states_by_week": {
+        "A": {},
+        "B": {
+          "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL": 2
+        }
+      }
+    }
+  },
+  "unchanged_v52": true,
+  "v90_commit": "cda4423b47926ea0b0b05ab6e38b5aa8e73c37e4",
+  "v90_committed_sha256": "1db892fcfe75699ded97151501e538d04c2fd8ae4084765c9e1cd4aa9fd4683a"
+}

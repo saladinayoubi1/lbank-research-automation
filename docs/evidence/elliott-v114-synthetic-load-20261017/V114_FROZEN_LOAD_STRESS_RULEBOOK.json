@@ -1,0 +1,38 @@
+{
+  "actual_market_data_evaluated": 0,
+  "actual_pnl": null,
+  "admissions_at_indices_0_and_1_each_30_min_block": true,
+  "all_checkpoint_prefix_hashes_computed_not_sampled": true,
+  "all_synthetic_intents_ledgered_without_cherry_picking": true,
+  "benchmark_is_journal_only_not_full_v99_v107_source_scaling": true,
+  "each_event_cash_and_stressed_risk_recomputed_independently": true,
+  "entry_signal": false,
+  "fixed_original_reference_balance_usdt": "500",
+  "live_enabled": false,
+  "naive_prefix_full_json_sha_crosscheck": "FIRST_MIDDLE_LAST_AND_64_SMALL_PREFIXES",
+  "negative_tamper_controls": "TIME_ORDER_CASH_RISK_CANDIDATE_CLOSE_REASON_DUPLICATION",
+  "no_bybit_market_ohlc_read": true,
+  "no_fixed_walltime_performance_guarantee": true,
+  "orders": 0,
+  "paper_eligible": false,
+  "price_reference_asof_closed_only": true,
+  "profile_measures": "PERF_COUNTER_AND_TRACEMALLOC_PEAK",
+  "resolutions_released_before_same_minute_new_intent": true,
+  "scenario": "TWO_RESERVATIONS_PER_30_MINUTES_OTHERS_CAPACITY_DENIED",
+  "scenario_original_intents": [
+    600,
+    4200,
+    9000
+  ],
+  "schema": "nexus.elliott-v114-500usdt-synthetic-large-event-journal-stress.v1",
+  "status": "PREDECLARED_SYNTHETIC_ONLY_NO_REAL_MARKET_EVALUATION",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "two_explicit_known_resolutions_at_each_next_30_min_boundary": true,
+  "v113_predecessor_commit": "8eeaa49a4827491d8020182919f47a7b1dc501bd",
+  "v113_predecessor_sha256": "254319942369dfb314df07c488d84724de5a5b7c095fb737c6210f821a06a6d7",
+  "v52_unchanged": true,
+  "verified_elliott_waves": 0
+}

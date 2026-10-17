@@ -1,0 +1,145 @@
+{
+  "auto_demo": false,
+  "date_utc": "2026-10-09",
+  "disposition": "PASS_OCT09_TWO_PAIRS_FULL_TRADE_AND_V2_GRID_QA",
+  "future_economic_edge_demonstrated": false,
+  "historical_first_receipt_retained": true,
+  "live_enabled": false,
+  "market_backtest_performed": false,
+  "native_final_receipt_sha256": "fc3a072cc57886f664a50dc9d244f618c35f161084dc7375dc610f37ee25e2aa",
+  "no_network_requests": true,
+  "no_paper_demo_live_orders": true,
+  "orders_placed": 0,
+  "original_gzip_files_rewritten": false,
+  "pairs": {
+    "BTCUSDT": {
+      "filename": "BTCUSDT_2026-10-09.csv.gz",
+      "full_row_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 1012531,
+        "valid_trade_rows": 1012531
+      },
+      "parser": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 1012531,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "raw_trades_fully_checked": 1012531,
+      "sha256": "d43ab98cc7d1b089af6a8aeeda623d2a41bfc8326f129e9424a15c99c1d346d6",
+      "size_bytes": 5989359,
+      "source_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-09.csv.gz",
+      "v2_rebuilt_in_memory_candles": {
+        "hour1": {
+          "closed_bars": 24,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 23:00:00+00:00"
+        },
+        "hour4": {
+          "closed_bars": 6,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 20:00:00+00:00"
+        },
+        "minute15": {
+          "closed_bars": 96,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 23:45:00+00:00"
+        }
+      },
+      "zero_invalid_or_duplicate_trade_ids": true
+    },
+    "ETHUSDT": {
+      "filename": "ETHUSDT_2026-10-09.csv.gz",
+      "full_row_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 278788,
+        "valid_trade_rows": 278788
+      },
+      "parser": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 278788,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "raw_trades_fully_checked": 278788,
+      "sha256": "81225224c0570744212c281f6d35f4013f26791aa0602dee480c4f1438dac3bb",
+      "size_bytes": 1954760,
+      "source_url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-10-09.csv.gz",
+      "v2_rebuilt_in_memory_candles": {
+        "hour1": {
+          "closed_bars": 24,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 23:00:00+00:00"
+        },
+        "hour4": {
+          "closed_bars": 6,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 20:00:00+00:00"
+        },
+        "minute15": {
+          "closed_bars": 96,
+          "first_open_utc": "2026-10-09 00:00:00+00:00",
+          "last_open_utc": "2026-10-09 23:45:00+00:00"
+        }
+      },
+      "zero_invalid_or_duplicate_trade_ids": true
+    }
+  },
+  "paper_eligible": false,
+  "prospective_v17_eligible": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v27-oct09-independent-source-qa.v1",
+  "source_pair_count": 2
+}
