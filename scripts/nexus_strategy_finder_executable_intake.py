@@ -182,7 +182,9 @@ def inspect_candidate(
     permit=permits[0] if permits else None
     # Exact structural alias of ANY fixed or generated factory candidate
     # cannot be papered over by a self-asserted independent-review entry.
-    if matches:
+    if ident in FACTORY_SPECS:
+        status="REJECT_DUPLICATE_EXECUTABLE_ID"
+    elif matches:
         status="REJECT_DUPLICATE_EXECUTABLE_TOPOLOGY"
     elif permit is None:
         status="REVIEW_REQUIRED_NO_SEPARATE_APPROVAL"
