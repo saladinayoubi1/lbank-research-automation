@@ -71,6 +71,7 @@ def close_time_plan(
     closed_close: float,
     previous_close: float,
     independently_closed_h1_vol_ok: bool,
+    h1_context_last_closed_15m_index: int,
 ) -> dict[str, Any]:
     """Observe right-confirmed D only once, one closed bar after D confirmation.
 
@@ -79,6 +80,13 @@ def close_time_plan(
     """
     if not isinstance(independently_closed_h1_vol_ok, bool):
         raise StructuralPlanError("higher timeframe context must be explicit")
+    # Index zero is anchored to a UTC hour boundary in an independently
+    # verified contiguous 15m source grid; the H1 candle including the
+    # decision bar is never allowed unless it is fully closed at decision.
+    if (type(closed_bar_index) is not int or closed_bar_index < 4
+            or type(h1_context_last_closed_15m_index) is not int
+            or h1_context_last_closed_15m_index != (closed_bar_index // 4) * 4 - 1):
+        raise StructuralPlanError("future, stale or partial one-hour context")
     if (
         type(closed_bar_index) is not int or closed_bar_index < 0
         or not isinstance(pivots, Sequence) or len(pivots) != 5
@@ -118,6 +126,8 @@ def close_time_plan(
         "decision_closed_bar_index": closed_bar_index,
         "allowed_hypothetical_next_open_index": closed_bar_index + 1,
         "h1_vol_context_closed": independently_closed_h1_vol_ok,
+        "h1_context_last_closed_15m_index": h1_context_last_closed_15m_index,
+        "input_grid_utc_hour_origin_required": True,
         "closed_candle_reversal_confirmation": trigger,
         "stop_structural_1p414_XA": _money(stop),
         "target_first_0p382_CD": _money(target),
