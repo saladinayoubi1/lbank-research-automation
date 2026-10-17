@@ -83,6 +83,7 @@ def test_spot_bearish_abstains_without_short():
 def test_unchanged_breakout_absence_is_not_a_position():
     bars=two_sources()["BTCUSDT"]
     bars[11]=candle(11,"109","109.5","108","109")
+    bars[12]=candle(12,"109","109.5","108","109")
     result=v118.find_first_breakout("BTCUSDT",1,six(),START+11*M,bars)
     assert result["classification"] in (
         "NO_CLOSED_WAVE1_BREAKOUT_WITHIN_240M",
