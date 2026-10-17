@@ -49,7 +49,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 6,
         "return_pct": 4.39089416,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.05079127
       },
       "severe": {
@@ -66,7 +66,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 6,
         "return_pct": 4.12331734,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.05067879
       },
       "stress": {
@@ -83,7 +83,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 6,
         "return_pct": 4.28386019,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.05074211
       }
     },
@@ -102,7 +102,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 4,
         "return_pct": -2.67697112,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 0.99784412
       },
       "severe": {
@@ -119,7 +119,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 4,
         "return_pct": -2.92574935,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 0.99661964
       },
       "stress": {
@@ -136,7 +136,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 4,
         "return_pct": -2.77655661,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 0.997357
       }
     },
@@ -145,52 +145,52 @@
         "asset_fill_events": 0,
         "btc_fill_events": 0,
         "closed_position_count": null,
-        "ending_cash_usdt": 500,
+        "ending_cash_usdt": 500.0,
         "eth_fill_events": 0,
-        "fees_usdt": 0,
-        "max_drawdown_pct": 0,
+        "fees_usdt": 0.0,
+        "max_drawdown_pct": -0.0,
         "mean_net_pnl_per_closed_position_usdt": null,
-        "minimum_cash_usdt": 500,
-        "net_pnl_usdt": 0,
+        "minimum_cash_usdt": 500.0,
+        "net_pnl_usdt": 0.0,
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 0,
-        "return_pct": 0,
-        "start_usdt": 500,
-        "turnover_multiple": 0
+        "return_pct": 0.0,
+        "start_usdt": 500.0,
+        "turnover_multiple": 0.0
       },
       "severe": {
         "asset_fill_events": 0,
         "btc_fill_events": 0,
         "closed_position_count": null,
-        "ending_cash_usdt": 500,
+        "ending_cash_usdt": 500.0,
         "eth_fill_events": 0,
-        "fees_usdt": 0,
-        "max_drawdown_pct": 0,
+        "fees_usdt": 0.0,
+        "max_drawdown_pct": -0.0,
         "mean_net_pnl_per_closed_position_usdt": null,
-        "minimum_cash_usdt": 500,
-        "net_pnl_usdt": 0,
+        "minimum_cash_usdt": 500.0,
+        "net_pnl_usdt": 0.0,
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 0,
-        "return_pct": 0,
-        "start_usdt": 500,
-        "turnover_multiple": 0
+        "return_pct": 0.0,
+        "start_usdt": 500.0,
+        "turnover_multiple": 0.0
       },
       "stress": {
         "asset_fill_events": 0,
         "btc_fill_events": 0,
         "closed_position_count": null,
-        "ending_cash_usdt": 500,
+        "ending_cash_usdt": 500.0,
         "eth_fill_events": 0,
-        "fees_usdt": 0,
-        "max_drawdown_pct": 0,
+        "fees_usdt": 0.0,
+        "max_drawdown_pct": -0.0,
         "mean_net_pnl_per_closed_position_usdt": null,
-        "minimum_cash_usdt": 500,
-        "net_pnl_usdt": 0,
+        "minimum_cash_usdt": 500.0,
+        "net_pnl_usdt": 0.0,
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 0,
-        "return_pct": 0,
-        "start_usdt": 500,
-        "turnover_multiple": 0
+        "return_pct": 0.0,
+        "start_usdt": 500.0,
+        "turnover_multiple": 0.0
       }
     },
     "2025_Q1_CONTINUOUS": {
@@ -208,7 +208,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 9,
         "return_pct": 1.68741452,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.06330056
       },
       "severe": {
@@ -225,7 +225,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 9,
         "return_pct": 1.42028608,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.06318122
       },
       "stress": {
@@ -242,7 +242,7 @@
         "note": "Fills are executions, not round-trips. Original v3 does not emit a per-position trade journal.",
         "rebalance_event_count": 9,
         "return_pct": 1.58055731,
-        "start_usdt": 500,
+        "start_usdt": 500.0,
         "turnover_multiple": 1.06325137
       }
     }
