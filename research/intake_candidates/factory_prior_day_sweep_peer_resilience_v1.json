@@ -1,0 +1,29 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_prior_day_sweep_peer_resilience",
+      "family": "lagged_peer_confirmed_prior_day_sweep",
+      "peer_required": true,
+      "hypothesis": "PROPOSAL ONLY: In a fully completed four-hour ranging context, spot candles may fail below the previous fully completed UTC day low while price closes back above that genuine prior-day low and a lagged peer-beta residual is positive. This closed-bar rejection with historically lagged independent BTC/ETH context may warrant a next-open long-only research falsification; it has no demonstrated economic edge, no global novelty proof, and may semantically overlap older failed-range-reversal designs.",
+      "context": [
+        {"field": "h4_range", "op": "eq", "value": 1},
+        {"field": "h1_vol_ok", "op": "eq", "value": 1},
+        {"field": "lagged_peer_beta_residual", "op": "gt", "value": 0},
+        {"field": "lagged_downside_variance_share_64", "op": "gt", "value": 0.5}
+      ],
+      "entry": [
+        {"field": "low", "op": "lt", "other": "prior_day_low"},
+        {"field": "close", "op": "gt", "other": "prior_day_low"},
+        {"field": "close", "op": "gt", "other": "open"},
+        {"field": "close_location", "op": "ge", "value": 0.6},
+        {"field": "rel_vol", "op": "ge", "value": 1.0}
+      ]
+    }
+  ]
+}
