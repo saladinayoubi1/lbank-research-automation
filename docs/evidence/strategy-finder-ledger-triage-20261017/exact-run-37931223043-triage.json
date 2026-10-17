@@ -1,0 +1,520 @@
+{
+  "audit_sha256": "a7fa8595d2c797deb77d749a12da8d6d051cabafe28d8418e9e59fb75c5f18a0",
+  "automatic_strategy_promotion": false,
+  "certificate_digest": "918f9d3c0fffe483df6086d43737c6d7197ed85787ecf08db60214aefc5476c9",
+  "classification_counts": {
+    "ALREADY_EVALUATED": 8,
+    "IDENTITY_ABSENT_SEMANTIC_REVIEW_REQUIRED": 4,
+    "INPUT_PROOF_REQUIRED": 3,
+    "TRAINING_SCREENED": 14
+  },
+  "dataset_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "dispatch_allowed": false,
+  "historical_ledger_counts": {
+    "evaluated_configuration_fingerprints": 32,
+    "evaluated_mechanisms": 21,
+    "training_screened_mechanisms": 103
+  },
+  "ledger_digest": "f6f27cfc6b0b4f653ce06edf0796a847b89b31247e966ee9d0d6e14a447efb36",
+  "live_trading_authority": false,
+  "new_strategy_proven_profitable": false,
+  "next_action": "independently_review_unrecorded_semantic_topologies_and_test_only_one_genuinely_distinct_causal_mechanism_with_fee_and_slippage_stress",
+  "novel_design_verified": false,
+  "paper_only": true,
+  "research_only": true,
+  "review_queue": [
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "compression_expansion_response",
+      "missing_source_proof": [],
+      "next_gate": "prove_semantic_novelty_against_old_and_generated_topologies",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "IDENTITY_ABSENT_SEMANTIC_REVIEW_REQUIRED",
+      "structural_fingerprint": "4aaff6093f255a60b8519d9c764ca03dea5456d435434482526c4fd040113de4"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "cross_pair_relative_reclaim",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "1678fa33d4a5e24572c9362dda086d0485fc03005ababf533f563d8f635814e6"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "cross_pair_relative_rotation",
+      "missing_source_proof": [],
+      "next_gate": "prove_semantic_novelty_against_old_and_generated_topologies",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "IDENTITY_ABSENT_SEMANTIC_REVIEW_REQUIRED",
+      "structural_fingerprint": "4a6b585355cbc40dcb9a93b50097eaabbba63200be9d0e9e61ebc1206dc79b47"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "cross_pair_volatility_catchup",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "360ed09b5cce21372b46e9addce40ce8ca6cc0837f27ddeff5c3c8cc2aa547ea"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "downside_exhaustion_rebound",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "eaa0d4c69f31bbbcded7337bb4e7fae462e76a6c6f60d41d55104fd43f901f6c"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "lagged_peer_impulse_confirmation",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "c043da40071b019ae2dc0991718969b836ee633e5fdbac7301144a61589f1e3b"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "lagged_peer_volatility_release",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "03c57614b5a9f8fde11cdc46dfd5aef79d375bb7030fe0acc0435ec6533c7223"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "liquidity_microstructure_mean_revert",
+      "missing_source_proof": [
+        "verified_spot_l2"
+      ],
+      "next_gate": "attest_missing_independent_inputs_before_any_research",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv",
+        "verified_spot_l2"
+      ],
+      "status": "INPUT_PROOF_REQUIRED",
+      "structural_fingerprint": "ace7ca1a83817d10a385b1867ee6004f8d3babfcbf14323f6f2459cf21247e94"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "multi_horizon_trend_reacceleration",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "a7f2539943dbd8d5e5e22fbf310188e5dcaa2c43c8f0db3ebb3f06c58727b0ba"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "multi_tf_structural_retest",
+      "missing_source_proof": [],
+      "next_gate": "prove_semantic_novelty_against_old_and_generated_topologies",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "IDENTITY_ABSENT_SEMANTIC_REVIEW_REQUIRED",
+      "structural_fingerprint": "7e31c3ea5280ea82950a736ef69205c0c0c47faabeb1db3597afd365581afb15"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "peer_beta_residual_reclaim",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "b7ce9e9a997d9284d34f96d305b58d1f1a185dc94ed5673669162fb77490d8bd"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "peer_shock_noncontagion_rebound",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "e2a0a32c1f9d6a456dbea4427371feaa0ac4303547359e25a13f27db12d77d2c"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "perpetual_positioning_divergence",
+      "missing_source_proof": [
+        "verified_perpetual_funding",
+        "verified_perpetual_oi"
+      ],
+      "next_gate": "attest_missing_independent_inputs_before_any_research",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv",
+        "verified_perpetual_funding",
+        "verified_perpetual_oi"
+      ],
+      "status": "INPUT_PROOF_REQUIRED",
+      "structural_fingerprint": "7b81644dee99f5b2408d81fda491757b2347e4d7773fbdfb32f66f1c5713594f"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "prior_day_breakout_continuation",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "d87b1914dd7352e43d403100ab912fbf929cff5eaf2e8f79e6e1bf839c8524c8"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "range_failure_reversal",
+      "missing_source_proof": [],
+      "next_gate": "prove_semantic_novelty_against_old_and_generated_topologies",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "IDENTITY_ABSENT_SEMANTIC_REVIEW_REQUIRED",
+      "structural_fingerprint": "6a57afefb7872ae85fbcfdfb0f991f8b101e27e8f3fddeb08409e56d8d45ef73"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "range_midpoint_reclaim",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "57ab15e07d3cf93c35322dc5483cb6bc091553f46c740aa6e0d079580901a326"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "range_wick_absorption_rebound",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "d567a9c70ba6554161cc0cca521889436d12fb5bccb24d0b21fc8e8725cfe53d"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "relative_momentum_reacceleration",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "97c40c60a05230764b736cf6344f2c725d208369f5dcaa884e4b6ecee345bec3"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "relative_strength_persistence_breakout",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "9f0cf03a15187dba859a2fe49b5146f7d4c4eb8930e30cdb7066da5d334ca52d"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "relative_weakness_exhaustion_rebound",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "0855efa1b5d25ec0f21c80df1ba568af954e794c86b7052c6b6f625af5334948"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "serial_dependence_breakout",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "89618d77e2f487095256cafe0018df9be7c898d82b03048e63b6ab7c67a7baf3"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "signed_flow_price_response",
+      "missing_source_proof": [
+        "verified_signed_trade_flow"
+      ],
+      "next_gate": "attest_missing_independent_inputs_before_any_research",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": false,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv",
+        "verified_signed_trade_flow"
+      ],
+      "status": "INPUT_PROOF_REQUIRED",
+      "structural_fingerprint": "b9642f0624c4d68b1a3ac82cbd0afe4128c339bc0f15728a20d8a577461e724f"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "trend_efficiency_breakout",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "8660a8c48d3105e138b1d2483404152b43ee3287397101a40f2e5378bb4301e4"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "trend_vwap_pullback_reclaim",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "33938a4e07bb79ae27e7dfd9ccbece362c2fe7f9a2ceb1ac5b23a66c4fdbb147"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "volatility_contraction_trend_reentry",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "809546d4e450051312eab1bd85863fffa8175b0ef7a46276a5c45b99db7dfd5e"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "volatility_expansion_pullback_reclaim",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "24f803943184d2d1001fbb9a566ac18c0997ca79aa83596fcfb15171fbf2ccfe"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "volatility_leadership_reversal",
+      "missing_source_proof": [],
+      "next_gate": "do_not_replay_previously_evaluated_mechanism",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": true,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "aligned_spot_cross_pair",
+        "closed_spot_ohlcv"
+      ],
+      "status": "ALREADY_EVALUATED",
+      "structural_fingerprint": "bae2a238ce6e85c0d3e511e2482e3a3aea5b00eaa564ba25ead650d62c7cd6c1"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "volatility_of_volatility_release",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "6883a00d20135be65ae6d022b9ac48ff70f0385c54f076e2f9fd78041dbe1e4e"
+    },
+    {
+      "dispatch_allowed": false,
+      "independently_backtested_as_this_design": false,
+      "mechanism_id": "volume_dryup_breakout",
+      "missing_source_proof": [],
+      "next_gate": "inspect_exact_training_screening_evidence_before_requalification",
+      "qualification_authority": false,
+      "registered_in_evaluated_ledger": false,
+      "registered_in_training_screen": true,
+      "semantic_novelty_proven": false,
+      "source_inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "status": "TRAINING_SCREENED",
+      "structural_fingerprint": "cdbbc99ef2b432b2b53f776235ef891f79803042367c39bb66ff85b8a9aaf228"
+    }
+  ],
+  "reviewed_catalog_digest": "a48642d78d48f96f9693a75c97b4ace6954abc4c16b0462003587831431d67d8",
+  "reviewed_design_count": 29,
+  "schema": "nexus.strategy-frontier-ledger-triage.v1",
+  "source_run_id": 37931223043,
+  "source_scope": "one verified main-workflow historical run, not an all-time global ledger",
+  "source_sha": "0e89da3170a1a9b85fbb081f8ce53a2642d87edb",
+  "status": "EXACT_HISTORICAL_LEDGER_TRIAGED_NO_NEW_CANDIDATE"
+}
