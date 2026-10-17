@@ -17,7 +17,7 @@ This patch closes that gap. `scripts/nexus_strategy_finder_shared_cash_eval.py` 
 | BTCUSDT Spot 15m | `c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226` |
 | BTCUSDT Spot 1h | `f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847` |
 | BTCUSDT Spot 4h | `e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6` |
-| ETHUSDT Spot 15m | `ce603440650d0022b1a17a7922da743a3b6219ba9afd89d4362b70fbe3bbfa1` |
+| ETHUSDT Spot 15m | `ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1` |
 | ETHUSDT Spot 1h | `ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a` |
 | ETHUSDT Spot 4h | `292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b` |
 
