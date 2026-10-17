@@ -1,0 +1,1412 @@
+{
+  "candidate_raw_sha256": "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d",
+  "comparison_scope": "ALL_MECHANISMS_CURRENT_GITHUB_MAIN_CLOSED_15M_2025Q1",
+  "live_enabled": false,
+  "market_profitability_tested": false,
+  "not_global_semantic_novelty_proof": true,
+  "orders": 0,
+  "original_mechanisms_compared": 114,
+  "paper_eligible": false,
+  "qualified": false,
+  "result_digest": "212b5e6e73b83639a017ad412c4889791f684d5965dec259b63944acc57fd1c4",
+  "schema": "nexus.strategy-finder-all-original-frontier-executable-signal-audit.v1",
+  "source_already_inspected": true,
+  "source_six_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "symbols": {
+    "BTCUSDT": {
+      "all_original_overlap_records": [
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 5,
+          "mechanism": "factory_gen_wick_pressure_range_vwap_reclaim",
+          "original_signal_count": 66
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 5,
+          "mechanism": "factory_gen_wick_pressure_range_local_breakout",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_gen_wick_range_vwap_reclaim",
+          "original_signal_count": 246
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "range_midpoint_reclaim",
+          "original_signal_count": 174
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_gen_wick_range_midpoint_reclaim",
+          "original_signal_count": 151
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_gen_wick_range_local_breakout",
+          "original_signal_count": 82
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_gen_wick_pressure_range_midpoint_reclaim",
+          "original_signal_count": 30
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volume_return_participation_vwap_reclaim",
+          "original_signal_count": 234
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_wick_vwap_reclaim",
+          "original_signal_count": 200
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "failed_range_break_reversal",
+          "original_signal_count": 167
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "bar_proxy_vwap_reclaim",
+          "original_signal_count": 162
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volume_return_participation_midpoint_reclaim",
+          "original_signal_count": 158
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "structural_pullback",
+          "original_signal_count": 150
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volume_return_participation_local_breakout",
+          "original_signal_count": 103
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volume_return_participation_prior_day_breakout",
+          "original_signal_count": 102
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_vov_compression_vwap_reclaim",
+          "original_signal_count": 100
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volatility_compression_expansion",
+          "original_signal_count": 90
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_vov_compression_midpoint_reclaim",
+          "original_signal_count": 87
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_relative_momentum_vwap_reclaim",
+          "original_signal_count": 86
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "regime_conditional_composite",
+          "original_signal_count": 82
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_wick_trend_reentry",
+          "original_signal_count": 66
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "trend_vwap_pullback_reclaim",
+          "original_signal_count": 64
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_trend_vwap_reclaim",
+          "original_signal_count": 62
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_range_memory_compression_vwap_reclaim",
+          "original_signal_count": 55
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_vov_midpoint_release",
+          "original_signal_count": 54
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volume_return_participation_failed_downside_reclaim",
+          "original_signal_count": 53
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "multi_horizon_trend_reacceleration",
+          "original_signal_count": 52
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "cross_pair_relative_reclaim",
+          "original_signal_count": 51
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_range_failed_downside_reclaim",
+          "original_signal_count": 49
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volatility_cluster_release_vwap_reclaim",
+          "original_signal_count": 46
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_serial_positive_vwap_reclaim",
+          "original_signal_count": 44
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_peer_volatility_midpoint_catchup",
+          "original_signal_count": 44
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_vov_compression_local_breakout",
+          "original_signal_count": 43
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_positive_tail_trend_prior_day_breakout",
+          "original_signal_count": 42
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volatility_of_volatility_release",
+          "original_signal_count": 41
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_vwap_reclaim",
+          "original_signal_count": 40
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "downside_exhaustion_rebound",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_peer_residual_negative_vwap_reclaim",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_positive_tail_trend_vwap_reclaim",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_negative_serial_range_rebound",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "lagged_peer_impulse_confirmation",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_trend_midpoint_reclaim",
+          "original_signal_count": 36
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_positive_tail_trend_local_breakout",
+          "original_signal_count": 34
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_range_memory_compression_midpoint_reclaim",
+          "original_signal_count": 34
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volatility_cluster_release_midpoint_reclaim",
+          "original_signal_count": 33
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_peer_residual_negative_midpoint_reclaim",
+          "original_signal_count": 31
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_range_prior_day_breakout",
+          "original_signal_count": 31
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_vov_compression_failed_downside_reclaim",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_peer_residual_vwap_reclaim",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "relative_strength_persistence_breakout",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volatility_contraction_trend_reentry",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_positive_tail_trend_midpoint_reclaim",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "prior_day_breakout_continuation",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volatility_cluster_release_local_breakout",
+          "original_signal_count": 26
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_range_memory_compression_local_breakout",
+          "original_signal_count": 24
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_serial_positive_midpoint_reclaim",
+          "original_signal_count": 24
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_local_breakout",
+          "original_signal_count": 24
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_efficiency_up_local_breakout",
+          "original_signal_count": 23
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_peer_residual_range_break",
+          "original_signal_count": 23
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_midpoint_reclaim",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_peer_residual_negative_failed_downside_reclaim",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "range_wick_absorption_rebound",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "trend_efficiency_breakout",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "peer_beta_residual_reclaim",
+          "original_signal_count": 21
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_efficiency_up_prior_day_breakout",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_prior_day_breakout",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "peer_shock_noncontagion_rebound",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_serial_positive_prior_day_breakout",
+          "original_signal_count": 17
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_vwap_reclaim",
+          "original_signal_count": 17
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_vov_compression_prior_day_breakout",
+          "original_signal_count": 16
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volume_dryup_breakout",
+          "original_signal_count": 16
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_failed_downside_reclaim",
+          "original_signal_count": 15
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_local_breakout",
+          "original_signal_count": 14
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_peer_residual_negative_local_breakout",
+          "original_signal_count": 14
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "relative_momentum_reacceleration",
+          "original_signal_count": 14
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "cross_pair_volatility_catchup",
+          "original_signal_count": 13
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_vov_prior_day_release",
+          "original_signal_count": 13
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_efficiency_up_failed_downside_reclaim",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_serial_positive_failed_downside_reclaim",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_failed_downside_reclaim",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_efficiency_up_vwap_reclaim",
+          "original_signal_count": 11
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_positive_tail_trend_failed_downside_reclaim",
+          "original_signal_count": 10
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_trend_failed_downside_reclaim",
+          "original_signal_count": 10
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_trend_local_breakout",
+          "original_signal_count": 10
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_serial_positive_local_breakout",
+          "original_signal_count": 9
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_range_memory_compression_failed_downside_reclaim",
+          "original_signal_count": 8
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volatility_cluster_release_failed_downside_reclaim",
+          "original_signal_count": 8
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_efficiency_vwap_reclaim",
+          "original_signal_count": 6
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "serial_dependence_breakout",
+          "original_signal_count": 6
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "lagged_peer_volatility_release",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "relative_weakness_exhaustion_rebound",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volatility_expansion_pullback_reclaim",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_serial_prior_day_continuation",
+          "original_signal_count": 4
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_volatility_cluster_release_prior_day_breakout",
+          "original_signal_count": 3
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_trend_prior_day_breakout",
+          "original_signal_count": 3
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_efficiency_up_midpoint_reclaim",
+          "original_signal_count": 2
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_range_memory_compression_prior_day_breakout",
+          "original_signal_count": 2
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_prior_day_breakout",
+          "original_signal_count": 2
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_efficiency_midpoint_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_deep_drawdown_recovery_failed_downside_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_deep_drawdown_recovery_local_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_deep_drawdown_recovery_midpoint_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_deep_drawdown_recovery_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_directional_order_trend_failed_downside_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_directional_order_trend_local_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_directional_order_trend_midpoint_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_directional_order_trend_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_directional_order_trend_vwap_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "volatility_leadership_reversal",
+          "original_signal_count": 0
+        }
+      ],
+      "candidate_events": 7,
+      "candidate_events_matching_at_least_one_old": 3,
+      "candidate_events_not_matching_any_old": 4,
+      "old_any_event_decision_bars": 1092,
+      "original_mechanisms_compared": 114,
+      "source_decision_bars": 8640
+    },
+    "ETHUSDT": {
+      "all_original_overlap_records": [
+        {
+          "candidate_exact_bar_overlap": 3,
+          "candidate_only_vs_mechanism": 5,
+          "mechanism": "range_midpoint_reclaim",
+          "original_signal_count": 178
+        },
+        {
+          "candidate_exact_bar_overlap": 3,
+          "candidate_only_vs_mechanism": 5,
+          "mechanism": "factory_gen_wick_range_midpoint_reclaim",
+          "original_signal_count": 134
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "failed_range_break_reversal",
+          "original_signal_count": 121
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "cross_pair_relative_reclaim",
+          "original_signal_count": 98
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_peer_volatility_midpoint_catchup",
+          "original_signal_count": 71
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "factory_gen_wick_range_local_breakout",
+          "original_signal_count": 70
+        },
+        {
+          "candidate_exact_bar_overlap": 2,
+          "candidate_only_vs_mechanism": 6,
+          "mechanism": "regime_conditional_composite",
+          "original_signal_count": 53
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_range_vwap_reclaim",
+          "original_signal_count": 240
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "bar_proxy_vwap_reclaim",
+          "original_signal_count": 157
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_vwap_reclaim",
+          "original_signal_count": 76
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "downside_exhaustion_rebound",
+          "original_signal_count": 48
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_midpoint_reclaim",
+          "original_signal_count": 42
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_local_breakout",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_downside_tail_exhaustion_midpoint_reclaim",
+          "original_signal_count": 20
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "factory_gen_wick_pressure_range_failed_downside_reclaim",
+          "original_signal_count": 18
+        },
+        {
+          "candidate_exact_bar_overlap": 1,
+          "candidate_only_vs_mechanism": 7,
+          "mechanism": "relative_weakness_exhaustion_rebound",
+          "original_signal_count": 15
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volume_return_participation_vwap_reclaim",
+          "original_signal_count": 210
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_wick_vwap_reclaim",
+          "original_signal_count": 169
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volume_return_participation_midpoint_reclaim",
+          "original_signal_count": 144
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "structural_pullback",
+          "original_signal_count": 125
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volume_return_participation_prior_day_breakout",
+          "original_signal_count": 94
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volume_return_participation_local_breakout",
+          "original_signal_count": 74
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volatility_compression_expansion",
+          "original_signal_count": 64
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_trend_vwap_reclaim",
+          "original_signal_count": 63
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_range_failed_downside_reclaim",
+          "original_signal_count": 63
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_relative_momentum_vwap_reclaim",
+          "original_signal_count": 55
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_positive_tail_trend_vwap_reclaim",
+          "original_signal_count": 51
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "trend_vwap_pullback_reclaim",
+          "original_signal_count": 46
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_trend_midpoint_reclaim",
+          "original_signal_count": 45
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volume_return_participation_failed_downside_reclaim",
+          "original_signal_count": 44
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_vov_compression_vwap_reclaim",
+          "original_signal_count": 44
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_vov_compression_midpoint_reclaim",
+          "original_signal_count": 43
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "relative_strength_persistence_breakout",
+          "original_signal_count": 43
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "multi_horizon_trend_reacceleration",
+          "original_signal_count": 42
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_serial_positive_vwap_reclaim",
+          "original_signal_count": 41
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "relative_momentum_reacceleration",
+          "original_signal_count": 41
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_positive_tail_trend_prior_day_breakout",
+          "original_signal_count": 39
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volatility_cluster_release_vwap_reclaim",
+          "original_signal_count": 39
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_wick_trend_reentry",
+          "original_signal_count": 38
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_range_memory_compression_vwap_reclaim",
+          "original_signal_count": 37
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_peer_residual_negative_vwap_reclaim",
+          "original_signal_count": 36
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_range_prior_day_breakout",
+          "original_signal_count": 36
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_positive_tail_trend_midpoint_reclaim",
+          "original_signal_count": 35
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "range_wick_absorption_rebound",
+          "original_signal_count": 35
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_downside_tail_exhaustion_vwap_reclaim",
+          "original_signal_count": 34
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volatility_cluster_release_midpoint_reclaim",
+          "original_signal_count": 31
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volatility_cluster_release_local_breakout",
+          "original_signal_count": 30
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_serial_positive_midpoint_reclaim",
+          "original_signal_count": 29
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_peer_residual_negative_failed_downside_reclaim",
+          "original_signal_count": 28
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_peer_residual_negative_midpoint_reclaim",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_positive_tail_trend_local_breakout",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_negative_serial_range_rebound",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "prior_day_breakout_continuation",
+          "original_signal_count": 27
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_vov_compression_local_breakout",
+          "original_signal_count": 25
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_serial_positive_prior_day_breakout",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volatility_of_volatility_release",
+          "original_signal_count": 22
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_local_breakout",
+          "original_signal_count": 21
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_peer_residual_vwap_reclaim",
+          "original_signal_count": 21
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_vov_midpoint_release",
+          "original_signal_count": 21
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_prior_day_breakout",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "peer_beta_residual_reclaim",
+          "original_signal_count": 19
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_efficiency_up_prior_day_breakout",
+          "original_signal_count": 18
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+          "original_signal_count": 18
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_range_memory_compression_local_breakout",
+          "original_signal_count": 18
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_serial_positive_local_breakout",
+          "original_signal_count": 17
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_trend_local_breakout",
+          "original_signal_count": 17
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_trend_prior_day_breakout",
+          "original_signal_count": 17
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_efficiency_up_local_breakout",
+          "original_signal_count": 16
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_range_memory_compression_midpoint_reclaim",
+          "original_signal_count": 16
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "trend_efficiency_breakout",
+          "original_signal_count": 16
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_peer_residual_range_break",
+          "original_signal_count": 15
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volatility_contraction_trend_reentry",
+          "original_signal_count": 15
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_serial_positive_failed_downside_reclaim",
+          "original_signal_count": 14
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_vov_compression_failed_downside_reclaim",
+          "original_signal_count": 14
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volume_dryup_breakout",
+          "original_signal_count": 12
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_positive_tail_trend_failed_downside_reclaim",
+          "original_signal_count": 11
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_vwap_reclaim",
+          "original_signal_count": 11
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_serial_prior_day_continuation",
+          "original_signal_count": 11
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "serial_dependence_breakout",
+          "original_signal_count": 11
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_vov_compression_prior_day_breakout",
+          "original_signal_count": 10
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_downside_tail_exhaustion_failed_downside_reclaim",
+          "original_signal_count": 9
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_downside_tail_exhaustion_local_breakout",
+          "original_signal_count": 9
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volatility_cluster_release_failed_downside_reclaim",
+          "original_signal_count": 9
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_trend_failed_downside_reclaim",
+          "original_signal_count": 9
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_efficiency_up_vwap_reclaim",
+          "original_signal_count": 8
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_vov_prior_day_release",
+          "original_signal_count": 8
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_efficiency_up_failed_downside_reclaim",
+          "original_signal_count": 7
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_volatility_cluster_release_prior_day_breakout",
+          "original_signal_count": 7
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_wick_pressure_range_prior_day_breakout",
+          "original_signal_count": 7
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_range_memory_compression_failed_downside_reclaim",
+          "original_signal_count": 6
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim",
+          "original_signal_count": 6
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_efficiency_vwap_reclaim",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volatility_leadership_reversal",
+          "original_signal_count": 5
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_peer_residual_negative_local_breakout",
+          "original_signal_count": 4
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_range_memory_compression_prior_day_breakout",
+          "original_signal_count": 4
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "volatility_expansion_pullback_reclaim",
+          "original_signal_count": 4
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_deep_drawdown_recovery_failed_downside_reclaim",
+          "original_signal_count": 2
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "lagged_peer_impulse_confirmation",
+          "original_signal_count": 2
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_deep_drawdown_recovery_local_breakout",
+          "original_signal_count": 1
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_deep_drawdown_recovery_midpoint_reclaim",
+          "original_signal_count": 1
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_efficiency_up_midpoint_reclaim",
+          "original_signal_count": 1
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "cross_pair_volatility_catchup",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_efficiency_midpoint_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_deep_drawdown_recovery_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_directional_order_trend_failed_downside_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_directional_order_trend_local_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_directional_order_trend_midpoint_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_directional_order_trend_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_directional_order_trend_vwap_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_downside_tail_exhaustion_prior_day_breakout",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "lagged_peer_volatility_release",
+          "original_signal_count": 0
+        },
+        {
+          "candidate_exact_bar_overlap": 0,
+          "candidate_only_vs_mechanism": 8,
+          "mechanism": "peer_shock_noncontagion_rebound",
+          "original_signal_count": 0
+        }
+      ],
+      "candidate_events": 8,
+      "candidate_events_matching_at_least_one_old": 7,
+      "candidate_events_not_matching_any_old": 1,
+      "old_any_event_decision_bars": 1051,
+      "original_mechanisms_compared": 114,
+      "source_decision_bars": 8640
+    }
+  }
+}
