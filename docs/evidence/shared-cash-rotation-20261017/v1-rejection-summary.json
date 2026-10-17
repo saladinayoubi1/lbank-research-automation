@@ -1,0 +1,147 @@
+{
+  "schema": "nexus.shared-cash-rotation-physical-rejection-evidence.v1",
+  "source_scope": "bybit spot historical archived 15m both symbols, identical UTC close grid and input files pinned by sha256",
+  "source_start_utc": "2022-12-01T00:00:00+00:00",
+  "source_end_utc": "2026-07-31T23:45:00+00:00",
+  "bar_count_per_asset": 128544,
+  "BTC_SHA256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+  "ETH_SHA256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+  "initial_cash_per_independent_split_usdt": 500,
+  "config_digest": "173c7a82951ee56bfc2f8f7c3cb43d5f3814c8a6fb695b9dd03cfdf0e8d1498e",
+  "result_digest": "cfbd50da127abc814fc8fa8fb64165cd34d70546d34a47e5c2b5c2b02df69918",
+  "full_raw_output_sha256": "89931e68784a9bcffc74e4f88084b60cb5d2f1e0b9fb9edf50b396abc3a9a8fb",
+  "full_raw_output_bytes": 2124336,
+  "full_raw_output_qa_path": "E:\\NEXUS-QA\\shared-cash-rotation-20261017\\measured-exploratory.json",
+  "source_status": "historical validation and test already inspected by NEXUS development; no untouched holdout claim",
+  "parameters_not_optimized_after_reading_results": true,
+  "cost_profiles_per_side": {
+    "conservative": {
+      "fee_bps": 10,
+      "slippage_bps": 5
+    },
+    "stress": {
+      "fee_bps": 25,
+      "slippage_bps": 15
+    }
+  },
+  "results": [
+    {
+      "partition": "training",
+      "profile": "conservative",
+      "round_trips": 912,
+      "net_pnl_usdt": -462.35601547,
+      "mean_pnl_usdt": -0.50696932,
+      "max_drawdown_pct": 92.76675973,
+      "fee_paid_usdt": 396.87274741,
+      "hard_stop_exit_count": 167,
+      "winning_trades": 270,
+      "intra_bar_asset_switch_count": 113,
+      "ending_cash_usdt": 37.64398453
+    },
+    {
+      "partition": "training",
+      "profile": "stress",
+      "round_trips": 911,
+      "net_pnl_usdt": -499.64166935,
+      "mean_pnl_usdt": -0.54845408,
+      "max_drawdown_pct": 99.92833387,
+      "fee_paid_usdt": 367.73559917,
+      "hard_stop_exit_count": 189,
+      "winning_trades": 146,
+      "intra_bar_asset_switch_count": 111,
+      "ending_cash_usdt": 0.35833065
+    },
+    {
+      "partition": "validation_already_inspected",
+      "profile": "conservative",
+      "round_trips": 364,
+      "net_pnl_usdt": -291.33875724,
+      "mean_pnl_usdt": -0.8003812,
+      "max_drawdown_pct": 58.59686597,
+      "fee_paid_usdt": 266.61858514,
+      "hard_stop_exit_count": 84,
+      "winning_trades": 111,
+      "intra_bar_asset_switch_count": 41,
+      "ending_cash_usdt": 208.66124276
+    },
+    {
+      "partition": "validation_already_inspected",
+      "profile": "stress",
+      "round_trips": 364,
+      "net_pnl_usdt": -465.49224696,
+      "mean_pnl_usdt": -1.27882485,
+      "max_drawdown_pct": 93.09844939,
+      "fee_paid_usdt": 332.17686069,
+      "hard_stop_exit_count": 93,
+      "winning_trades": 63,
+      "intra_bar_asset_switch_count": 41,
+      "ending_cash_usdt": 34.50775304
+    },
+    {
+      "partition": "historical_test_already_inspected",
+      "profile": "conservative",
+      "round_trips": 282,
+      "net_pnl_usdt": -327.55930745,
+      "mean_pnl_usdt": -1.16155783,
+      "max_drawdown_pct": 66.58732197,
+      "fee_paid_usdt": 175.11405824,
+      "hard_stop_exit_count": 62,
+      "winning_trades": 80,
+      "intra_bar_asset_switch_count": 29,
+      "ending_cash_usdt": 172.44069255
+    },
+    {
+      "partition": "historical_test_already_inspected",
+      "profile": "stress",
+      "round_trips": 282,
+      "net_pnl_usdt": -455.98556858,
+      "mean_pnl_usdt": -1.6169701,
+      "max_drawdown_pct": 91.26009738,
+      "fee_paid_usdt": 267.73724569,
+      "hard_stop_exit_count": 67,
+      "winning_trades": 44,
+      "intra_bar_asset_switch_count": 29,
+      "ending_cash_usdt": 44.01443142
+    }
+  ],
+  "diagnostic_no_trading_costs": [
+    {
+      "partition": "training",
+      "net_pnl_usdt": 61.58952448,
+      "round_trips": 913
+    },
+    {
+      "partition": "validation_already_inspected",
+      "net_pnl_usdt": 121.31542879,
+      "round_trips": 364
+    },
+    {
+      "partition": "historical_test_already_inspected",
+      "net_pnl_usdt": -96.21625297,
+      "round_trips": 282
+    }
+  ],
+  "fixed_equal_weight_btc_eth_buy_hold": [
+    {
+      "partition": "training",
+      "conservative_net_pnl_usdt": 1456.09279229,
+      "stress_net_pnl_usdt": 1446.33671559
+    },
+    {
+      "partition": "validation_already_inspected",
+      "conservative_net_pnl_usdt": 79.29431921,
+      "stress_net_pnl_usdt": 76.40506987
+    },
+    {
+      "partition": "historical_test_already_inspected",
+      "conservative_net_pnl_usdt": -214.19075783,
+      "stress_net_pnl_usdt": -215.61624076
+    }
+  ],
+  "verdict": "REJECTED_ALL_SPLITS_AFTER_COSTS",
+  "interpretation": "rank switching and stops churn shared cash; fee and slippage make net performance sharply negative; zero-cost diagnostic also loses in already-inspected test",
+  "automatic_demo_promotion": false,
+  "qualification_authority": false,
+  "live_trading_authority": false,
+  "new_candidate_proven_profitable": false
+}
