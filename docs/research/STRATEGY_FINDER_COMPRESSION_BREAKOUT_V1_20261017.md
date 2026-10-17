@@ -23,4 +23,22 @@ Predeclared arms: entry 12 or 20 bars; width ratios 0.38 or 0.55; base 80 bars; 
 
 This research source rejects changed raw file hashes, missing/duplicate 15-minute timestamps, modified series shape or malformed OHLC. A successful test or historical positive aggregate **must not** reset Strategy Finder exhaustion, promote a Candidate, claim unseen validation or enable Live. A separate independent dataset and review of signal causality, risk/stop policy, fill assumptions and net costs are required before a vetted workflow stage can join automatic rotation. The existing 3-family multi-pair pipeline remains frozen.
 
-**Current status:** isolated hypothesis and adversarial tests proposed in Draft PR. Physical replay, CI and independent future sample require separate recorded results; do not infer they passed from the presence of files.
+## Physically measured, reviewed historical result (Laptop2)
+
+The original identical 15m Parquet source SHA256s were reopened and verified on DESKTOP-F4SA4VL. Five adversarial tests passed locally (5/5, exit 0). The physical archive replay exited 0 and emitted four complete, mutually comparable arms.
+
+| Arm (entry bars, compression ratio) | Training net, both symbols, conservative | Validation net, both symbols, conservative | Inspected test net, both symbols, conservative |
+|---|---:|---:|---:|
+| 12, 0.38 | -984.80 USDT | -760.16 USDT | -814.14 USDT |
+| 12, 0.55 | -986.36 USDT | -807.78 USDT | -847.22 USDT |
+| **20, 0.38 (training selected)** | **-866.97 USDT** | **-549.66 USDT** | **-681.17 USDT** |
+| 20, 0.55 | -937.28 USDT | -676.21 USDT | -757.61 USDT |
+
+Each symbol has its own isolated synthetic 500 USDT account, **so the combined 1,000 USDT in the table is not the shared 500 USDT NEXUS Demo paper balance**. The selected arm's combined conservative closed roundtrips: training 1,427; validation 438; inspected test 434. Stress costs worsen each period (training -996.24; validation -849.34; test -892.44 USDT, respectively). The apparent high trade count and severe losses mean the new idea is **not an economic strategy candidate**. There are no untouched future results and no stop-first intrabar fill modeling.
+
+- Native full research JSON: `docs/evidence/strategy-finder-compression-20261017/V1_MEASURED_PREINSPECTED_REPLAY.json`.
+- Original computed canonical result digest: `a7d0c44de9bdcdf375dd70a22f5f42c18a29f31c5524119795103423db39cfa8`.
+- Original Laptop2 output-file bytes SHA256: `72893679ae762d1a548ecd3a3a4e469f67a0fbd19b4cdb0510521913d8adea1a` (Windows local newline presentation, not asserted to equal Git text blob).
+- Verdict: `REJECT_NEW_MECHANISM_NEGATIVE_INSPECTED_HISTORY`, do not enqueue this evaluated fingerprint in autonomous rotation. Keep all tested arms and losses, avoid posthoc threshold tuning.
+
+A genuinely different preregistered hypothesis and independent prospective validation are required to resolve the rotation's exhausted frontier without repeating old research. GitHub CI and independent market-source validation are separate from the completed local tests.
