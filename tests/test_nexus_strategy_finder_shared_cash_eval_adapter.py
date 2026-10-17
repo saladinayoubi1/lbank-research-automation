@@ -40,6 +40,14 @@ def test_wrong_composite_contract_sha_denied():
         cli.reviewed_config(c["mechanism"],"0"*64)
 
 
+def test_reviewed_risk_variant_1_cannot_silently_use_different_stop_model():
+    old=next(x for x in cli.CONFIGS if x["risk_variant"]==1)
+    sha=composite_digest({"config":old,"dataset":ARCHIVE_SHA256,
+                          "contract":COMPOSITE_SCHEMA})
+    with pytest.raises(cli.CandidateBridgeError,match="risk_variant=0"):
+        cli.reviewed_config(old["mechanism"],sha)
+
+
 def test_short_or_uppercase_fingerprint_denied():
     c,sha=known()
     for bad in ("abc","F"*64,"z"*64):
