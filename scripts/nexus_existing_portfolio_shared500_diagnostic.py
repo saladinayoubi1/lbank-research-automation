@@ -166,7 +166,10 @@ def run(archive_root:Path,config_path:Path=ROOT/DEFAULT_CONFIG)->dict[str,Any]:
                                         rebalance_mask=schedule)
             if (out["minimum_cash_usdt"] < -1e-7 or
                 out["fill_count"]<0 or out["total_fees"]<0 or
-                not np.isfinite(list(out.values())).all() or
+                not all(np.isfinite(float(out[k])) for k in (
+                    "total_return","max_drawdown","sharpe","fill_count",
+                    "turnover","total_fees","average_exposure","minimum_cash_usdt",
+                    "rebalance_event_count")) or
                 len(out["asset_fill_counts"])!=2):
                 raise OriginalPortfolioDiagnosticError("original portfolio cash accounting failed")
             per_profile[label]={
