@@ -112,7 +112,7 @@ def test_strict_triplet_no_pruning_same_kind(monkeypatch):
     assert not found
     assert counts["source_confirmed_triplets"]==2
     assert counts["non_LHL_source_triplets"]==1
-    assert counts["structural_geometry_failure"]==1
+    assert counts["no_retest_reclaim_within_48_completed_bars"]==1
 
 
 def test_fee_stress_reduces_exact_identical_winning_trade():
