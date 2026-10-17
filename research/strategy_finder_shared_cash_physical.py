@@ -168,7 +168,7 @@ def replay_shared_cash(
                 fees_total+=entry_fee
                 cash-=spent
                 active={
-                    "symbol":symbol,"index":i,"entry_open_ms":int(times[i].value//10**6),
+                    "symbol":symbol,"index":i,"entry_open_ms":int(times[i].value//10**6)-GRANULARITY_MS,
                     "entry_fill":fill,"entry_fee":entry_fee,"qty":qty,
                     "entry_cash":spent,"stop":stop,"target":target,
                 }
