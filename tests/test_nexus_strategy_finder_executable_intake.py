@@ -198,6 +198,20 @@ def test_unapproved_candidate_abort_before_any_archive_lookup(tmp_path,monkeypat
         )
 
 
+def test_first_committed_proposal_is_dsl_executable_but_blocked_from_all_replay():
+    row=module.inspect_candidate(
+        module.ROOT,
+        "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+        approval_base(),
+    )
+    assert row["candidate_id"]=="factory_prior_day_sweep_peer_resilience"
+    assert row["status"]=="REVIEW_REQUIRED_NO_SEPARATE_APPROVAL"
+    assert not row["matching_existing_executable_ids"]
+    assert row["global_economic_semantic_novelty_proven"] is False
+    assert row["paper_eligible"] is False
+    assert row["orders"]==0
+
+
 def test_no_order_key_or_paper_authority_in_source():
     source=Path(module.__file__).read_text("utf8")
     assert "place_order(" not in source
