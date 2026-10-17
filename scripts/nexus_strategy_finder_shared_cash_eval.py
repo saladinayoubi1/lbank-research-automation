@@ -46,6 +46,8 @@ def reviewed_config(mechanism:str,expected_fingerprint:str)->dict[str,Any]:
     matched=[c for c in candidates if c["fingerprint"]==expected_fingerprint]
     if len(matched)!=1:
         raise CandidateBridgeError("reviewed source/config exact fingerprint mismatch")
+    if matched[0]["risk_variant"]!=0:
+        raise CandidateBridgeError("500-USDT gate models only frozen risk_variant=0 physical 1.5ATR/2R; never silently remap another reviewed risk contract")
     return matched[0]
 
 
