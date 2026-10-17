@@ -1,0 +1,580 @@
+{
+  "automatic_demo_promotion": false,
+  "historical_holdouts_already_inspected": true,
+  "live_trading_authority": false,
+  "monthly": {
+    "historical_test_already_inspected": {
+      "conservative": [
+        {
+          "mean_pnl_usdt": -1.36978462,
+          "month": "2025-11",
+          "net_pnl_usdt": -46.57267692,
+          "round_trips": 34
+        },
+        {
+          "mean_pnl_usdt": -1.54699369,
+          "month": "2025-12",
+          "net_pnl_usdt": -47.95680441,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -2.3229902,
+          "month": "2026-01",
+          "net_pnl_usdt": -69.68970595,
+          "round_trips": 30
+        },
+        {
+          "mean_pnl_usdt": -0.89748438,
+          "month": "2026-02",
+          "net_pnl_usdt": -29.61698439,
+          "round_trips": 33
+        },
+        {
+          "mean_pnl_usdt": -1.07198346,
+          "month": "2026-03",
+          "net_pnl_usdt": -37.51942116,
+          "round_trips": 35
+        },
+        {
+          "mean_pnl_usdt": -0.52452571,
+          "month": "2026-04",
+          "net_pnl_usdt": -16.26029705,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -1.38046384,
+          "month": "2026-05",
+          "net_pnl_usdt": -26.22881296,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -1.1832419,
+          "month": "2026-06",
+          "net_pnl_usdt": -39.04698262,
+          "round_trips": 33
+        },
+        {
+          "mean_pnl_usdt": -0.40743394,
+          "month": "2026-07",
+          "net_pnl_usdt": -14.66762197,
+          "round_trips": 36
+        }
+      ],
+      "stress": [
+        {
+          "mean_pnl_usdt": -3.4204463,
+          "month": "2025-11",
+          "net_pnl_usdt": -116.2951741,
+          "round_trips": 34
+        },
+        {
+          "mean_pnl_usdt": -2.84139322,
+          "month": "2025-12",
+          "net_pnl_usdt": -88.08318993,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -2.78810728,
+          "month": "2026-01",
+          "net_pnl_usdt": -83.64321841,
+          "round_trips": 30
+        },
+        {
+          "mean_pnl_usdt": -1.39255574,
+          "month": "2026-02",
+          "net_pnl_usdt": -45.95433926,
+          "round_trips": 33
+        },
+        {
+          "mean_pnl_usdt": -1.25667746,
+          "month": "2026-03",
+          "net_pnl_usdt": -43.98371127,
+          "round_trips": 35
+        },
+        {
+          "mean_pnl_usdt": -0.75665032,
+          "month": "2026-04",
+          "net_pnl_usdt": -23.45615994,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -0.93941744,
+          "month": "2026-05",
+          "net_pnl_usdt": -17.84893137,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -0.71907108,
+          "month": "2026-06",
+          "net_pnl_usdt": -23.72934564,
+          "round_trips": 33
+        },
+        {
+          "mean_pnl_usdt": -0.36087496,
+          "month": "2026-07",
+          "net_pnl_usdt": -12.99149862,
+          "round_trips": 36
+        }
+      ]
+    },
+    "training": {
+      "conservative": [
+        {
+          "mean_pnl_usdt": -1.75548288,
+          "month": "2022-12",
+          "net_pnl_usdt": -42.13158907,
+          "round_trips": 24
+        },
+        {
+          "mean_pnl_usdt": 0.57988136,
+          "month": "2023-01",
+          "net_pnl_usdt": 18.55620364,
+          "round_trips": 32
+        },
+        {
+          "mean_pnl_usdt": -1.58332693,
+          "month": "2023-02",
+          "net_pnl_usdt": -42.74982713,
+          "round_trips": 27
+        },
+        {
+          "mean_pnl_usdt": -0.85484796,
+          "month": "2023-03",
+          "net_pnl_usdt": -37.61331018,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.52227886,
+          "month": "2023-04",
+          "net_pnl_usdt": -15.66836581,
+          "round_trips": 30
+        },
+        {
+          "mean_pnl_usdt": -0.82546216,
+          "month": "2023-05",
+          "net_pnl_usdt": -17.33470535,
+          "round_trips": 21
+        },
+        {
+          "mean_pnl_usdt": 0.06100848,
+          "month": "2023-06",
+          "net_pnl_usdt": 1.64722896,
+          "round_trips": 27
+        },
+        {
+          "mean_pnl_usdt": -1.2355469,
+          "month": "2023-07",
+          "net_pnl_usdt": -16.06210971,
+          "round_trips": 13
+        },
+        {
+          "mean_pnl_usdt": -2.23050022,
+          "month": "2023-08",
+          "net_pnl_usdt": -35.68800345,
+          "round_trips": 16
+        },
+        {
+          "mean_pnl_usdt": -0.99710383,
+          "month": "2023-09",
+          "net_pnl_usdt": -18.94497272,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -0.12003812,
+          "month": "2023-10",
+          "net_pnl_usdt": -2.88091488,
+          "round_trips": 24
+        },
+        {
+          "mean_pnl_usdt": -0.87531028,
+          "month": "2023-11",
+          "net_pnl_usdt": -33.26179076,
+          "round_trips": 38
+        },
+        {
+          "mean_pnl_usdt": -0.77636663,
+          "month": "2023-12",
+          "net_pnl_usdt": -28.72556549,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": -0.05766811,
+          "month": "2024-01",
+          "net_pnl_usdt": -2.13372002,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": 0.22188711,
+          "month": "2024-02",
+          "net_pnl_usdt": 8.20982322,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": -0.95005354,
+          "month": "2024-03",
+          "net_pnl_usdt": -39.90224888,
+          "round_trips": 42
+        },
+        {
+          "mean_pnl_usdt": -1.11152885,
+          "month": "2024-04",
+          "net_pnl_usdt": -48.90726938,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.44698852,
+          "month": "2024-05",
+          "net_pnl_usdt": -18.32652938,
+          "round_trips": 41
+        },
+        {
+          "mean_pnl_usdt": -0.43634416,
+          "month": "2024-06",
+          "net_pnl_usdt": -13.52666882,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -0.19083842,
+          "month": "2024-07",
+          "net_pnl_usdt": -9.16024435,
+          "round_trips": 48
+        },
+        {
+          "mean_pnl_usdt": -0.08810001,
+          "month": "2024-08",
+          "net_pnl_usdt": -2.99540039,
+          "round_trips": 34
+        },
+        {
+          "mean_pnl_usdt": -0.39162066,
+          "month": "2024-09",
+          "net_pnl_usdt": -15.27320581,
+          "round_trips": 39
+        },
+        {
+          "mean_pnl_usdt": -0.28479447,
+          "month": "2024-10",
+          "net_pnl_usdt": -12.24616232,
+          "round_trips": 43
+        },
+        {
+          "mean_pnl_usdt": -0.16442676,
+          "month": "2024-11",
+          "net_pnl_usdt": -8.38576487,
+          "round_trips": 51
+        },
+        {
+          "mean_pnl_usdt": -0.27841491,
+          "month": "2024-12",
+          "net_pnl_usdt": -15.03440533,
+          "round_trips": 54
+        },
+        {
+          "mean_pnl_usdt": -0.20325916,
+          "month": "2025-01",
+          "net_pnl_usdt": -8.94340318,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.32487293,
+          "month": "2025-02",
+          "net_pnl_usdt": -4.8730939,
+          "round_trips": 15
+        }
+      ],
+      "stress": [
+        {
+          "mean_pnl_usdt": -3.84505293,
+          "month": "2022-12",
+          "net_pnl_usdt": -92.28127025,
+          "round_trips": 24
+        },
+        {
+          "mean_pnl_usdt": -1.375932,
+          "month": "2023-01",
+          "net_pnl_usdt": -44.02982405,
+          "round_trips": 32
+        },
+        {
+          "mean_pnl_usdt": -2.70343131,
+          "month": "2023-02",
+          "net_pnl_usdt": -72.99264549,
+          "round_trips": 27
+        },
+        {
+          "mean_pnl_usdt": -1.77055276,
+          "month": "2023-03",
+          "net_pnl_usdt": -77.90432161,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -1.2001665,
+          "month": "2023-04",
+          "net_pnl_usdt": -36.00499499,
+          "round_trips": 30
+        },
+        {
+          "mean_pnl_usdt": -1.16279303,
+          "month": "2023-05",
+          "net_pnl_usdt": -24.41865373,
+          "round_trips": 21
+        },
+        {
+          "mean_pnl_usdt": -0.67045441,
+          "month": "2023-06",
+          "net_pnl_usdt": -18.1022691,
+          "round_trips": 27
+        },
+        {
+          "mean_pnl_usdt": -1.05771413,
+          "month": "2023-07",
+          "net_pnl_usdt": -13.75028366,
+          "round_trips": 13
+        },
+        {
+          "mean_pnl_usdt": -1.28460773,
+          "month": "2023-08",
+          "net_pnl_usdt": -20.55372368,
+          "round_trips": 16
+        },
+        {
+          "mean_pnl_usdt": -0.87404267,
+          "month": "2023-09",
+          "net_pnl_usdt": -16.60681071,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -0.43376119,
+          "month": "2023-10",
+          "net_pnl_usdt": -10.41026864,
+          "round_trips": 24
+        },
+        {
+          "mean_pnl_usdt": -0.51116142,
+          "month": "2023-11",
+          "net_pnl_usdt": -19.42413398,
+          "round_trips": 38
+        },
+        {
+          "mean_pnl_usdt": -0.37733506,
+          "month": "2023-12",
+          "net_pnl_usdt": -13.96139733,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": -0.18090287,
+          "month": "2024-01",
+          "net_pnl_usdt": -6.69340621,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": -0.12393065,
+          "month": "2024-02",
+          "net_pnl_usdt": -4.58543419,
+          "round_trips": 37
+        },
+        {
+          "mean_pnl_usdt": -0.21466664,
+          "month": "2024-03",
+          "net_pnl_usdt": -9.01599903,
+          "round_trips": 42
+        },
+        {
+          "mean_pnl_usdt": -0.17285026,
+          "month": "2024-04",
+          "net_pnl_usdt": -7.60541146,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.08257962,
+          "month": "2024-05",
+          "net_pnl_usdt": -3.38576455,
+          "round_trips": 41
+        },
+        {
+          "mean_pnl_usdt": -0.06257797,
+          "month": "2024-06",
+          "net_pnl_usdt": -1.93991709,
+          "round_trips": 31
+        },
+        {
+          "mean_pnl_usdt": -0.03673972,
+          "month": "2024-07",
+          "net_pnl_usdt": -1.76350674,
+          "round_trips": 48
+        },
+        {
+          "mean_pnl_usdt": -0.03347348,
+          "month": "2024-08",
+          "net_pnl_usdt": -1.13809824,
+          "round_trips": 34
+        },
+        {
+          "mean_pnl_usdt": -0.02685558,
+          "month": "2024-09",
+          "net_pnl_usdt": -1.0473676,
+          "round_trips": 39
+        },
+        {
+          "mean_pnl_usdt": -0.01710543,
+          "month": "2024-10",
+          "net_pnl_usdt": -0.7355337,
+          "round_trips": 43
+        },
+        {
+          "mean_pnl_usdt": -0.00974752,
+          "month": "2024-11",
+          "net_pnl_usdt": -0.49712341,
+          "round_trips": 51
+        },
+        {
+          "mean_pnl_usdt": -0.00940954,
+          "month": "2024-12",
+          "net_pnl_usdt": -0.49870588,
+          "round_trips": 53
+        },
+        {
+          "mean_pnl_usdt": -0.0049029,
+          "month": "2025-01",
+          "net_pnl_usdt": -0.21572748,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.00527177,
+          "month": "2025-02",
+          "net_pnl_usdt": -0.0790765,
+          "round_trips": 15
+        }
+      ]
+    },
+    "validation_already_inspected": {
+      "conservative": [
+        {
+          "mean_pnl_usdt": -2.45156779,
+          "month": "2025-02",
+          "net_pnl_usdt": -46.57978802,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -1.04051427,
+          "month": "2025-03",
+          "net_pnl_usdt": -49.94468502,
+          "round_trips": 48
+        },
+        {
+          "mean_pnl_usdt": -0.92405121,
+          "month": "2025-04",
+          "net_pnl_usdt": -40.65825336,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": 0.79547256,
+          "month": "2025-05",
+          "net_pnl_usdt": 35.00079285,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.68939193,
+          "month": "2025-06",
+          "net_pnl_usdt": -24.12871739,
+          "round_trips": 35
+        },
+        {
+          "mean_pnl_usdt": 0.02674987,
+          "month": "2025-07",
+          "net_pnl_usdt": 1.15024452,
+          "round_trips": 43
+        },
+        {
+          "mean_pnl_usdt": -1.56396033,
+          "month": "2025-08",
+          "net_pnl_usdt": -76.63405593,
+          "round_trips": 49
+        },
+        {
+          "mean_pnl_usdt": -0.21884185,
+          "month": "2025-09",
+          "net_pnl_usdt": -6.34641357,
+          "round_trips": 29
+        },
+        {
+          "mean_pnl_usdt": -1.54037793,
+          "month": "2025-10",
+          "net_pnl_usdt": -73.93814062,
+          "round_trips": 48
+        },
+        {
+          "mean_pnl_usdt": -1.85194813,
+          "month": "2025-11",
+          "net_pnl_usdt": -9.25974064,
+          "round_trips": 5
+        }
+      ],
+      "stress": [
+        {
+          "mean_pnl_usdt": -4.50564694,
+          "month": "2025-02",
+          "net_pnl_usdt": -85.6072918,
+          "round_trips": 19
+        },
+        {
+          "mean_pnl_usdt": -2.54128919,
+          "month": "2025-03",
+          "net_pnl_usdt": -121.98188101,
+          "round_trips": 48
+        },
+        {
+          "mean_pnl_usdt": -1.8863912,
+          "month": "2025-04",
+          "net_pnl_usdt": -83.00121262,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -0.59374167,
+          "month": "2025-05",
+          "net_pnl_usdt": -26.12463361,
+          "round_trips": 44
+        },
+        {
+          "mean_pnl_usdt": -1.12998914,
+          "month": "2025-06",
+          "net_pnl_usdt": -39.54961998,
+          "round_trips": 35
+        },
+        {
+          "mean_pnl_usdt": -0.616674,
+          "month": "2025-07",
+          "net_pnl_usdt": -26.51698188,
+          "round_trips": 43
+        },
+        {
+          "mean_pnl_usdt": -0.8831478,
+          "month": "2025-08",
+          "net_pnl_usdt": -43.2742422,
+          "round_trips": 49
+        },
+        {
+          "mean_pnl_usdt": -0.4186061,
+          "month": "2025-09",
+          "net_pnl_usdt": -12.55818301,
+          "round_trips": 30
+        },
+        {
+          "mean_pnl_usdt": -0.52145261,
+          "month": "2025-10",
+          "net_pnl_usdt": -24.50827251,
+          "round_trips": 47
+        },
+        {
+          "mean_pnl_usdt": -0.47398568,
+          "month": "2025-11",
+          "net_pnl_usdt": -2.36992839,
+          "round_trips": 5
+        }
+      ]
+    }
+  },
+  "raw_full_file_sha256": "89931e68784a9bcffc74e4f88084b60cb5d2f1e0b9fb9edf50b396abc3a9a8fb",
+  "result_digest": "cfbd50da127abc814fc8fa8fb64165cd34d70546d34a47e5c2b5c2b02df69918",
+  "schema": "nexus.shared-cash-rotation-monthly-research-evidence.v1"
+}
