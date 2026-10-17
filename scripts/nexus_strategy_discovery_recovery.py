@@ -10,8 +10,13 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Mapping
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from nexus_strategy_discovery_feedback import load_state as load_feedback
 from nexus_strategy_discovery_rotation import load_state as load_rotation
