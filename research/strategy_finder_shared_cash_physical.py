@@ -78,7 +78,8 @@ def validate_source(
             raise SharedCashDiagnosticError("peer candle timestamp mismatch")
         reference=ts
         values={col:f[col].to_numpy(dtype=float) for col in REQUIRED[1:]}
-        if (any(not np.isfinite(x).all() for x in values.values()) or
+        if (any(not np.isfinite(values[key]).all() for key in ("open","high","low","close"))
+            or np.isinf(values["atr"]).any() or
             any((values[x]<=0).any() for x in ("open","high","low","close")) or
             (values["high"]<np.maximum.reduce((
                values["open"],values["close"],values["low"]))).any() or
