@@ -28,6 +28,7 @@ on:
       - "nexus_demo_strategy_discovery_health_trigger.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_strategy_discovery_recovery.py"
       - "scripts/nexus_public_paper_boundary_proof.py"
       - "research/strategy_family_catalog.json"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -44,6 +45,7 @@ on:
       - "nexus_demo_regime_lifecycle_bridge.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_strategy_discovery_recovery.py"
       - "scripts/nexus_public_paper_boundary_proof.py"
       - "research/strategy_family_catalog.json"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -55,6 +57,7 @@ on:
       - "tests/test_nexus_demo_strategy_discovery_health_trigger.py"
       - "tests/test_nexus_strategy_discovery_rotation_workflow.py"
       - "tests/test_nexus_strategy_discovery_controller.py"
+      - "tests/test_nexus_strategy_discovery_recovery.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
       - ".github/workflows/nexus_strategy_discovery_rotation.yml"
       - "tests/test_nexus_research_workflow_execution_policy.py"
@@ -98,6 +101,7 @@ jobs:
           tests/test_nexus_strategy_discovery_rotation_workflow.py
           tests/test_nexus_research_workflow_execution_policy.py
           tests/test_nexus_strategy_discovery_controller.py
+          tests/test_nexus_strategy_discovery_recovery.py
           tests/test_nexus_multitimeframe_strategy_discovery.py
 
   dispatch-one-stage:
@@ -289,7 +293,7 @@ jobs:
         if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
         run: |
           set -euo pipefail
-          python scripts/nexus_strategy_discovery_controller.py             --root . --output build/discovery/controller-status.json
+          python scripts/nexus_strategy_discovery_controller.py             --root . --feedback-state build/discovery/feedback-state.json --output build/discovery/controller-status.json
           python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --require-feedback-state             --output build/discovery/dispatch-plan.json
           if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -298,6 +302,19 @@ jobs:
             jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Produce exact-source design-review queue when frontier is exhausted
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
+        run: |
+          set -euo pipefail
+          python scripts/nexus_strategy_discovery_recovery.py \
+            --controller build/discovery/controller-status.json \
+            --blocked build/discovery/dispatch-plan.json \
+            --rotation-state build/discovery/rotation-state.json \
+            --feedback-state build/discovery/feedback-state.json \
+            --reviewed-catalog research/reviewed_composite_mechanisms_v1.json \
+            --output build/discovery/recovery-review-plan.json
+          echo "Strategy Finder: historical frontiers terminal; generated non-dispatchable research design intake only." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Dispatch reviewed Research workflow
         id: dispatch
@@ -477,6 +494,13 @@ jobs:
           retention-days: 90
           compression-level: 9
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
+        with:
+          name: nexus-strategy-discovery-recovery-plan
+          path: build/discovery/recovery-review-plan.json
+          if-no-files-found: error
+          retention-days: 90
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: steps.health-gate.outputs.should_dispatch == 'true'
         with:
