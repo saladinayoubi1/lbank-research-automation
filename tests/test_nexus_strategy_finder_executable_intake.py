@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from nexus_mechanism_factory import load_factory_contract
+from nexus_mechanism_factory import load_factory_contract, factory_signal
 from scripts import nexus_strategy_finder_executable_intake as module
 
 
@@ -210,6 +210,31 @@ def test_first_committed_proposal_is_dsl_executable_but_blocked_from_all_replay(
     assert row["global_economic_semantic_novelty_proven"] is False
     assert row["paper_eligible"] is False
     assert row["orders"]==0
+
+
+def test_first_proposal_has_physical_true_and_false_signal_witness():
+    import pandas as pd
+    path=module.ROOT/"research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json"
+    reviewed=load_factory_contract(path)
+    ident=next(iter(reviewed))
+    sample=pd.DataFrame({
+        "h4_range":[1.,1.],"h1_vol_ok":[1.,1.],
+        "lagged_peer_beta_residual":[0.02,0.02],
+        "lagged_downside_variance_share_64":[0.70,0.70],
+        "low":[98.,98.],"prior_day_low":[100.,100.],
+        "close":[102.,99.],"open":[101.,101.],
+        "close_location":[0.80,0.10],"rel_vol":[1.25,1.25],
+    })
+    got=factory_signal(
+        sample,ident,specs=reviewed,
+        expected_contract_digest=reviewed[ident]["contract_digest"],
+    )
+    assert got.tolist()==[True,False]
+    assert module.inspect_candidate(
+        module.ROOT,
+        "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+        approval_base(),
+    )["status"]=="REVIEW_REQUIRED_NO_SEPARATE_APPROVAL"
 
 
 def test_no_order_key_or_paper_authority_in_source():
