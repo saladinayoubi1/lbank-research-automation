@@ -1,0 +1,10 @@
+{
+  "schema": "nexus.strategy-finder-executable-intake-allowlist.v1",
+  "status": "NO_INDEPENDENTLY_REVIEWED_NEW_EXECUTABLE_CONTRACTS",
+  "research_only": true,
+  "paper_only": true,
+  "live_trading_authority": false,
+  "automatic_strategy_promotion": false,
+  "qualification_authority": false,
+  "approved_executable_contracts": []
+}
