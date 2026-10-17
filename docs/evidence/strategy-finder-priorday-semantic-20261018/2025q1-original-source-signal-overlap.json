@@ -1,0 +1,281 @@
+{
+  "already_inspected_not_pristine": true,
+  "economically_novel_proven": false,
+  "independent_semantic_review_completed": false,
+  "interval": "2025-01-01_to_2025-04-01_exclusive_UTC",
+  "live_enabled": false,
+  "market_profitability_tested": false,
+  "orders": 0,
+  "original_candidate_id": "factory_prior_day_sweep_peer_resilience",
+  "original_candidate_raw_sha256": "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d",
+  "paper_eligible": false,
+  "report_digest": "72e4cbe1c03f4582d16385a189f6f18b6cd8ed154576043e68dd2c7641fc8eaf",
+  "research_allowlist_still_empty": true,
+  "schema": "nexus.strategy-finder-prior-day-sweep-semantic-signal-audit.v1",
+  "scope": "BEHAVIORAL_SOURCE_OVERLAP_ONLY_NO_ECONOMIC_BACKTEST",
+  "six_original_bybit_source_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "symbols": {
+    "BTCUSDT": {
+      "candidate_first_5_signal_closed_at_utc": [
+        "2025-01-23T14:45:00+00:00",
+        "2025-02-03T14:45:00+00:00",
+        "2025-02-16T09:45:00+00:00",
+        "2025-02-23T22:00:00+00:00",
+        "2025-03-13T18:15:00+00:00"
+      ],
+      "candidate_identical_to_any_old_baseline": false,
+      "candidate_signal_funnel": [
+        {
+          "gate": "prior_day_low_available",
+          "surviving_bars": 8640
+        },
+        {
+          "gate": "h4_range",
+          "surviving_bars": 7488
+        },
+        {
+          "gate": "h1_vol_ok",
+          "surviving_bars": 6016
+        },
+        {
+          "gate": "lagged_positive_peer_beta_residual",
+          "surviving_bars": 3017
+        },
+        {
+          "gate": "lagged_downside_share_above_half",
+          "surviving_bars": 1531
+        },
+        {
+          "gate": "prior_day_low_physically_swept",
+          "surviving_bars": 180
+        },
+        {
+          "gate": "prior_day_low_close_reclaimed",
+          "surviving_bars": 20
+        },
+        {
+          "gate": "bullish_closed_body",
+          "surviving_bars": 14
+        },
+        {
+          "gate": "close_location_guard",
+          "surviving_bars": 13
+        },
+        {
+          "gate": "lagged_volume_guard",
+          "surviving_bars": 7
+        }
+      ],
+      "candidate_signals": 7,
+      "evaluated_closed_15m_bars": 8640,
+      "monthly_signal_counts": {
+        "2025-01": {
+          "baseline": {
+            "failed_range_break_reversal": 43,
+            "peer_beta_residual_reclaim": 12,
+            "peer_shock_noncontagion_rebound": 4,
+            "prior_day_breakout_continuation": 13,
+            "range_wick_absorption_rebound": 8,
+            "relative_weakness_exhaustion_rebound": 1
+          },
+          "candidate_signals": 1
+        },
+        "2025-02": {
+          "baseline": {
+            "failed_range_break_reversal": 63,
+            "peer_beta_residual_reclaim": 6,
+            "peer_shock_noncontagion_rebound": 12,
+            "prior_day_breakout_continuation": 6,
+            "range_wick_absorption_rebound": 11,
+            "relative_weakness_exhaustion_rebound": 2
+          },
+          "candidate_signals": 3
+        },
+        "2025-03": {
+          "baseline": {
+            "failed_range_break_reversal": 61,
+            "peer_beta_residual_reclaim": 3,
+            "peer_shock_noncontagion_rebound": 3,
+            "prior_day_breakout_continuation": 8,
+            "range_wick_absorption_rebound": 3,
+            "relative_weakness_exhaustion_rebound": 2
+          },
+          "candidate_signals": 3
+        }
+      },
+      "old_family_overlap": {
+        "failed_range_break_reversal": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 167,
+          "old_signals": 167,
+          "same_bar_intersection": 0
+        },
+        "peer_beta_residual_reclaim": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 21,
+          "old_signals": 21,
+          "same_bar_intersection": 0
+        },
+        "peer_shock_noncontagion_rebound": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 19,
+          "old_signals": 19,
+          "same_bar_intersection": 0
+        },
+        "prior_day_breakout_continuation": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 27,
+          "old_signals": 27,
+          "same_bar_intersection": 0
+        },
+        "range_wick_absorption_rebound": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 22,
+          "old_signals": 22,
+          "same_bar_intersection": 0
+        },
+        "relative_weakness_exhaustion_rebound": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 5,
+          "old_signals": 5,
+          "same_bar_intersection": 0
+        }
+      }
+    },
+    "ETHUSDT": {
+      "candidate_first_5_signal_closed_at_utc": [
+        "2025-01-08T13:15:00+00:00",
+        "2025-01-08T15:00:00+00:00",
+        "2025-01-13T06:00:00+00:00",
+        "2025-01-18T11:45:00+00:00",
+        "2025-01-23T07:45:00+00:00"
+      ],
+      "candidate_identical_to_any_old_baseline": false,
+      "candidate_signal_funnel": [
+        {
+          "gate": "prior_day_low_available",
+          "surviving_bars": 8640
+        },
+        {
+          "gate": "h4_range",
+          "surviving_bars": 7632
+        },
+        {
+          "gate": "h1_vol_ok",
+          "surviving_bars": 6412
+        },
+        {
+          "gate": "lagged_positive_peer_beta_residual",
+          "surviving_bars": 3133
+        },
+        {
+          "gate": "lagged_downside_share_above_half",
+          "surviving_bars": 1677
+        },
+        {
+          "gate": "prior_day_low_physically_swept",
+          "surviving_bars": 213
+        },
+        {
+          "gate": "prior_day_low_close_reclaimed",
+          "surviving_bars": 43
+        },
+        {
+          "gate": "bullish_closed_body",
+          "surviving_bars": 30
+        },
+        {
+          "gate": "close_location_guard",
+          "surviving_bars": 21
+        },
+        {
+          "gate": "lagged_volume_guard",
+          "surviving_bars": 8
+        }
+      ],
+      "candidate_signals": 8,
+      "evaluated_closed_15m_bars": 8640,
+      "monthly_signal_counts": {
+        "2025-01": {
+          "baseline": {
+            "failed_range_break_reversal": 46,
+            "peer_beta_residual_reclaim": 7,
+            "peer_shock_noncontagion_rebound": 0,
+            "prior_day_breakout_continuation": 10,
+            "range_wick_absorption_rebound": 14,
+            "relative_weakness_exhaustion_rebound": 8
+          },
+          "candidate_signals": 6
+        },
+        "2025-02": {
+          "baseline": {
+            "failed_range_break_reversal": 33,
+            "peer_beta_residual_reclaim": 6,
+            "peer_shock_noncontagion_rebound": 0,
+            "prior_day_breakout_continuation": 8,
+            "range_wick_absorption_rebound": 14,
+            "relative_weakness_exhaustion_rebound": 2
+          },
+          "candidate_signals": 1
+        },
+        "2025-03": {
+          "baseline": {
+            "failed_range_break_reversal": 42,
+            "peer_beta_residual_reclaim": 6,
+            "peer_shock_noncontagion_rebound": 0,
+            "prior_day_breakout_continuation": 9,
+            "range_wick_absorption_rebound": 7,
+            "relative_weakness_exhaustion_rebound": 5
+          },
+          "candidate_signals": 1
+        }
+      },
+      "old_family_overlap": {
+        "failed_range_break_reversal": {
+          "candidate_only_vs_family": 6,
+          "old_only_vs_candidate": 119,
+          "old_signals": 121,
+          "same_bar_intersection": 2
+        },
+        "peer_beta_residual_reclaim": {
+          "candidate_only_vs_family": 8,
+          "old_only_vs_candidate": 19,
+          "old_signals": 19,
+          "same_bar_intersection": 0
+        },
+        "peer_shock_noncontagion_rebound": {
+          "candidate_only_vs_family": 8,
+          "old_only_vs_candidate": 0,
+          "old_signals": 0,
+          "same_bar_intersection": 0
+        },
+        "prior_day_breakout_continuation": {
+          "candidate_only_vs_family": 8,
+          "old_only_vs_candidate": 27,
+          "old_signals": 27,
+          "same_bar_intersection": 0
+        },
+        "range_wick_absorption_rebound": {
+          "candidate_only_vs_family": 8,
+          "old_only_vs_candidate": 35,
+          "old_signals": 35,
+          "same_bar_intersection": 0
+        },
+        "relative_weakness_exhaustion_rebound": {
+          "candidate_only_vs_family": 7,
+          "old_only_vs_candidate": 14,
+          "old_signals": 15,
+          "same_bar_intersection": 1
+        }
+      }
+    }
+  },
+  "warmup_begins": "2024-12-01T00:00:00Z"
+}
