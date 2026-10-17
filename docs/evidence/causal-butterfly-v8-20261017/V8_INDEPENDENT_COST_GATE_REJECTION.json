@@ -1,0 +1,146 @@
+{
+  "aggregated_cell_diagnostics_not_one_account": [
+    {
+      "cost_profile": "conservative",
+      "partition": "train",
+      "sum_independent_account_pnl_usdt": 8.58103662,
+      "total_closed_round_trips": 3
+    },
+    {
+      "cost_profile": "stress",
+      "partition": "train",
+      "sum_independent_account_pnl_usdt": -11.91859928,
+      "total_closed_round_trips": 3
+    },
+    {
+      "cost_profile": "conservative",
+      "partition": "validation",
+      "sum_independent_account_pnl_usdt": -15.38455687,
+      "total_closed_round_trips": 2
+    },
+    {
+      "cost_profile": "stress",
+      "partition": "validation",
+      "sum_independent_account_pnl_usdt": -23.29882741,
+      "total_closed_round_trips": 2
+    },
+    {
+      "cost_profile": "conservative",
+      "partition": "historically_inspected_test",
+      "sum_independent_account_pnl_usdt": 0,
+      "total_closed_round_trips": 0
+    },
+    {
+      "cost_profile": "stress",
+      "partition": "historically_inspected_test",
+      "sum_independent_account_pnl_usdt": 0,
+      "total_closed_round_trips": 0
+    }
+  ],
+  "audit_sha256": "1e22eac7ec079ea1579beb3b2844f7e02056dded0efe6f9a14324ce9ab64b6f4",
+  "automatic_strategy_promotion": false,
+  "candidate_profitable_claim": false,
+  "factory_fingerprint": "c451551fdb8bacd867e865eb494a14ba506061cbffd9542aca04e13df3f56f02",
+  "historical_archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "historically_inspected_test_has_zero_trades": true,
+  "isolation_warning": "10k USDT per symbol/per profile historical cells, NOT one 500-USDT portfolio or realized orders",
+  "live_trading_authority": false,
+  "new_algorithm_created": false,
+  "next_action": "reject_first_butterfly_v8_cost_fragile_implementation; require separately_preregistered_prospective_economic_edge",
+  "past_source_has_been_inspected": true,
+  "per_symbol": [
+    {
+      "cells": [
+        {
+          "closed_round_trips": 2,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": 5.40321599,
+          "partition": "train"
+        },
+        {
+          "closed_round_trips": 2,
+          "cost_profile": "stress",
+          "net_pnl_usdt": -2.61528927,
+          "partition": "train"
+        },
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": -6.52019211,
+          "partition": "validation"
+        },
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "stress",
+          "net_pnl_usdt": -10.4831732,
+          "partition": "validation"
+        },
+        {
+          "closed_round_trips": 0,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": 0,
+          "partition": "historically_inspected_test"
+        },
+        {
+          "closed_round_trips": 0,
+          "cost_profile": "stress",
+          "net_pnl_usdt": 0,
+          "partition": "historically_inspected_test"
+        }
+      ],
+      "symbol": "BTCUSDT"
+    },
+    {
+      "cells": [
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": 3.17782063,
+          "partition": "train"
+        },
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "stress",
+          "net_pnl_usdt": -9.30331001,
+          "partition": "train"
+        },
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": -8.86436476,
+          "partition": "validation"
+        },
+        {
+          "closed_round_trips": 1,
+          "cost_profile": "stress",
+          "net_pnl_usdt": -12.81565421,
+          "partition": "validation"
+        },
+        {
+          "closed_round_trips": 0,
+          "cost_profile": "conservative",
+          "net_pnl_usdt": 0,
+          "partition": "historically_inspected_test"
+        },
+        {
+          "closed_round_trips": 0,
+          "cost_profile": "stress",
+          "net_pnl_usdt": 0,
+          "partition": "historically_inspected_test"
+        }
+      ],
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "qualifies_for_paper_demo": false,
+  "research_only": true,
+  "schema": "nexus.causal-butterfly-v8-independent-cost-audit.v1",
+  "source_authenticity_independently_verified_here": false,
+  "source_report_digest": "21be76c6f276c0d71ed4f87a2a045eee7ee9050d4d789ee1a862be8ad333c4c0",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "status": "REJECTED_FRAGILE_TRAIN_NEGATIVE_VALIDATION_NO_TEST_ACTIVITY",
+  "trade_engine_independently_replayed_here": false,
+  "trades_in_held_out_test_sufficient_to_validate": false,
+  "training_conservative_positive_but_stress_negative": true,
+  "validation_both_symbols_both_profiles_negative": true
+}
