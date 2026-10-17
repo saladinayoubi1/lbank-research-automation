@@ -58,8 +58,24 @@ def build_recovery(
 ) -> dict[str, Any]:
     controller_core = {key: value for key, value in controller.items() if key != "status_sha256"}
     blocked_core = {key: value for key, value in blocked.items() if key != "blocked_digest"}
+    rotation_core = {key: value for key, value in rotation.items() if key != "state_digest"}
+    feedback_core = {key: value for key, value in feedback.items() if key != "state_digest"}
     if (
-        controller.get("schema") != "nexus.strategy-discovery-controller.v1"
+        rotation.get("schema_version") != "nexus.strategy-discovery-rotation-state.v1"
+        or rotation.get("state_digest") != digest(rotation_core)
+        or rotation.get("research_only") is not True
+        or rotation.get("paper_only") is not True
+        or rotation.get("live_trading_authority") is not False
+        or rotation.get("automatic_strategy_promotion") is not False
+        or rotation.get("qualification_authority") is not False
+        or feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
+        or feedback.get("state_digest") != digest(feedback_core)
+        or feedback.get("research_only") is not True
+        or feedback.get("paper_only") is not True
+        or feedback.get("live_trading_authority") is not False
+        or feedback.get("automatic_strategy_promotion") is not False
+        or feedback.get("qualification_authority") is not False
+        or controller.get("schema") != "nexus.strategy-discovery-controller.v1"
         or controller.get("status_sha256") != digest(controller_core)
         or controller.get("controller_verified") is not True
         or controller.get("paper_only") is not True
