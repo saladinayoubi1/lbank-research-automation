@@ -1,0 +1,206 @@
+{
+  "auto_demo_promotion": false,
+  "decision": "REJECT_NEGATIVE_IN_ALL_HISTORICAL_SPLITS",
+  "live_enabled": false,
+  "mechanism": "structural_pullback",
+  "orders": 0,
+  "original_500_usdt_shared_spot_cash_by_partition": true,
+  "paper_eligible": false,
+  "partition_summaries": {
+    "historical_test_already_inspected": {
+      "conservative": {
+        "closed_round_trips": 27,
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 28
+        },
+        "ending_shared_cash_usdt": 476.47287663,
+        "entry_exit_fees_usdt": 13.41799352,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 7,
+          "STRUCTURAL_STOP": 19,
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "maximum_drawdown_pct": 4.88642428,
+        "mean_pnl_usdt": -0.87137494,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -0.87137494,
+            "month": "2025-03",
+            "net_pnl_usdt": -23.52712337,
+            "round_trips": 27
+          }
+        ],
+        "net_pnl_usdt": -23.52712337,
+        "positive_closed_trades": 6,
+        "signals_due_at_next_open": 55
+      },
+      "stress": {
+        "closed_round_trips": 33,
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 22
+        },
+        "ending_shared_cash_usdt": 430.64222089,
+        "entry_exit_fees_usdt": 38.28586086,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 3,
+          "STOP_GAP_AT_WORSE_OPEN": 4,
+          "STRUCTURAL_STOP": 26
+        },
+        "maximum_drawdown_pct": 13.91721351,
+        "mean_pnl_usdt": -2.10175088,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -2.10175088,
+            "month": "2025-03",
+            "net_pnl_usdt": -69.35777911,
+            "round_trips": 33
+          }
+        ],
+        "net_pnl_usdt": -69.35777911,
+        "positive_closed_trades": 3,
+        "signals_due_at_next_open": 55
+      }
+    },
+    "training": {
+      "conservative": {
+        "closed_round_trips": 83,
+        "denial_reasons": {
+          "SAME_OPEN_LOWER_PRIORITY_PEER": 15,
+          "SHARED_CASH_POSITION_OCCUPIED": 81
+        },
+        "ending_shared_cash_usdt": 426.38143598,
+        "entry_exit_fees_usdt": 40.28675237,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 20,
+          "STOP_FIRST_INTRABAR_BOTH": 1,
+          "STRUCTURAL_STOP": 61,
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "maximum_drawdown_pct": 14.8990222,
+        "mean_pnl_usdt": -0.88697065,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -0.78612698,
+            "month": "2025-01",
+            "net_pnl_usdt": -42.45085688,
+            "round_trips": 54
+          },
+          {
+            "mean_pnl_usdt": -1.07474852,
+            "month": "2025-02",
+            "net_pnl_usdt": -31.16770719,
+            "round_trips": 29
+          }
+        ],
+        "net_pnl_usdt": -73.61856402,
+        "positive_closed_trades": 20,
+        "signals_due_at_next_open": 179
+      },
+      "stress": {
+        "closed_round_trips": 85,
+        "denial_reasons": {
+          "SAME_OPEN_LOWER_PRIORITY_PEER": 15,
+          "SHARED_CASH_POSITION_OCCUPIED": 79
+        },
+        "ending_shared_cash_usdt": 337.73032049,
+        "entry_exit_fees_usdt": 93.0989712,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 13,
+          "STRUCTURAL_STOP": 71,
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "maximum_drawdown_pct": 32.4539359,
+        "mean_pnl_usdt": -1.90905505,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.90331244,
+            "month": "2025-01",
+            "net_pnl_usdt": -106.58549636,
+            "round_trips": 56
+          },
+          {
+            "mean_pnl_usdt": -1.92014425,
+            "month": "2025-02",
+            "net_pnl_usdt": -55.68418314,
+            "round_trips": 29
+          }
+        ],
+        "net_pnl_usdt": -162.26967951,
+        "positive_closed_trades": 13,
+        "signals_due_at_next_open": 179
+      }
+    },
+    "validation_already_inspected": {
+      "conservative": {
+        "closed_round_trips": 21,
+        "denial_reasons": {
+          "SAME_OPEN_LOWER_PRIORITY_PEER": 1,
+          "SHARED_CASH_POSITION_OCCUPIED": 19
+        },
+        "ending_shared_cash_usdt": 494.50937257,
+        "entry_exit_fees_usdt": 10.27096172,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 9,
+          "STRUCTURAL_STOP": 11,
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "maximum_drawdown_pct": 1.96012722,
+        "mean_pnl_usdt": -0.26145845,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -0.26145845,
+            "month": "2025-03",
+            "net_pnl_usdt": -5.49062743,
+            "round_trips": 21
+          }
+        ],
+        "net_pnl_usdt": -5.49062743,
+        "positive_closed_trades": 9,
+        "signals_due_at_next_open": 41
+      },
+      "stress": {
+        "closed_round_trips": 20,
+        "denial_reasons": {
+          "SAME_OPEN_LOWER_PRIORITY_PEER": 1,
+          "SHARED_CASH_POSITION_OCCUPIED": 20
+        },
+        "ending_shared_cash_usdt": 479.08647187,
+        "entry_exit_fees_usdt": 19.85173525,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 8,
+          "STRUCTURAL_STOP": 11,
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "maximum_drawdown_pct": 4.50198922,
+        "mean_pnl_usdt": -1.04567641,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.04567641,
+            "month": "2025-03",
+            "net_pnl_usdt": -20.91352814,
+            "round_trips": 20
+          }
+        ],
+        "net_pnl_usdt": -20.91352813,
+        "positive_closed_trades": 8,
+        "signals_due_at_next_open": 41
+      }
+    }
+  },
+  "raw_local_ledger_sha256": "a9b0cb3872a503e370c0fef1f1439721be7b4ca59951f58ae976c899665c093e",
+  "raw_local_result_digest": "bb8e9bfd2d3cfa2092373a4d051b97a765121fc8456336b43b78a7e1b14aab72",
+  "reviewed_candidate_fingerprint": "da9f52ac52b17fa0103c077cadf41ec7b1e172155ef8e51cddca0b7d999c32cd",
+  "risk_variant": 0,
+  "schema": "nexus.strategy-finder-500-shared-first-physical-2025q1.v1",
+  "source_attested_six_original_file_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "source_canonical_archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "source_scope": "2024-12-01 warmup; 2025-01-01 thru 2025-03-31 UTC actual Bybit cached OHLC",
+  "source_test_is_preinspected_historical_not_future_holdout": true
+}
