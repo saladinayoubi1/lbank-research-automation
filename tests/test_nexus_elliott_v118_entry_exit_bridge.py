@@ -105,6 +105,16 @@ def test_stop_first_with_same_entry_bar_target_touch():
     assert result["paper_eligible"] is False
 
 
+def test_stop_only_is_not_falsely_called_ambiguous_stop_target_bar():
+    data=two_sources()
+    data["BTCUSDT"][12]=candle(12,op="111.2",hi="112",lo="104",cl="108")
+    result=v118.replay_proposals([candidate()],data,"conservative")
+    assert result["admitted_round_trips"]==1
+    trade=result["original_trade_events"][0]
+    assert trade["exit_reason"]=="STRUCTURE_STOP_ONLY"
+    assert Decimal(trade["net_pnl_usdt"])<0
+
+
 def test_gap_through_stop_executes_worse_open():
     data=two_sources()
     data["BTCUSDT"][12]=candle(12,op="104",hi="112",lo="100",cl="111")
