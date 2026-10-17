@@ -25,7 +25,11 @@ def load(filename):
 
 def test_original_preregistered_executable_proposal_bytes_unchanged():
     p=ROOT/"research"/"intake_candidates"/"factory_prior_day_sweep_peer_resilience_v1.json"
-    assert sha256(p.read_bytes()).hexdigest()==ORIGINAL_SHA
+    # GitHub Windows checkout may CRLF-normalize the working-tree JSON while
+    # the reviewed Git blob and raw source SHA retain LF. Normalize ONLY EOL,
+    # never strip whitespace, reorder JSON or weaken the original SHA lock.
+    raw=p.read_bytes()
+    assert sha256(raw.replace(b"\r\n",b"\n")).hexdigest()==ORIGINAL_SHA
 
 
 def test_neighbor_audit_digest_source_and_non_economic_scope():
