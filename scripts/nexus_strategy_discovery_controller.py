@@ -228,20 +228,71 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
     }, errors
 
 
-def build_status(root: Path = ROOT) -> dict[str, Any]:
+def _terminal_fingerprints(feedback: dict[str, Any] | None) -> set[str]:
+    """Exact successful terminal fingerprints; not merely successful workflow runs."""
+    if feedback is None:
+        return set()
+    from nexus_strategy_discovery_feedback import _digest as feedback_digest
+
+    core = {key: value for key, value in feedback.items() if key != "state_digest"}
+    if (
+        feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
+        or feedback.get("state_digest") != feedback_digest(core)
+        or feedback.get("research_only") is not True
+        or feedback.get("paper_only") is not True
+        or feedback.get("live_trading_authority") is not False
+        or feedback.get("automatic_strategy_promotion") is not False
+        or feedback.get("qualification_authority") is not False
+        or not isinstance(feedback.get("exhausted_experiment_sha256"), list)
+        or not isinstance(feedback.get("outcomes"), list)
+    ):
+        raise ValueError("unverified Strategy Finder feedback cannot set stage availability")
+    terminal = set(feedback["exhausted_experiment_sha256"])
+    for row in feedback["outcomes"]:
+        if not isinstance(row, dict):
+            continue
+        if (
+            row.get("outcome") in {
+                "no_candidate", "exhausted", "candidate_evidence",
+                "completed_no_qualification",
+            }
+            and row.get("workflow_conclusion") == "success"
+            and isinstance(row.get("experiment_sha256"), str)
+            and len(row["experiment_sha256"]) == 64
+            and all(ch in "0123456789abcdef" for ch in row["experiment_sha256"])
+        ):
+            terminal.add(row["experiment_sha256"])
+    return terminal
+
+
+def build_status(
+    root: Path = ROOT, *, feedback_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     from nexus_strategy_discovery_feedback import reviewed_local_data_feedback
 
     root = root.resolve()
     catalog, errors = _catalog_status(root)
+    terminal = _terminal_fingerprints(feedback_state)
     stages: list[dict[str, Any]] = []
     for spec in SEARCH_STAGES:
         stage, stage_errors = _stage_status(root, spec)
+        if (
+            stage["rotation_eligible"] is True
+            and stage["status"] == "READY_FOR_RESEARCH_DISPATCH"
+            and stage["frontier_sha256"] in terminal
+        ):
+            stage["status"] = "FRONTIER_TERMINAL_REQUIRES_NEW_MECHANISM"
+            stage["terminal_evidence"] = "exact_successful_feedback_fingerprint"
         stages.append(stage)
         errors.extend(stage_errors)
 
     ready = [row for row in stages if row["status"] == "READY_FOR_RESEARCH_DISPATCH"]
     ready_frontier = [row for row in ready if row["rotation_eligible"] is True]
     ready_legacy = [row for row in ready if row["lane"] == "legacy_validation"]
+    terminal_frontier = [
+        row for row in stages
+        if row["status"] == "FRONTIER_TERMINAL_REQUIRES_NEW_MECHANISM"
+    ]
     blocked = [row for row in stages if row["status"] == "BLOCKED"]
     controller_verified = not errors
 
@@ -258,6 +309,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
             "search_stage_count": len(stages),
             "ready_search_stage_count": len(ready),
             "ready_frontier_stage_count": len(ready_frontier),
+            "terminal_frontier_stage_count": len(terminal_frontier),
+            "feedback_verified_for_frontier": feedback_state is not None,
             "ready_legacy_validation_stage_count": len(ready_legacy),
             "blocked_search_stage_count": len(blocked),
         },
@@ -272,7 +325,11 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         "next_research_action": (
             ready_frontier[0]["stage"]
             if controller_verified and ready_frontier
-            else "repair_discovery_surface_before_dispatch"
+            else (
+                "design_and_independently_review_new_mechanism"
+                if controller_verified and terminal_frontier and not ready_frontier
+                else "repair_discovery_surface_before_dispatch"
+            )
         ),
     }
     payload["status_sha256"] = hashlib.sha256(
@@ -285,9 +342,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Inventory the bounded NEXUS strategy-discovery surface")
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--feedback-state", type=Path)
     args = parser.parse_args()
 
-    payload = build_status(args.root)
+    feedback = None
+    if args.feedback_state is not None:
+        from nexus_strategy_discovery_feedback import load_state as load_feedback_state
+        feedback = load_feedback_state(args.feedback_state, require_existing=True)
+    payload = build_status(args.root, feedback_state=feedback)
     if args.output:
         _atomic_write(args.output, payload)
     print(json.dumps(payload, sort_keys=True))
