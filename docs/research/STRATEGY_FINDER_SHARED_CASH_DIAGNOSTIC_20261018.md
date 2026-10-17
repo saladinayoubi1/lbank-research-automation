@@ -14,7 +14,7 @@ New files:
 
 - `research/strategy_finder_shared_cash_physical.py`: pure, 15-minute BTCUSDT/ETHUSDT **single-wallet** simulator for already computed strictly boolean reviewed strategy signals and physical OHLC+ATR.
 - `scripts/nexus_strategy_finder_shared_cash_eval.py`: manual opt-in research CLI mapping the **existing** Strategy Finder reviewed grammar and exact config fingerprint into the original pinned and authenticated multi-timeframe Bybit archive adapter, deriving signals without user-supplied scripts and passing only those signals into the new shared-wallet engine.
-- `tests/test_nexus_strategy_finder_shared_cash_physical.py`, `tests/test_nexus_strategy_finder_shared_cash_eval_adapter.py`: 27 separate tests.
+- `tests/test_nexus_strategy_finder_shared_cash_physical.py`, `tests/test_nexus_strategy_finder_shared_cash_eval_adapter.py`: 28 separate tests.
 
 **Boundaries:** no modifications to `nexus_composite_strategy_research.py`, running scheduler, existing historical evidence/ledger cursor, Agent Manager, order adapter, V52/Elliott preregistered rules, actual owner Laptop1 Demo, risk profile, account keys or Live state. Both components return `paper_eligible=false`, `qualified=false`, `live_enabled=false`, `orders=0` even if simulated test data makes money.
 
@@ -31,10 +31,10 @@ New files:
 
 ### Current verified result and limit
 
-- **27/27 native tests PASS on isolated Laptop2** using new PR modules and independently fetched current GitHub `main` Strategy Finder dependencies, after catching and correcting one typed-missing-ATR fixture incompatibility.
+- **28/28 native tests PASS on isolated Laptop2** using new PR modules and independently fetched current GitHub `main` Strategy Finder dependencies, after catching and correcting one typed-missing-ATR fixture incompatibility.
 - These are ***synthetic acceptance tests*** of the new cross-asset research execution model and its original reviewed-contract adapter, NOT an observed profitability evaluation for a new strategy. No new real-market replay, no candidate qualification and no approval of a live/Demo order resulted.
 - Laptop2 has approximately **3.89 GB total RAM, ~1.1 GB free** at the guarded source audit; do not force a full multiyear two-symbol feature build there without separate resource limits or streaming implementation. A full genuine candidate research replay is a distinct verified next step, not something we claim occurred during these tests.
-- A manual CLI `--mechanism`, `--exact-fingerprint`, `--source-archive-sha256`, `--archive-root`, `--output` is deliberately explicit. It accepts only a known reviewed Strategy Finder mechanism under an exact dataset-bound fingerprint, and writes its output once. It does **not** restart exhausted workflow frontiers or create a new tradeable mechanism automatically.
+- A manual CLI `--mechanism`, `--exact-fingerprint`, `--source-archive-sha256`, `--archive-root`, `--output` is deliberately explicit. It accepts only a known reviewed Strategy Finder mechanism under an exact dataset-bound fingerprint and **frozen risk_variant=0** (1.5ATR/2R); a legacy risk_variant=1 contract is refused rather than silently evaluated with different stops/targets. It writes its output once. It does **not** restart exhausted workflow frontiers or create a new tradeable mechanism automatically.
 
 ### Research acceptance / rollout
 
