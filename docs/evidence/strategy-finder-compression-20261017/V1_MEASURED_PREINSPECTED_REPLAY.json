@@ -1,0 +1,682 @@
+{
+  "actual_orders": 0,
+  "arms": [
+    {
+      "config": {
+        "baseline_bars": 80,
+        "compression_ratio": 0.38,
+        "entry_bars": 12,
+        "exit_bars": 8
+      },
+      "per_symbol": {
+        "BTCUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 445,
+              "entries": 445,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.81142622,
+              "mean_closed_trade_usdt": -0.91171485,
+              "negative_closed_trades": 365,
+              "net_pnl_usdt": -405.71310813,
+              "positive_closed_trades": 80
+            },
+            "stress": {
+              "closed_roundtrips": 445,
+              "entries": 445,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.97962143,
+              "mean_closed_trade_usdt": -1.10069823,
+              "negative_closed_trades": 401,
+              "net_pnl_usdt": -489.81071302,
+              "positive_closed_trades": 44
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 1419,
+              "entries": 1419,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98273281,
+              "mean_closed_trade_usdt": -0.34620687,
+              "negative_closed_trades": 1139,
+              "net_pnl_usdt": -491.26755104,
+              "positive_closed_trades": 280
+            },
+            "stress": {
+              "closed_roundtrips": 1419,
+              "entries": 1419,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99998563,
+              "mean_closed_trade_usdt": -0.35235571,
+              "negative_closed_trades": 1247,
+              "net_pnl_usdt": -499.99275882,
+              "positive_closed_trades": 172
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 474,
+              "entries": 474,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.82079363,
+              "mean_closed_trade_usdt": -0.86567969,
+              "negative_closed_trades": 378,
+              "net_pnl_usdt": -410.33217335,
+              "positive_closed_trades": 96
+            },
+            "stress": {
+              "closed_roundtrips": 474,
+              "entries": 474,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98323567,
+              "mean_closed_trade_usdt": -1.03716843,
+              "negative_closed_trades": 429,
+              "net_pnl_usdt": -491.61783379,
+              "positive_closed_trades": 45
+            }
+          }
+        },
+        "ETHUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 399,
+              "entries": 399,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.81685491,
+              "mean_closed_trade_usdt": -1.02362771,
+              "negative_closed_trades": 319,
+              "net_pnl_usdt": -408.42745466,
+              "positive_closed_trades": 80
+            },
+            "stress": {
+              "closed_roundtrips": 399,
+              "entries": 399,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.97508989,
+              "mean_closed_trade_usdt": -1.22191715,
+              "negative_closed_trades": 350,
+              "net_pnl_usdt": -487.54494271,
+              "positive_closed_trades": 49
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 1371,
+              "entries": 1371,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9872791,
+              "mean_closed_trade_usdt": -0.35998322,
+              "negative_closed_trades": 1097,
+              "net_pnl_usdt": -493.53698855,
+              "positive_closed_trades": 274
+            },
+            "stress": {
+              "closed_roundtrips": 1371,
+              "entries": 1371,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99998652,
+              "mean_closed_trade_usdt": -0.36469233,
+              "negative_closed_trades": 1179,
+              "net_pnl_usdt": -499.99318699,
+              "positive_closed_trades": 192
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 435,
+              "entries": 435,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.71321351,
+              "mean_closed_trade_usdt": -0.80419578,
+              "negative_closed_trades": 308,
+              "net_pnl_usdt": -349.82516483,
+              "positive_closed_trades": 127
+            },
+            "stress": {
+              "closed_roundtrips": 435,
+              "entries": 435,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.96675848,
+              "mean_closed_trade_usdt": -1.1102046,
+              "negative_closed_trades": 345,
+              "net_pnl_usdt": -482.93900269,
+              "positive_closed_trades": 90
+            }
+          }
+        }
+      },
+      "training_net_pnl_both_usdt": -984.80453959
+    },
+    {
+      "config": {
+        "baseline_bars": 80,
+        "compression_ratio": 0.55,
+        "entry_bars": 12,
+        "exit_bars": 8
+      },
+      "per_symbol": {
+        "BTCUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 518,
+              "entries": 518,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.85644222,
+              "mean_closed_trade_usdt": -0.8257569,
+              "negative_closed_trades": 419,
+              "net_pnl_usdt": -427.74207622,
+              "positive_closed_trades": 99
+            },
+            "stress": {
+              "closed_roundtrips": 518,
+              "entries": 518,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98915848,
+              "mean_closed_trade_usdt": -0.95478618,
+              "negative_closed_trades": 462,
+              "net_pnl_usdt": -494.57924112,
+              "positive_closed_trades": 56
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 1596,
+              "entries": 1596,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98457572,
+              "mean_closed_trade_usdt": -0.30839571,
+              "negative_closed_trades": 1259,
+              "net_pnl_usdt": -492.19955978,
+              "positive_closed_trades": 337
+            },
+            "stress": {
+              "closed_roundtrips": 1596,
+              "entries": 1596,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9999947,
+              "mean_closed_trade_usdt": -0.31328154,
+              "negative_closed_trades": 1390,
+              "net_pnl_usdt": -499.99733043,
+              "positive_closed_trades": 206
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 558,
+              "entries": 558,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.84802273,
+              "mean_closed_trade_usdt": -0.75977876,
+              "negative_closed_trades": 438,
+              "net_pnl_usdt": -423.95654687,
+              "positive_closed_trades": 120
+            },
+            "stress": {
+              "closed_roundtrips": 558,
+              "entries": 558,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9906587,
+              "mean_closed_trade_usdt": -0.88768701,
+              "negative_closed_trades": 498,
+              "net_pnl_usdt": -495.32934986,
+              "positive_closed_trades": 60
+            }
+          }
+        },
+        "ETHUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 482,
+              "entries": 482,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.84208681,
+              "mean_closed_trade_usdt": -0.87029051,
+              "negative_closed_trades": 375,
+              "net_pnl_usdt": -419.48002656,
+              "positive_closed_trades": 107
+            },
+            "stress": {
+              "closed_roundtrips": 482,
+              "entries": 482,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98556673,
+              "mean_closed_trade_usdt": -1.02234049,
+              "negative_closed_trades": 416,
+              "net_pnl_usdt": -492.76811641,
+              "positive_closed_trades": 66
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 1557,
+              "entries": 1557,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98849709,
+              "mean_closed_trade_usdt": -0.31737688,
+              "negative_closed_trades": 1213,
+              "net_pnl_usdt": -494.15580247,
+              "positive_closed_trades": 344
+            },
+            "stress": {
+              "closed_roundtrips": 1557,
+              "entries": 1557,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99999519,
+              "mean_closed_trade_usdt": -0.32112882,
+              "negative_closed_trades": 1324,
+              "net_pnl_usdt": -499.99756928,
+              "positive_closed_trades": 233
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 516,
+              "entries": 516,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.78117434,
+              "mean_closed_trade_usdt": -0.74383627,
+              "negative_closed_trades": 366,
+              "net_pnl_usdt": -383.81951618,
+              "positive_closed_trades": 150
+            },
+            "stress": {
+              "closed_roundtrips": 516,
+              "entries": 516,
+              "forced_end_exits": 1,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.98287755,
+              "mean_closed_trade_usdt": -0.95193138,
+              "negative_closed_trades": 414,
+              "net_pnl_usdt": -491.19659368,
+              "positive_closed_trades": 102
+            }
+          }
+        }
+      },
+      "training_net_pnl_both_usdt": -986.35536225
+    },
+    {
+      "config": {
+        "baseline_bars": 80,
+        "compression_ratio": 0.38,
+        "entry_bars": 20,
+        "exit_bars": 10
+      },
+      "per_symbol": {
+        "BTCUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 223,
+              "entries": 223,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.66172627,
+              "mean_closed_trade_usdt": -1.47916141,
+              "negative_closed_trades": 182,
+              "net_pnl_usdt": -329.85299553,
+              "positive_closed_trades": 41
+            },
+            "stress": {
+              "closed_roundtrips": 223,
+              "entries": 223,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.88879791,
+              "mean_closed_trade_usdt": -1.99195671,
+              "negative_closed_trades": 203,
+              "net_pnl_usdt": -444.20634584,
+              "positive_closed_trades": 20
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 723,
+              "entries": 723,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.87147604,
+              "mean_closed_trade_usdt": -0.60166285,
+              "negative_closed_trades": 595,
+              "net_pnl_usdt": -435.00224312,
+              "positive_closed_trades": 128
+            },
+            "stress": {
+              "closed_roundtrips": 723,
+              "entries": 723,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99652699,
+              "mean_closed_trade_usdt": -0.68914312,
+              "negative_closed_trades": 636,
+              "net_pnl_usdt": -498.25047531,
+              "positive_closed_trades": 87
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 217,
+              "entries": 217,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.55441961,
+              "mean_closed_trade_usdt": -1.26807819,
+              "negative_closed_trades": 172,
+              "net_pnl_usdt": -275.17296813,
+              "positive_closed_trades": 45
+            },
+            "stress": {
+              "closed_roundtrips": 217,
+              "entries": 217,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.84906055,
+              "mean_closed_trade_usdt": -1.95405871,
+              "negative_closed_trades": 191,
+              "net_pnl_usdt": -424.03074087,
+              "positive_closed_trades": 26
+            }
+          }
+        },
+        "ETHUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 211,
+              "entries": 211,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.70264287,
+              "mean_closed_trade_usdt": -1.66503049,
+              "negative_closed_trades": 171,
+              "net_pnl_usdt": -351.32143424,
+              "positive_closed_trades": 40
+            },
+            "stress": {
+              "closed_roundtrips": 211,
+              "entries": 211,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.89646276,
+              "mean_closed_trade_usdt": -2.12431933,
+              "negative_closed_trades": 183,
+              "net_pnl_usdt": -448.23137947,
+              "positive_closed_trades": 28
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 704,
+              "entries": 704,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.87135986,
+              "mean_closed_trade_usdt": -0.61358345,
+              "negative_closed_trades": 555,
+              "net_pnl_usdt": -431.96274656,
+              "positive_closed_trades": 149
+            },
+            "stress": {
+              "closed_roundtrips": 704,
+              "entries": 704,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9960406,
+              "mean_closed_trade_usdt": -0.70736669,
+              "negative_closed_trades": 591,
+              "net_pnl_usdt": -497.98615262,
+              "positive_closed_trades": 113
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 221,
+              "entries": 221,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.56784727,
+              "mean_closed_trade_usdt": -1.24200017,
+              "negative_closed_trades": 163,
+              "net_pnl_usdt": -274.48203758,
+              "positive_closed_trades": 58
+            },
+            "stress": {
+              "closed_roundtrips": 221,
+              "entries": 221,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.85614923,
+              "mean_closed_trade_usdt": -1.92446241,
+              "negative_closed_trades": 181,
+              "net_pnl_usdt": -425.30619342,
+              "positive_closed_trades": 40
+            }
+          }
+        }
+      },
+      "training_net_pnl_both_usdt": -866.96498968
+    },
+    {
+      "config": {
+        "baseline_bars": 80,
+        "compression_ratio": 0.55,
+        "entry_bars": 20,
+        "exit_bars": 10
+      },
+      "per_symbol": {
+        "BTCUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 336,
+              "entries": 336,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.74648605,
+              "mean_closed_trade_usdt": -1.11084234,
+              "negative_closed_trades": 266,
+              "net_pnl_usdt": -373.24302599,
+              "positive_closed_trades": 70
+            },
+            "stress": {
+              "closed_roundtrips": 336,
+              "entries": 336,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.95275179,
+              "mean_closed_trade_usdt": -1.4177854,
+              "negative_closed_trades": 298,
+              "net_pnl_usdt": -476.37589335,
+              "positive_closed_trades": 38
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 1025,
+              "entries": 1025,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.93926766,
+              "mean_closed_trade_usdt": -0.45737827,
+              "negative_closed_trades": 814,
+              "net_pnl_usdt": -468.81272216,
+              "positive_closed_trades": 211
+            },
+            "stress": {
+              "closed_roundtrips": 1025,
+              "entries": 1025,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99963187,
+              "mean_closed_trade_usdt": -0.48762396,
+              "negative_closed_trades": 888,
+              "net_pnl_usdt": -499.81455593,
+              "positive_closed_trades": 137
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 342,
+              "entries": 342,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.75292445,
+              "mean_closed_trade_usdt": -1.09746432,
+              "negative_closed_trades": 275,
+              "net_pnl_usdt": -375.3327961,
+              "positive_closed_trades": 67
+            },
+            "stress": {
+              "closed_roundtrips": 342,
+              "entries": 342,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.95520065,
+              "mean_closed_trade_usdt": -1.39605865,
+              "negative_closed_trades": 304,
+              "net_pnl_usdt": -477.45205925,
+              "positive_closed_trades": 38
+            }
+          }
+        },
+        "ETHUSDT": {
+          "inspected_test": {
+            "conservative": {
+              "closed_roundtrips": 315,
+              "entries": 315,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.76873724,
+              "mean_closed_trade_usdt": -1.22021785,
+              "negative_closed_trades": 244,
+              "net_pnl_usdt": -384.3686216,
+              "positive_closed_trades": 71
+            },
+            "stress": {
+              "closed_roundtrips": 315,
+              "entries": 315,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.95212704,
+              "mean_closed_trade_usdt": -1.51131277,
+              "negative_closed_trades": 269,
+              "net_pnl_usdt": -476.0635212,
+              "positive_closed_trades": 46
+            }
+          },
+          "training": {
+            "conservative": {
+              "closed_roundtrips": 979,
+              "entries": 979,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9378416,
+              "mean_closed_trade_usdt": -0.47851497,
+              "negative_closed_trades": 759,
+              "net_pnl_usdt": -468.46615593,
+              "positive_closed_trades": 220
+            },
+            "stress": {
+              "closed_roundtrips": 979,
+              "entries": 979,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.99952951,
+              "mean_closed_trade_usdt": -0.51048417,
+              "negative_closed_trades": 819,
+              "net_pnl_usdt": -499.76400633,
+              "positive_closed_trades": 160
+            }
+          },
+          "validation": {
+            "conservative": {
+              "closed_roundtrips": 327,
+              "entries": 327,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.61842568,
+              "mean_closed_trade_usdt": -0.92011091,
+              "negative_closed_trades": 238,
+              "net_pnl_usdt": -300.8762674,
+              "positive_closed_trades": 89
+            },
+            "stress": {
+              "closed_roundtrips": 327,
+              "entries": 327,
+              "forced_end_exits": 0,
+              "initial_usdt": 500.0,
+              "maximum_drawdown_fraction": 0.9252386,
+              "mean_closed_trade_usdt": -1.41033794,
+              "negative_closed_trades": 268,
+              "net_pnl_usdt": -461.18050742,
+              "positive_closed_trades": 59
+            }
+          }
+        }
+      },
+      "training_net_pnl_both_usdt": -937.27887809
+    }
+  ],
+  "automatic_promotion": false,
+  "demo_modified": false,
+  "entry_rule": "close-confirmed breakout, execute next bar OPEN",
+  "exit_rule": "close-confirmed trailing low or forced partition end",
+  "intrabar_stops_or_target_simulated": false,
+  "live_enabled": false,
+  "no_minimum_trade_count": true,
+  "no_unseen_holdout_or_proven_profit": true,
+  "original_bars_per_symbol": 128544,
+  "paper_eligible": false,
+  "partitions": [
+    {
+      "end_exclusive": 77126,
+      "name": "training",
+      "start": 0
+    },
+    {
+      "end_exclusive": 102835,
+      "name": "validation",
+      "start": 77126
+    },
+    {
+      "end_exclusive": 128544,
+      "name": "inspected_test",
+      "start": 102835
+    }
+  ],
+  "result_sha256": "a7d0c44de9bdcdf375dd70a22f5f42c18a29f31c5524119795103423db39cfa8",
+  "schema": "nexus.strategy-compression-breakout-research.v1",
+  "scope": "HISTORICAL_INSPECTED_EXPLORATORY_ONLY",
+  "source": "previously_reviewed_immutable_bybit_spot_15m_archive",
+  "source_files_sha256": {
+    "BTCUSDT": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "ETHUSDT": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "source_originally_inspected": true,
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "training_only_selected_arm_index": 2
+}
