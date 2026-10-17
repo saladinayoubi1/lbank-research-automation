@@ -85,7 +85,7 @@ def close_time_plan(
     # decision bar is never allowed unless it is fully closed at decision.
     if (type(closed_bar_index) is not int or closed_bar_index < 4
             or type(h1_context_last_closed_15m_index) is not int
-            or h1_context_last_closed_15m_index != (closed_bar_index // 4) * 4 - 1):
+            or h1_context_last_closed_15m_index != ((closed_bar_index + 1) // 4) * 4 - 1):
         raise StructuralPlanError("future, stale or partial one-hour context")
     if (
         type(closed_bar_index) is not int or closed_bar_index < 0
