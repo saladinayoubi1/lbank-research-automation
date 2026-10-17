@@ -22,7 +22,7 @@ from nexus_composite_strategy_research import (
 )
 from nexus_demo_archive_replay import ARCHIVE_SHA256
 from research.strategy_finder_shared_cash_physical import (
-    sidecar_summary, SharedCashDiagnosticError, SYMBOLS
+    sidecar_summary, SharedCashDiagnosticError, SYMBOLS, _digest
 )
 
 
@@ -76,6 +76,7 @@ def evaluate_readonly(
         "qualification":"DIAGNOSTIC_ONLY_NO_AUTOMATIC_DEMO_PROMOTION",
         "paper_eligible":False,"live_enabled":False,"orders":0,
     })
+    result["result_digest"]=_digest({k:v for k,v in result.items() if k!="result_digest"})
     return result
 
 
