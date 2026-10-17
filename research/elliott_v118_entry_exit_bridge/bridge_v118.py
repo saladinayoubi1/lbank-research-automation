@@ -187,7 +187,8 @@ def replay_proposals(intents:list[dict], candles:dict[str,list[v102.Candle]],
             if bar.low<=stop:
                 exit_reason=("GAP_THROUGH_STOP_AT_WORSE_OPEN"
                              if bar.open<stop else
-                             "STOP_FIRST_SAME_BAR_IF_TARGET_ALSO_HIT")
+                             "STOP_FIRST_SAME_BAR_IF_TARGET_ALSO_HIT"
+                             if bar.high>=target else "STRUCTURE_STOP_ONLY")
                 exit_level=min(bar.open,stop)
                 exit_i=j
                 break
