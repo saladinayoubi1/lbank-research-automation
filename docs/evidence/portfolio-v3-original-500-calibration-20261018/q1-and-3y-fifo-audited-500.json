@@ -1,0 +1,567 @@
+{
+  "digest": "6b8eef57f59cd5af44c09b74e58ff92d93b395026996db196bf1a422ba6d56fd",
+  "live_enabled": false,
+  "orders": 0,
+  "original_exact_execution_policy_unchanged": true,
+  "paper_eligible": false,
+  "physical_stop_loss_existed_in_original_engine": false,
+  "risk_gap_still_unbounded": true,
+  "schema": "nexus.portfolio-v3-500-attested-fifo-research-evidence.v1",
+  "scopes": {
+    "2023_2026_CONTINUOUS": {
+      "cost_profiles": {
+        "conservative": {
+          "actual_original_execution_fills": 106,
+          "btc_fills": 74,
+          "closed_fifo_lot_segments": 88,
+          "eth_fills": 32,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 3.9052403414592165,
+          "monthly_by_fifo_exit_month": {
+            "2023-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 3.70888728,
+              "winning_segments": 1
+            },
+            "2023-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 0.49611572,
+              "winning_segments": 4
+            },
+            "2023-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 90.31826511,
+              "winning_segments": 5
+            },
+            "2024-01": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -34.3579937,
+              "winning_segments": 1
+            },
+            "2024-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 10.24098418,
+              "winning_segments": 3
+            },
+            "2024-03": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": 206.58229069,
+              "winning_segments": 6
+            },
+            "2024-04": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -0.26827561,
+              "winning_segments": 1
+            },
+            "2024-05": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": -2.51820416,
+              "winning_segments": 3
+            },
+            "2024-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -44.2870325,
+              "winning_segments": 1
+            },
+            "2024-08": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -86.14163205,
+              "winning_segments": 1
+            },
+            "2024-10": {
+              "fifo_matched_lot_segments": 1,
+              "net_pnl_usdt": 0.74381681,
+              "winning_segments": 1
+            },
+            "2024-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 103.72610256,
+              "winning_segments": 4
+            },
+            "2024-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 88.01999205,
+              "winning_segments": 5
+            },
+            "2025-01": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 7.23769872,
+              "winning_segments": 3
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 8,
+              "net_pnl_usdt": 38.10964315,
+              "winning_segments": 5
+            },
+            "2025-05": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 76.02552601,
+              "winning_segments": 3
+            },
+            "2025-06": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": -36.65516965,
+              "winning_segments": 1
+            },
+            "2025-07": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 106.7391233,
+              "winning_segments": 4
+            },
+            "2025-08": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 29.07126644,
+              "winning_segments": 2
+            },
+            "2025-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 4.01048687,
+              "winning_segments": 2
+            },
+            "2025-10": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 50.07735949,
+              "winning_segments": 4
+            },
+            "2025-11": {
+              "fifo_matched_lot_segments": 6,
+              "net_pnl_usdt": -57.40385528,
+              "winning_segments": 1
+            },
+            "2026-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -209.81424538,
+              "winning_segments": 0
+            }
+          },
+          "net_pnl_usdt": 343.66115004841106,
+          "observed_max_drawdown_pct": 34.43365449097202,
+          "original_asset_fill_counts": [
+            74,
+            32
+          ],
+          "original_max_drawdown": 0.3443365449097202,
+          "original_total_return": 0.687322300096822,
+          "raw_fifo_journal_digest": "36effa74d5554ea5029f6e194c3d4afb211db6317172e483fecce4d7dc7af682",
+          "terminal_cash_usdt": 843.6611500484111,
+          "total_fees_usdt": 21.596967553108126,
+          "winning_fifo_lot_segments": 61
+        },
+        "severe": {
+          "actual_original_execution_fills": 106,
+          "btc_fills": 74,
+          "closed_fifo_lot_segments": 88,
+          "eth_fills": 32,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 3.2497268564247053,
+          "monthly_by_fifo_exit_month": {
+            "2023-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -0.67352381,
+              "winning_segments": 1
+            },
+            "2023-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 0.45515589,
+              "winning_segments": 4
+            },
+            "2023-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 87.29563931,
+              "winning_segments": 5
+            },
+            "2024-01": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -36.06157042,
+              "winning_segments": 1
+            },
+            "2024-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 9.81998142,
+              "winning_segments": 3
+            },
+            "2024-03": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": 198.50225092,
+              "winning_segments": 6
+            },
+            "2024-04": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -0.37171557,
+              "winning_segments": 1
+            },
+            "2024-05": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": -4.566127,
+              "winning_segments": 3
+            },
+            "2024-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -49.44620849,
+              "winning_segments": 1
+            },
+            "2024-08": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -87.2861106,
+              "winning_segments": 0
+            },
+            "2024-10": {
+              "fifo_matched_lot_segments": 1,
+              "net_pnl_usdt": 0.65205585,
+              "winning_segments": 1
+            },
+            "2024-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 97.55028951,
+              "winning_segments": 4
+            },
+            "2024-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 83.29479568,
+              "winning_segments": 5
+            },
+            "2025-01": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 6.81198787,
+              "winning_segments": 3
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 8,
+              "net_pnl_usdt": 34.35508953,
+              "winning_segments": 5
+            },
+            "2025-05": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 67.9733406,
+              "winning_segments": 3
+            },
+            "2025-06": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": -38.13088018,
+              "winning_segments": 1
+            },
+            "2025-07": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 96.00089284,
+              "winning_segments": 4
+            },
+            "2025-08": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 26.91684447,
+              "winning_segments": 2
+            },
+            "2025-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 3.70850699,
+              "winning_segments": 2
+            },
+            "2025-10": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 45.87618816,
+              "winning_segments": 4
+            },
+            "2025-11": {
+              "fifo_matched_lot_segments": 6,
+              "net_pnl_usdt": -56.2655416,
+              "winning_segments": 1
+            },
+            "2026-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -200.435378,
+              "winning_segments": 0
+            }
+          },
+          "net_pnl_usdt": 285.97596336537407,
+          "observed_max_drawdown_pct": 34.74926622128838,
+          "original_asset_fill_counts": [
+            74,
+            32
+          ],
+          "original_max_drawdown": 0.3474926622128838,
+          "original_total_return": 0.5719519267307476,
+          "raw_fifo_journal_digest": "7618de0d51cdb005590c7b37e8adbe2effc9d37e4f61a6d2882a5b27a076bdcc",
+          "terminal_cash_usdt": 785.9759633653738,
+          "total_fees_usdt": 51.95824695679028,
+          "winning_fifo_lot_segments": 60
+        },
+        "stress": {
+          "actual_original_execution_fills": 106,
+          "btc_fills": 74,
+          "closed_fifo_lot_segments": 88,
+          "eth_fills": 32,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 3.637658479033773,
+          "monthly_by_fifo_exit_month": {
+            "2023-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 1.95216573,
+              "winning_segments": 1
+            },
+            "2023-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 0.48047481,
+              "winning_segments": 4
+            },
+            "2023-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 89.10291984,
+              "winning_segments": 5
+            },
+            "2024-01": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -35.04259455,
+              "winning_segments": 1
+            },
+            "2024-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 10.07126991,
+              "winning_segments": 3
+            },
+            "2024-03": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": 203.32430372,
+              "winning_segments": 6
+            },
+            "2024-04": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": -0.31022785,
+              "winning_segments": 1
+            },
+            "2024-05": {
+              "fifo_matched_lot_segments": 7,
+              "net_pnl_usdt": -3.34963322,
+              "winning_segments": 3
+            },
+            "2024-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -46.39017519,
+              "winning_segments": 1
+            },
+            "2024-08": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -86.62440256,
+              "winning_segments": 0
+            },
+            "2024-10": {
+              "fifo_matched_lot_segments": 1,
+              "net_pnl_usdt": 0.7063365,
+              "winning_segments": 1
+            },
+            "2024-11": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 101.21638439,
+              "winning_segments": 4
+            },
+            "2024-12": {
+              "fifo_matched_lot_segments": 5,
+              "net_pnl_usdt": 86.10156936,
+              "winning_segments": 5
+            },
+            "2025-01": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 7.06464678,
+              "winning_segments": 3
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 8,
+              "net_pnl_usdt": 36.57589964,
+              "winning_segments": 5
+            },
+            "2025-05": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": 72.7304233,
+              "winning_segments": 3
+            },
+            "2025-06": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": -37.27962863,
+              "winning_segments": 1
+            },
+            "2025-07": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 102.33759302,
+              "winning_segments": 4
+            },
+            "2025-08": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 28.19088699,
+              "winning_segments": 2
+            },
+            "2025-09": {
+              "fifo_matched_lot_segments": 2,
+              "net_pnl_usdt": 3.88705385,
+              "winning_segments": 2
+            },
+            "2025-10": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 48.35749829,
+              "winning_segments": 4
+            },
+            "2025-11": {
+              "fifo_matched_lot_segments": 6,
+              "net_pnl_usdt": -56.96062463,
+              "winning_segments": 1
+            },
+            "2026-06": {
+              "fifo_matched_lot_segments": 3,
+              "net_pnl_usdt": -206.02819333,
+              "winning_segments": 0
+            }
+          },
+          "net_pnl_usdt": 320.11394615497204,
+          "observed_max_drawdown_pct": 34.5478122057443,
+          "original_asset_fill_counts": [
+            74,
+            32
+          ],
+          "original_max_drawdown": 0.345478122057443,
+          "original_total_return": 0.6402278923099443,
+          "raw_fifo_journal_digest": "38a243a3d9821247270bc457f53abc809fd46ec433b1ac965db1ca007f0190f6",
+          "terminal_cash_usdt": 820.1139461549722,
+          "total_fees_usdt": 31.900410319556162,
+          "winning_fifo_lot_segments": 60
+        }
+      },
+      "fixed_old_candidate_id": "b4e4a2c33304aec1",
+      "full_ledger_local_path": "E:\\NEXUS-QA\\portfolio-v3-execution-ledger-20261018\\bybit-2023_2026_CONTINUOUS-original-fill-journal.json",
+      "full_ledger_local_sha256": "b8aaaf4eb102eaeb370a065e54b4f3a6cc2da56ebf8bcedc593e267f9341c85b",
+      "full_original_report_digest": "06065adaa04d493eecd5f585cf75d9e6c234d6ae8b15ca26fc2d79fd6a0064c0",
+      "original_engine_module_sha256": "dbeae707617a7f383f03b7822cd127b06cdc83dc68caa32ec6cc2367eb5a2160",
+      "original_fixed_config_digest": "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4",
+      "scored_period": {
+        "end": "2026-08-01",
+        "start": "2023-09-01"
+      },
+      "source_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+      "source_six_raw_sha256": {
+        "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+        "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+        "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+        "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+        "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+        "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+      }
+    },
+    "2025Q1": {
+      "cost_profiles": {
+        "conservative": {
+          "actual_original_execution_fills": 9,
+          "btc_fills": 9,
+          "closed_fifo_lot_segments": 8,
+          "eth_fills": 0,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 1.0546340730531252,
+          "monthly_by_fifo_exit_month": {
+            "2025-01": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 1.09042962,
+              "winning_segments": 4
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 7.34664296,
+              "winning_segments": 3
+            }
+          },
+          "net_pnl_usdt": 8.437072584425001,
+          "observed_max_drawdown_pct": 6.743549024641293,
+          "original_asset_fill_counts": [
+            9,
+            0
+          ],
+          "original_max_drawdown": 0.06743549024641293,
+          "original_total_return": 0.016874145168849886,
+          "raw_fifo_journal_digest": "45e3f8e769058dd5b435a3bcc599a14e372fadc9fe9124cb28bf5b0b8dbc5c9e",
+          "terminal_cash_usdt": 508.437072584425,
+          "total_fees_usdt": 0.5316502787254476,
+          "winning_fifo_lot_segments": 7
+        },
+        "severe": {
+          "actual_original_execution_fills": 9,
+          "btc_fills": 9,
+          "closed_fifo_lot_segments": 8,
+          "eth_fills": 0,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 0.8876788001812819,
+          "monthly_by_fifo_exit_month": {
+            "2025-01": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 1.01266117,
+              "winning_segments": 4
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 6.08876923,
+              "winning_segments": 3
+            }
+          },
+          "net_pnl_usdt": 7.101430401450255,
+          "observed_max_drawdown_pct": 6.751575837526835,
+          "original_asset_fill_counts": [
+            9,
+            0
+          ],
+          "original_max_drawdown": 0.06751575837526835,
+          "original_total_return": 0.014202860802900341,
+          "raw_fifo_journal_digest": "c34d7c646c52a17ecdca8e31be5b323c4290f806c6c2a3e453f1f1d8ce9050f2",
+          "terminal_cash_usdt": 507.1014304014502,
+          "total_fees_usdt": 1.3289765251551644,
+          "winning_fifo_lot_segments": 7
+        },
+        "stress": {
+          "actual_original_execution_fills": 9,
+          "btc_fills": 9,
+          "closed_fifo_lot_segments": 8,
+          "eth_fills": 0,
+          "initial_cash_usdt": 500.0,
+          "mean_net_pnl_per_fifo_matched_segment_usdt": 0.9878483163632917,
+          "monthly_by_fifo_exit_month": {
+            "2025-01": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 1.05969201,
+              "winning_segments": 4
+            },
+            "2025-02": {
+              "fifo_matched_lot_segments": 4,
+              "net_pnl_usdt": 6.84309452,
+              "winning_segments": 3
+            }
+          },
+          "net_pnl_usdt": 7.902786530906334,
+          "observed_max_drawdown_pct": 6.746757244314128,
+          "original_asset_fill_counts": [
+            9,
+            0
+          ],
+          "original_max_drawdown": 0.06746757244314128,
+          "original_total_return": 0.01580557306181274,
+          "raw_fifo_journal_digest": "61f6d22b7f18b78f4008e429b6338f7260159ba21346c4d03580e9836d662960",
+          "terminal_cash_usdt": 507.9027865309064,
+          "total_fees_usdt": 0.7974385310813428,
+          "winning_fifo_lot_segments": 7
+        }
+      },
+      "fixed_old_candidate_id": "b4e4a2c33304aec1",
+      "full_ledger_local_path": "E:\\NEXUS-QA\\portfolio-v3-execution-ledger-20261018\\bybit-2025Q1-original-fill-journal.json",
+      "full_ledger_local_sha256": "ac48e823f8613b550d8de5eaa45f6e7ebc7ced79844f89b2664c714e548a2e7d",
+      "full_original_report_digest": "f905926583c9bfab43d72e957c81cf5e5c01ec330c5124d46a01a3c67f9978d4",
+      "original_engine_module_sha256": "dbeae707617a7f383f03b7822cd127b06cdc83dc68caa32ec6cc2367eb5a2160",
+      "original_fixed_config_digest": "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4",
+      "scored_period": {
+        "end": "2025-04-01",
+        "start": "2025-01-01"
+      },
+      "source_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+      "source_six_raw_sha256": {
+        "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+        "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+        "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+        "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+        "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+        "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+      }
+    }
+  },
+  "source_historical_preinspected_not_untouched_future": true,
+  "trading_strategy_newly_generated": false
+}
