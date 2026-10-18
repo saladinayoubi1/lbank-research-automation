@@ -1,0 +1,26 @@
+{
+  "schema": "nexus.strategy-source-note.v1",
+  "source_url": "https://www.adamhgrimes.com/failure-test-2/",
+  "publisher": "Adam H Grimes",
+  "title": "The Failure Test",
+  "published_utc_date": "2014-11-11",
+  "retrieved_utc_date": "2026-10-18",
+  "content_kind": "research_paraphrase_not_provider_raw_bytes",
+  "provider_authentication_verified": false,
+  "findings": [
+    "The author describes a brief breach of support or resistance followed by a reversal back across it. The long case tests below support and closes above it.",
+    "The stop belongs at or beyond the failure movement extreme; for the long case this is the signal low. Adverse gaps can exceed nominal stop risk.",
+    "This implementation selects the previous completed UTC day as support, next-open entry, the existing peer/context filters, 2R target, 64-bar timeout and shared-cash sizing as explicit NEXUS research extensions. The source does not supply those choices."
+  ],
+  "coverage": {
+    "context": null,
+    "entry": "Downside support test and completed-close recovery; support construction and execution timing are research choices.",
+    "exit": "Long-side invalidation is the low of the failure movement. Target and timeout are research choices.",
+    "sizing": null,
+    "no_trade": null
+  },
+  "status": "PRIMARY_AUTHOR_CONCEPT_WITH_EXPLICIT_RESEARCH_EXTENSIONS_NOT_PROFIT_ATTESTATION",
+  "automatic_implementation": false,
+  "paper_eligible": false,
+  "live_enabled": false
+}

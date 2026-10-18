@@ -11,6 +11,13 @@ on:
     branches: [main]
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "scripts/nexus_source_system_economic_execution.py"
+      - "research/strategy_finder_shared_cash_physical.py"
+      - "scripts/nexus_strategy_finder_executable_intake.py"
+      - "research/source_system_economic_requests/**"
+      - "research/strategy_finder_executable_intake_allowlist_v1.json"
+      - "research/complete_systems/failure_test_structural_v1.json"
+      - "tests/test_nexus_source_system_economics.py"
       - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
@@ -43,6 +50,13 @@ on:
   pull_request:
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "scripts/nexus_source_system_economic_execution.py"
+      - "research/strategy_finder_shared_cash_physical.py"
+      - "scripts/nexus_strategy_finder_executable_intake.py"
+      - "research/source_system_economic_requests/**"
+      - "research/strategy_finder_executable_intake_allowlist_v1.json"
+      - "research/complete_systems/failure_test_structural_v1.json"
+      - "tests/test_nexus_source_system_economics.py"
       - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
@@ -110,6 +124,102 @@ jobs:
           tests/test_nexus_agent_composite_runtime.py
           tests/test_nexus_research_successor.py
           tests/test_nexus_qa_attested_discovery_frontier.py
+          tests/test_nexus_source_system_economics.py
+
+  source-system-research:
+    # This explicit merge marker authorizes ONE frozen request. Ordinary code
+    # pushes still run contracts only. Completed result artifacts are reused.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[source-system-evaluation]')
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      task_id: ${{ steps.preflight.outputs.task_id }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Bind the complete request and reuse finished economic evidence
+        id: preflight
+        run: python scripts/nexus_source_system_economic_execution.py preflight
+      - name: Restore the same immutable Bybit archive without running legacy discovery
+        if: steps.preflight.outputs.reused != 'true'
+        run: |
+          set -euo pipefail
+          python scripts/select_nexus_bybit_replay_artifact.py \
+            --repository "$GITHUB_REPOSITORY" --output-dir build/final_delivery \
+            --expected-file-name NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip \
+            --expected-semantic-sha256 2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422 \
+            --delivery-name NEXUS_BYBIT_replay_v2_delivery.json --artifact-prefix bybit-full-history-final-
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.select_nexus_bybit_replay_artifact import safe_extract
+          safe_extract(Path("build/final_delivery/NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"), Path("build/bybit_dataset"))
+          PY
+      - name: Persist the exact task before market execution
+        if: steps.preflight.outputs.reused != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-source-system-economic-started-${{ steps.preflight.outputs.task_id }}
+          path: build/source-system-economic/start.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Research worker evaluates the complete reviewed system once
+        if: steps.preflight.outputs.reused != 'true'
+        run: python scripts/nexus_source_system_economic_execution.py research
+      - name: Preserve the finished Research result before independent QA
+        if: steps.preflight.outputs.reused != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-source-system-economic-${{ steps.preflight.outputs.task_id }}
+          path: build/source-system-economic/research.json
+          if-no-files-found: error
+          retention-days: 90
+
+  source-system-numerical-qa:
+    needs: source-system-research
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Restore the exact original Research result
+        run: python scripts/nexus_source_system_economic_execution.py restore-current
+      - name: Independently authenticate and load the original Bybit archive
+        run: |
+          set -euo pipefail
+          python scripts/select_nexus_bybit_replay_artifact.py \
+            --repository "$GITHUB_REPOSITORY" --output-dir build/final_delivery \
+            --expected-file-name NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip \
+            --expected-semantic-sha256 2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422 \
+            --delivery-name NEXUS_BYBIT_replay_v2_delivery.json --artifact-prefix bybit-full-history-final-
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.select_nexus_bybit_replay_artifact import safe_extract
+          safe_extract(Path("build/final_delivery/NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"), Path("build/bybit_dataset"))
+          PY
+      - name: Separate QA worker checks source equations, events, cash, costs and disposition
+        run: python scripts/nexus_source_system_economic_execution.py qa
+      - name: Preserve numerical QA and explicit economic disposition
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-source-system-economic-qa-${{ needs.source-system-research.outputs.task_id }}
+          path: build/source-system-economic/qa.json
+          if-no-files-found: error
+          retention-days: 90
 
   discover:
     # Source/QA pushes run contracts only. The reviewed rotation dispatcher
