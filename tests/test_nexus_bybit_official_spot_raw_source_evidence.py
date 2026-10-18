@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha256
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -88,7 +89,7 @@ def test_independent_native_4h_aggregators_reconcile_daily_bars():
         assert row["raw_file_sha256"]==legacy["raw_sha256"]
         assert row["total_raw_trade_rows"]==legacy["trade_rows"]
         for native,cross in zip(row["fully_observed_4h_bars"],legacy["4h_bars"]):
-            assert native["timestamp"]==cross["timestamp"]
+            assert datetime.fromisoformat(native["timestamp"])==datetime.fromisoformat(cross["timestamp"])
             for col in ("open","high","low","close","volume"):
                 assert native[col]==pytest.approx(cross[col],abs=1e-6)
 
