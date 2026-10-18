@@ -139,6 +139,10 @@ def decode_payload(value: str) -> dict[str, Any]:
     development_keys = ({"source_system_development_task"} | (
         {"source_system_development_producer"} if data.get("worker_id") == "qa-verifier-agent" else set()
     )) if is_development else set()
+    is_economic_review = isinstance(data.get("task_id"), str) and data["task_id"].startswith("ECON-REVIEW-")
+    economic_review_keys = ({"source_system_economic_review_task"} | (
+        {"source_system_economic_review_producer"} if data.get("worker_id") == "qa-verifier-agent" else set()
+    )) if is_economic_review else set()
     expected = (
         DISPATCH_KEYS
         | (qa_keys if is_research_qa else set())
@@ -146,11 +150,20 @@ def decode_payload(value: str) -> dict[str, Any]:
         | (composite_qa_keys if is_composite_qa else set())
         | (followon_keys if is_followon else set())
         | development_keys
+        | economic_review_keys
     )
     if is_research_qa and not qa_keys.issubset(keys):
         raise ValueError("Research independent QA producer binding absent")
     if keys != expected:
         raise ValueError("dispatch payload schema mismatch")
+    if is_economic_review:
+        from nexus_source_system_economic_review import validate_binding
+        binding = data["source_system_economic_review_task"]
+        validate_binding(binding)
+        if (binding["id"] != data["task_id"] or data.get("phase") != 7 or data.get("gate") != 17
+            or data.get("authority") != 2 or data.get("transport") != "github-cloud"
+            or data.get("worker_id") not in {"research-agent", "qa-verifier-agent"}):
+            raise ValueError("invalid finished-study review dispatch route")
     if is_development:
         from nexus_source_system_development import validate_binding
         binding = data["source_system_development_task"]
@@ -276,6 +289,17 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
 
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if isinstance(task_id, str) and task_id.startswith("ECON-REVIEW-"):
+        try:
+            from nexus_source_system_economic_review import run_review
+            if transport != "github-cloud":
+                raise ValueError("finished-study evidence review requires cloud transport")
+            return "success", run_review(payload, source_sha=os.environ.get("GITHUB_SHA", ""))
+        except (KeyError, OSError, ValueError, RuntimeError, TypeError) as exc:
+            return "failure", {"executor": "nexus-source-system-economic-evidence-review",
+                               "failure_class": "source_system_economic_review_failed",
+                               "reason": str(exc)[:600], "paper_eligible": False,
+                               "live_enabled": False, "market_replay_performed": False}
     if isinstance(task_id, str) and task_id.startswith("SYSTEM-DEV-"):
         try:
             from nexus_source_system_development import run_development

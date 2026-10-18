@@ -1,0 +1,13 @@
+{
+  "schema": "nexus.source-system-economic-review.v1",
+  "economic_task_id": "SYSTEM-ECON-9ad802095258f36a509347c3",
+  "economic_request_path": "research/source_system_economic_requests/failure_test_structural_v1.json",
+  "economic_request_sha256": "9ad802095258f36a509347c3710f3fc0e8c89be33ab4f1552b8276175c330382",
+  "producer_result_sha256": "21eedcb44f1cdff08c18453e7a72251c4f87e821faafe4cb6334bd115ef71107",
+  "producer_result_digest": "9bcae5e9fd401a8dd08c74e89b37af219325e03a824d3d1a56e8bf9a29c5f45a",
+  "numerical_qa_sha256": "2bba0017b3bd0155545863ab889a42afdf38c7e9ef3bf640697ba17c97cc75b5",
+  "numerical_qa_receipt_digest": "e2c06a2764b60878c1554a1f37dbb25975fa92aa46ef718b599dc9921a262ffd",
+  "execution_source_sha": "8bfe55c5fec22a1ba29e6c1dddd9f37b90368961",
+  "workflow_run_id": "39107550009",
+  "selection_basis": "one_finished_study_no_market_replay"
+}

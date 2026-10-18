@@ -11,6 +11,10 @@ from typing import Any, Mapping
 
 from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 from nexus_source_system_development import is_development, validate_binding, verify_receipt as verify_development_receipt
+from nexus_source_system_economic_review import (
+    is_review as is_economic_review, validate_binding as validate_economic_review_binding,
+    verify_receipt as verify_economic_review_receipt, summarize_reviews,
+)
 
 QUEUE_PATH = Path("config/nexus-agent-manager.json")
 STATE_PATH = Path("data/agent_coordination/manager_state.json")
@@ -137,6 +141,14 @@ def validate_config(config: dict[str, Any]) -> None:
             _bounded_metric(task["max_cost_units"], "max_cost_units")
         if "min_health_score" in task:
             _bounded_metric(task["min_health_score"], "min_health_score", maximum=1.0)
+        if is_economic_review(task):
+            binding = task.get("source_system_economic_review_task")
+            validate_economic_review_binding(binding)
+            if (binding["id"] != task["id"] or task.get("phase") != 7
+                or task.get("gate") != 17 or task.get("authority") != 2
+                or task.get("required_resources") != ["github-cloud"]
+                or task.get("qa_verifier_only") is True):
+                raise ValueError("invalid completed-study evidence review route")
         if is_development(task):
             binding = task.get("source_system_development_task")
             validate_binding(binding)
@@ -435,6 +447,8 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
         eligible_rows = [row for row in routing_rows if row["eligible"]]
         if is_development(task):
             eligible_rows = [row for row in eligible_rows if row["worker_id"] == "developer-agent"]
+        if is_economic_review(task):
+            eligible_rows = [row for row in eligible_rows if row["worker_id"] == "research-agent"]
         if task.get("id") in TASKS:
             # Actual numerical Research leases are not generic cloud pytest
             # work: only the dedicated Research Agent can be their producer.
@@ -591,6 +605,8 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
     )
     if is_development(task):
         candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
+    if is_economic_review(task):
+        candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
     if task.get("id") in TASKS:
         # Reject a generic verifier even if its dynamic routing score is
         # higher: independent numerical replay requires the designated QA.
@@ -617,6 +633,22 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     if task.get("assigned_worker") != worker_id:
         raise ValueError("worker does not own current lease")
     evidence = evidence or {}
+    if is_economic_review(task):
+        if outcome == "success":
+            qa_role = task.get("status") == "VERIFYING"
+            original = task.get("result_evidence") if qa_role else None
+            if (task.get("status") not in {"LEASED", "RUNNING", "VERIFYING"}
+                or worker_id != ("qa-verifier-agent" if qa_role else "research-agent")
+                or (qa_role and task.get("producer") != "research-agent")):
+                raise ValueError("economic review Research/QA separation is invalid")
+            verify_economic_review_receipt(evidence, task["source_system_economic_review_task"],
+                lease_id=task["lease_id"], role="independent-qa" if qa_role else "producer", original=original)
+        elif outcome == "failure":
+            task.update(status="BLOCKED", failure_class=evidence.get("failure_class", "economic_review_failed"),
+                        failure_evidence=evidence, blocked_reason="finished-study evidence requires reviewed correction; no market replay",
+                        assigned_worker=None, heartbeat_at=None, lease_expires_at=None)
+            emit("source_system_economic_review_failed_closed", task_id=task_id, worker=worker_id)
+            return
     if is_development(task):
         if outcome == "success":
             original = task.get("result_evidence") if task.get("status") == "VERIFYING" else None
@@ -767,6 +799,7 @@ def summarize(config: dict[str, Any]) -> dict[str, Any]:
         "task_phases": sorted({int(t.get("phase", config.get("phase"))) for t in config["tasks"]}),
         "counts": counts,
         "verified_progress_percent": round((done / total * 100.0) if total else 0.0, 2),
+        "source_system_economic_reviews": summarize_reviews(config["tasks"]),
         "owner_required": [t["id"] for t in config["tasks"] if t.get("status") == "OWNER_REQUIRED"],
         "worker_capacity": worker_capacity,
         "available_worker_slots": sum(item["available"] for item in worker_capacity.values()),
