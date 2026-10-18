@@ -21,7 +21,7 @@ MULTIPAIR = "nexus_multipair_strategy_discovery_v2.yml"
 def _condition(expression: str, github: dict[str, Any], needs: dict[str, Any] | None = None) -> bool:
     """Evaluate only the boolean/string subset used by these GitHub guards.
 
-    No eval or arbitrary calls are allowed; only always() is supported as a
+    No eval or arbitrary calls are allowed; only always()/contains() are supported as
     GitHub status primitive. Missing event
     properties resolve to an empty string, as in GitHub Actions expressions.
     """
@@ -40,6 +40,10 @@ def _condition(expression: str, github: dict[str, Any], needs: dict[str, Any] | 
             return contexts[node.id]
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "always" and not node.args and not node.keywords:
             return True
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "contains" and len(node.args) == 2 and not node.keywords):
+            haystack, needle = (visit(arg) for arg in node.args)
+            return str(needle).casefold() in str(haystack).casefold()
         if isinstance(node, ast.Attribute):
             parent = visit(node.value)
             return parent.get(node.attr, "") if isinstance(parent, dict) else ""
@@ -122,6 +126,28 @@ class ResearchWorkflowExecutionPolicyTests(unittest.TestCase):
                         self.allowed(ROTATION, "dispatch-one-stage", _context(event, ref)),
                         event in {"workflow_dispatch", "schedule"} and ref == "refs/heads/main",
                     )
+
+    def test_source_system_requires_explicit_main_push_authorization(self) -> None:
+        # A source/QA push by itself cannot launch this experiment or the old
+        # exhausted discovery. The frozen request is additionally SHA-reviewed.
+        expression = self.workflows[DISCOVERY]["jobs"]["discover"]["if"]
+        for event in ("push", "pull_request", "workflow_dispatch", "schedule"):
+            for ref in ("refs/heads/main", "refs/heads/feature"):
+                for message in ("ordinary code fix", "run [source-system-evaluation] fixed request"):
+                    context = _context(event,ref)
+                    context["event"]["head_commit"] = {"message":message}
+                    with self.subTest(event=event,ref=ref,message=message):
+                        self.assertEqual(_condition(expression,context),ref=="refs/heads/main" and (
+                            event=="workflow_dispatch" or event=="push" and "[source-system-evaluation]" in message))
+                        if event=="push":
+                            self.assertEqual(self.allowed(DISCOVERY,"discover",context),
+                                             ref=="refs/heads/main" and "[source-system-evaluation]" in message)
+        steps = self.workflows[DISCOVERY]["jobs"]["discover"]["steps"]
+        numerical_qa = next(s for s in steps if s.get("name","").startswith("Separate QA process"))
+        self.assertEqual(numerical_qa["if"],"github.event_name == 'push'")
+        self.assertNotIn("continue-on-error",numerical_qa)
+        legacy = next(s for s in steps if s.get("name")=="Research next previously unseen composite mechanism and backtest historical folds")
+        self.assertEqual(legacy["if"],"github.event_name == 'workflow_dispatch'")
 
     def test_multipair_entire_pipeline_requires_main_dispatch(self) -> None:
         # Deliberately provide successful parents and nonempty old outputs:

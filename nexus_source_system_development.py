@@ -236,7 +236,10 @@ def compile_system(binding: dict[str, Any], root: Path = ROOT) -> dict[str, Any]
     if obj["execution_contract"] != execution_contract():
         raise SystemDevelopmentError("unsupported requested execution requires actual code implementation")
     # Reading the existing review registry cannot grant this compiler approval.
-    readiness = inspect_candidate(root, obj["candidate_path"], _load_json_strict(root / DEFAULT_ALLOWLIST, 200_000))
+    reviews = _load_json_strict(root / DEFAULT_ALLOWLIST, 200_000)
+    # A compiler's grammar/duplicate check must not consume an unrelated
+    # approved execution specification for the same signal candidate.
+    readiness = inspect_candidate(root, obj["candidate_path"], {**reviews, "approved_executable_contracts": []})
     if readiness["status"].startswith("REJECT_"):
         raise SystemDevelopmentError("candidate rejected by existing intake: " + readiness["status"])
     candidate = {k: readiness[k] for k in ("candidate_id", "candidate_path", "candidate_sha256",

@@ -1,0 +1,21 @@
+{
+  "automatic_strategy_promotion": false,
+  "candidate_path": "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+  "id": "failure_test_structural_v1",
+  "live_enabled": false,
+  "paper_eligible": false,
+  "research_only": true,
+  "schema": "nexus.source-system-economic-task.v1",
+  "selection_basis": "one_frozen_hypothesis_no_posthoc_tournament",
+  "support_source_sha256": {
+    "nexus_complete_strategy_system.py": "4d2ddcc11ac2df3e8bf5a69474d1caac0a9b903cbbaf4cc8c567c60096247c8e",
+    "nexus_demo_archive_replay.py": "afb583725ab7fa706ba31b564a0ea5bdb8b3887203d497e9ed9579b80bac7a54",
+    "requirements-dev.lock": "25e2d4fb1e171eaad16d2045244a0cbbf4c37e35ece44760ef1a3d859bc0a942",
+    "requirements.lock": "5e9a931b25406d0a97bde274a1d6fd9d98feb26b1261ca471f298d294c6b7f1a",
+    "research/mechanism_factory_v1.json": "bc4e7ee86291699081b31fa4178940995fced650693d9a8a27ddae416cb6b7bd",
+    "scripts/select_nexus_bybit_replay_artifact.py": "5ceb8bbfccf7876c292f0b6dbbe07e62d2a25267b1647b3d9c4e8bd49bf623fa"
+  },
+  "system_specification_path": "research/complete_systems/failure_test_structural_v1.json",
+  "system_specification_sha256": "4301bb8bd33db3c4f706c7d5ee2c610c3c40da5ef0ed254ccce2845ee30f9550",
+  "worker_source_sha256": "d0a4d85a97d3e195b581afcbdebc6498ab56cf3bcfc50c81e3bf53d93841d814"
+}

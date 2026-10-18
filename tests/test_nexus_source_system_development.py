@@ -95,7 +95,7 @@ def test_actual_manager_worker_qa_cycle_emits_existing_executor_inputs_without_m
     assert qa["external_source_interpretation_attested"] is False and qa["economic_edge_established"] is False
     for path, content in qa["bundle"]["files"].items():
         assert content.encode() == (dev.ROOT / path).read_bytes()
-    assert not json.loads((dev.ROOT / intake.DEFAULT_ALLOWLIST).read_text())["approved_executable_contracts"]
+    assert (isolated / intake.DEFAULT_ALLOWLIST).read_bytes() == (dev.ROOT / intake.DEFAULT_ALLOWLIST).read_bytes()
 
 
 def test_real_cli_result_artifact_contains_complete_system_bytes(isolated, tmp_path):

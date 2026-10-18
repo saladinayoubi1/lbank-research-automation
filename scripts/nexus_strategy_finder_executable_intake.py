@@ -37,10 +37,10 @@ from nexus_composite_strategy_research import (
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
 from nexus_demo_archive_replay import ARCHIVE_SHA256
 from research.strategy_finder_shared_cash_physical import (
-    SYMBOLS,sidecar_summary,_digest,execution_contract
+    SYMBOLS,sidecar_summary,_digest,execution_contract,reviewed_stop_policy,SharedCashDiagnosticError
 )
 from nexus_complete_strategy_system import (
-    CompleteSystemError, REVIEW_FIELDS, validate_system,
+    CompleteSystemError, REVIEW_FIELDS, validate_system, _read,
 )
 from scripts.nexus_strategy_finder_shared_cash_eval import (
     verify_pinned_market_files,write_once
@@ -231,8 +231,10 @@ def inspect_candidate(
     }
     if status=="APPROVED_FOR_RESEARCH_SIMULATION_ONLY":
         try:
-            result["complete_system"]=validate_system(root,result,permit,execution_contract())
-        except CompleteSystemError as exc:
+            system,_=_read(root,permit["system_specification_path"],"system")
+            policy=reviewed_stop_policy(system["execution_contract"])
+            result["complete_system"]=validate_system(root,result,permit,execution_contract(policy))
+        except (CompleteSystemError,SharedCashDiagnosticError,KeyError) as exc:
             raise IntakeError(str(exc)) from exc
     return result
 
@@ -263,6 +265,8 @@ def evaluate_approved(
         or (end-start)<pd.Timedelta(days=30)
         or any(x.value%(900_000*1_000_000)!=0 for x in (warm,start,end))):
         raise IntakeError("research window must be UTC, 15m-aligned, 25d warmup, >=30d trial, <=150d total")
+    system,_=_read(root,row["complete_system"]["system_specification_path"],"system")
+    policy=reviewed_stop_policy(system["execution_contract"])
     # Actual physical source byte hashes are checked before ANY features.
     locked=verify_pinned_market_files(archive)
     frames={}
@@ -294,11 +298,13 @@ def evaluate_approved(
         signal[sym]=factory_signal(
             source[sym],row["candidate_id"],specs=specs,
             expected_contract_digest=spec["contract_digest"]
-        ) & (
-            np.isfinite(source[sym]["atr"].to_numpy(dtype=float))
-            & (source[sym]["atr"].to_numpy(dtype=float)>0)
         )
-    replay=sidecar_summary(source,signal)
+        if policy=="prior_range_v1":
+            signal[sym] &= (
+                np.isfinite(source[sym]["atr"].to_numpy(dtype=float))
+                & (source[sym]["atr"].to_numpy(dtype=float)>0)
+            )
+    replay=sidecar_summary(source,signal,stop_policy=policy)
     if inspect_candidate(root,candidate_relative,allowlist)!=row:
         raise IntakeError("complete-system evidence changed during replay")
     evidence={
@@ -308,7 +314,7 @@ def evaluate_approved(
         "source_canonical_semantic_sha256":ARCHIVE_SHA256,
         "readiness":row,
         "complete_system_digest":row["complete_system"]["system_digest"],
-        "execution_contract":execution_contract(),
+        "execution_contract":execution_contract(policy),
         "warmup_utc":warm.isoformat(),
         "evaluation_start_utc":start.isoformat(),
         "evaluation_end_exclusive_utc":end.isoformat(),
