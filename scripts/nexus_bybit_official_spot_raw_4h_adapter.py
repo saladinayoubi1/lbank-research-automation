@@ -78,7 +78,7 @@ def aggregate_gzip_day(path:Path,symbol:str,day:str,expected_sha256:str)->dict:
         raise RawTradeSourceError("raw official-host trade file SHA256 mismatch")
     midnight=int(datetime(start.year,start.month,start.day,
                           tzinfo=timezone.utc).timestamp()*1000)
-    bars:[dict|None]=[None]*6
+    bars:list[dict|None]=[None]*6
     last_id=0
     last_time=-1
     trades=0
