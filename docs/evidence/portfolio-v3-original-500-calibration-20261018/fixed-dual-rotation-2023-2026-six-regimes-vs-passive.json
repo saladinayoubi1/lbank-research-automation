@@ -1,0 +1,1504 @@
+{
+  "authoritative_price_source": "cached original signed Bybit Spot OHLC; not verified current Bybit order book",
+  "digest": "63afc60f7e35fbe456a4a43b3dc061e6b253d33d46e60b0fa95725ca29050077",
+  "execution_fill_is_not_round_trip": true,
+  "live_enabled": false,
+  "no_exchange_order": true,
+  "no_parameter_search": true,
+  "objective": "FALSIFY_FIXED_ORIGINAL_ROTATION_VS_PASSIVE_BASELINES",
+  "original_Q1_reproduction_verification": true,
+  "original_candidate_contract_digest": "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4",
+  "original_engine_no_physical_stop": true,
+  "original_engine_source_sha256": "a1e2233748a3e1ce2d68265f54a5fa7279a4b25dbb0577ef7ec49dd18137a679",
+  "original_portfolio_engine_reused_without_execution_changes": true,
+  "original_pre_registered_fixed_candidate_id": "b4e4a2c33304aec1",
+  "paper_eligible": false,
+  "periods": {
+    "2023_09_to_2024_03": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2024-03-01",
+      "start": "2023-09-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 26,
+            "btc_fills": 24,
+            "end_cash_usdt": 730.86441467,
+            "eth_fills": 2,
+            "max_drawdown_pct": 14.10072676,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 230.86441467,
+            "paid_fees_usdt": 4.50725473,
+            "turnover_x_start_cash": 9.01450945
+          },
+          "severe": {
+            "asset_fill_count": 26,
+            "btc_fills": 24,
+            "end_cash_usdt": 716.0650745,
+            "eth_fills": 2,
+            "max_drawdown_pct": 14.75505719,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 216.0650745,
+            "paid_fees_usdt": 11.16963054,
+            "turnover_x_start_cash": 8.93570443
+          },
+          "stress": {
+            "asset_fill_count": 26,
+            "btc_fills": 24,
+            "end_cash_usdt": 724.91566085,
+            "eth_fills": 2,
+            "max_drawdown_pct": 14.36247818,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 224.91566085,
+            "paid_fees_usdt": 6.7371406,
+            "turnover_x_start_cash": 8.98285414
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 1088.14400961,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.25218606,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 588.14400961,
+            "paid_fees_usdt": 1.58873374,
+            "turnover_x_start_cash": 3.17746748
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 1082.71685581,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.25218606,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 582.71685581,
+            "paid_fees_usdt": 3.96045887,
+            "turnover_x_start_cash": 3.1683671
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 1085.96989407,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.25218606,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 585.96989407,
+            "paid_fees_usdt": 2.38027863,
+            "turnover_x_start_cash": 3.17370484
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1168.58805839,
+            "eth_fills": 0,
+            "max_drawdown_pct": 17.45863971,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 668.58805839,
+            "paid_fees_usdt": 1.66925832,
+            "turnover_x_start_cash": 3.33851663
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1162.75968728,
+            "eth_fills": 0,
+            "max_drawdown_pct": 17.45863971,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 662.75968728,
+            "paid_fees_usdt": 4.16106747,
+            "turnover_x_start_cash": 3.32885398
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1166.25321537,
+            "eth_fills": 0,
+            "max_drawdown_pct": 17.45863971,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 666.25321537,
+            "paid_fees_usdt": 2.50088452,
+            "turnover_x_start_cash": 3.33451269
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 1007.69996082,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.74713716,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 507.69996082,
+            "paid_fees_usdt": 1.50820917,
+            "turnover_x_start_cash": 3.01641834
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 1002.67402435,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.74713716,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 502.67402435,
+            "paid_fees_usdt": 3.75985027,
+            "turnover_x_start_cash": 3.00788022
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 1005.68657278,
+            "eth_fills": 2,
+            "max_drawdown_pct": 17.74713716,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 505.68657278,
+            "paid_fees_usdt": 2.25967274,
+            "turnover_x_start_cash": 3.01289698
+          }
+        }
+      }
+    },
+    "2023_09_to_2026_08_CONTINUOUS": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2026-08-01",
+      "start": "2023-09-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 106,
+            "btc_fills": 74,
+            "end_cash_usdt": 843.66115005,
+            "eth_fills": 32,
+            "max_drawdown_pct": 34.43365449,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 343.66115005,
+            "paid_fees_usdt": 21.59696755,
+            "turnover_x_start_cash": 43.19393511
+          },
+          "severe": {
+            "asset_fill_count": 106,
+            "btc_fills": 74,
+            "end_cash_usdt": 785.97596337,
+            "eth_fills": 32,
+            "max_drawdown_pct": 34.74926622,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 285.97596337,
+            "paid_fees_usdt": 51.95824696,
+            "turnover_x_start_cash": 41.56659757
+          },
+          "stress": {
+            "asset_fill_count": 106,
+            "btc_fills": 74,
+            "end_cash_usdt": 820.11394615,
+            "eth_fills": 32,
+            "max_drawdown_pct": 34.54781221,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 320.11394615,
+            "paid_fees_usdt": 31.90041032,
+            "turnover_x_start_cash": 42.53388043
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 882.01406091,
+            "eth_fills": 2,
+            "max_drawdown_pct": 58.44468459,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 382.01406091,
+            "paid_fees_usdt": 1.38239746,
+            "turnover_x_start_cash": 2.76479491
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 877.61498697,
+            "eth_fills": 2,
+            "max_drawdown_pct": 58.44468459,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 377.61498697,
+            "paid_fees_usdt": 3.4464191,
+            "turnover_x_start_cash": 2.75713528
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 880.25179373,
+            "eth_fills": 2,
+            "max_drawdown_pct": 58.44468459,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 380.25179373,
+            "paid_fees_usdt": 2.07123792,
+            "turnover_x_start_cash": 2.76165056
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1202.11337634,
+            "eth_fills": 0,
+            "max_drawdown_pct": 53.44397804,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 702.11337634,
+            "paid_fees_usdt": 1.70281719,
+            "turnover_x_start_cash": 3.40563439
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1196.11779661,
+            "eth_fills": 0,
+            "max_drawdown_pct": 53.44397804,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 696.11779661,
+            "paid_fees_usdt": 4.24467176,
+            "turnover_x_start_cash": 3.39573741
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 1199.71154961,
+            "eth_fills": 0,
+            "max_drawdown_pct": 53.44397804,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 699.71154961,
+            "paid_fees_usdt": 2.55114742,
+            "turnover_x_start_cash": 3.40152989
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 561.91474547,
+            "eth_fills": 2,
+            "max_drawdown_pct": 68.02878299,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 61.91474547,
+            "paid_fees_usdt": 1.06197772,
+            "turnover_x_start_cash": 2.12395544
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 559.11217733,
+            "eth_fills": 2,
+            "max_drawdown_pct": 68.02878299,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 59.11217733,
+            "paid_fees_usdt": 2.64816645,
+            "turnover_x_start_cash": 2.11853316
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 560.79203785,
+            "eth_fills": 2,
+            "max_drawdown_pct": 68.02878299,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 60.79203785,
+            "paid_fees_usdt": 1.59132842,
+            "turnover_x_start_cash": 2.12177123
+          }
+        }
+      }
+    },
+    "2024_03_to_2024_09": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2024-09-01",
+      "start": "2024-03-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 27,
+            "btc_fills": 18,
+            "end_cash_usdt": 439.68761407,
+            "eth_fills": 9,
+            "max_drawdown_pct": 26.959032,
+            "min_cash_usdt": 119.03216068,
+            "net_usdt": -60.31238593,
+            "paid_fees_usdt": 4.91265525,
+            "turnover_x_start_cash": 9.8253105
+          },
+          "severe": {
+            "asset_fill_count": 27,
+            "btc_fills": 18,
+            "end_cash_usdt": 429.00138302,
+            "eth_fills": 9,
+            "max_drawdown_pct": 28.45053015,
+            "min_cash_usdt": 115.27871937,
+            "net_usdt": -70.99861698,
+            "paid_fees_usdt": 12.1609883,
+            "turnover_x_start_cash": 9.72879064
+          },
+          "stress": {
+            "asset_fill_count": 27,
+            "btc_fills": 18,
+            "end_cash_usdt": 435.3866258,
+            "eth_fills": 9,
+            "max_drawdown_pct": 27.55868295,
+            "min_cash_usdt": 117.5196446,
+            "net_usdt": -64.6133742,
+            "paid_fees_usdt": 7.33994032,
+            "turnover_x_start_cash": 9.78658709
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 426.58835935,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.60276241,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -73.41164065,
+            "paid_fees_usdt": 0.92651587,
+            "turnover_x_start_cash": 1.85303175
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 424.46073597,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.60276241,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -75.53926403,
+            "paid_fees_usdt": 2.31069416,
+            "turnover_x_start_cash": 1.84855533
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 425.73603431,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.60276241,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -74.26396569,
+            "paid_fees_usdt": 1.38844008,
+            "turnover_x_start_cash": 1.85125344
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 481.16630244,
+            "eth_fills": 0,
+            "max_drawdown_pct": 30.01329071,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -18.83369756,
+            "paid_fees_usdt": 0.98114845,
+            "turnover_x_start_cash": 1.9622969
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 478.76646979,
+            "eth_fills": 0,
+            "max_drawdown_pct": 30.01329071,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -21.23353021,
+            "paid_fees_usdt": 2.44679876,
+            "turnover_x_start_cash": 1.95743901
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 480.20493049,
+            "eth_fills": 0,
+            "max_drawdown_pct": 30.01329071,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -19.79506951,
+            "paid_fees_usdt": 1.47026616,
+            "turnover_x_start_cash": 1.96035489
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 372.01041626,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.64679892,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -127.98958374,
+            "paid_fees_usdt": 0.8718833,
+            "turnover_x_start_cash": 1.7437666
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 370.15500215,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.64679892,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -129.84499785,
+            "paid_fees_usdt": 2.17458957,
+            "turnover_x_start_cash": 1.73967165
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 371.26713814,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.64679892,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -128.73286186,
+            "paid_fees_usdt": 1.306614,
+            "turnover_x_start_cash": 1.742152
+          }
+        }
+      }
+    },
+    "2024_09_to_2025_03": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2025-03-01",
+      "start": "2024-09-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 22,
+            "btc_fills": 22,
+            "end_cash_usdt": 684.72124778,
+            "eth_fills": 0,
+            "max_drawdown_pct": 8.87229636,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 184.72124778,
+            "paid_fees_usdt": 1.60814719,
+            "turnover_x_start_cash": 3.21629438
+          },
+          "severe": {
+            "asset_fill_count": 22,
+            "btc_fills": 22,
+            "end_cash_usdt": 680.2459418,
+            "eth_fills": 0,
+            "max_drawdown_pct": 8.93311184,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 180.2459418,
+            "paid_fees_usdt": 4.00680786,
+            "turnover_x_start_cash": 3.20544629
+          },
+          "stress": {
+            "asset_fill_count": 22,
+            "btc_fills": 22,
+            "end_cash_usdt": 682.92773047,
+            "eth_fills": 0,
+            "max_drawdown_pct": 8.89661564,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 182.92773047,
+            "paid_fees_usdt": 2.40893438,
+            "turnover_x_start_cash": 3.21191251
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 583.23310211,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.27471092,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 83.23310211,
+            "paid_fees_usdt": 1.08331742,
+            "turnover_x_start_cash": 2.16663484
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 580.32420797,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.27471092,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 80.32420797,
+            "paid_fees_usdt": 2.70132943,
+            "turnover_x_start_cash": 2.16106354
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 582.06780034,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.27471092,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 82.06780034,
+            "paid_fees_usdt": 1.62329001,
+            "turnover_x_start_cash": 2.16438667
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 718.36493535,
+            "eth_fills": 0,
+            "max_drawdown_pct": 26.81621136,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 218.36493535,
+            "paid_fees_usdt": 1.21858452,
+            "turnover_x_start_cash": 2.43716904
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 714.78206677,
+            "eth_fills": 0,
+            "max_drawdown_pct": 26.81621136,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 214.78206677,
+            "paid_fees_usdt": 3.03831654,
+            "turnover_x_start_cash": 2.43065324
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 716.9296397,
+            "eth_fills": 0,
+            "max_drawdown_pct": 26.81621136,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 216.9296397,
+            "paid_fees_usdt": 1.82588666,
+            "turnover_x_start_cash": 2.43451555
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 448.10126888,
+            "eth_fills": 2,
+            "max_drawdown_pct": 48.2317334,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -51.89873112,
+            "paid_fees_usdt": 0.94805032,
+            "turnover_x_start_cash": 1.89610064
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 445.86634917,
+            "eth_fills": 2,
+            "max_drawdown_pct": 48.2317334,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -54.13365083,
+            "paid_fees_usdt": 2.36434231,
+            "turnover_x_start_cash": 1.89147385
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 447.20596098,
+            "eth_fills": 2,
+            "max_drawdown_pct": 48.2317334,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -52.79403902,
+            "paid_fees_usdt": 1.42069335,
+            "turnover_x_start_cash": 1.8942578
+          }
+        }
+      }
+    },
+    "2025_03_to_2025_10": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2025-10-01",
+      "start": "2025-03-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 24,
+            "btc_fills": 8,
+            "end_cash_usdt": 658.98838602,
+            "eth_fills": 16,
+            "max_drawdown_pct": 12.54528762,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 158.98838602,
+            "paid_fees_usdt": 4.03251299,
+            "turnover_x_start_cash": 8.06502599
+          },
+          "severe": {
+            "asset_fill_count": 24,
+            "btc_fills": 8,
+            "end_cash_usdt": 647.30106193,
+            "eth_fills": 16,
+            "max_drawdown_pct": 13.20647808,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 147.30106193,
+            "paid_fees_usdt": 9.99310238,
+            "turnover_x_start_cash": 7.99448191
+          },
+          "stress": {
+            "asset_fill_count": 24,
+            "btc_fills": 8,
+            "end_cash_usdt": 654.28978827,
+            "eth_fills": 16,
+            "max_drawdown_pct": 12.81035776,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 154.28978827,
+            "paid_fees_usdt": 6.02751028,
+            "turnover_x_start_cash": 8.03668038
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 789.64248754,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08303825,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 289.64248754,
+            "paid_fees_usdt": 1.28993342,
+            "turnover_x_start_cash": 2.57986684
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 785.70411984,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08303825,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 285.70411984,
+            "paid_fees_usdt": 3.21606605,
+            "turnover_x_start_cash": 2.57285284
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 788.06477909,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08303825,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 288.06477909,
+            "paid_fees_usdt": 1.93274966,
+            "turnover_x_start_cash": 2.57699955
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 666.10035857,
+            "eth_fills": 0,
+            "max_drawdown_pct": 20.4035614,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 166.10035857,
+            "paid_fees_usdt": 1.16626763,
+            "turnover_x_start_cash": 2.33253525
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 662.77816128,
+            "eth_fills": 0,
+            "max_drawdown_pct": 20.4035614,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 162.77816128,
+            "paid_fees_usdt": 2.90798094,
+            "turnover_x_start_cash": 2.32638475
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 664.76948773,
+            "eth_fills": 0,
+            "max_drawdown_pct": 20.4035614,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 164.76948773,
+            "paid_fees_usdt": 1.74752889,
+            "turnover_x_start_cash": 2.33003853
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 913.18461651,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.67362495,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 413.18461651,
+            "paid_fees_usdt": 1.41359921,
+            "turnover_x_start_cash": 2.82719843
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 908.63007841,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.67362495,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 408.63007841,
+            "paid_fees_usdt": 3.52415116,
+            "turnover_x_start_cash": 2.81932093
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 911.36007046,
+            "eth_fills": 2,
+            "max_drawdown_pct": 43.67362495,
+            "min_cash_usdt": 0.0,
+            "net_usdt": 411.36007046,
+            "paid_fees_usdt": 2.11797043,
+            "turnover_x_start_cash": 2.82396058
+          }
+        }
+      }
+    },
+    "2025_10_to_2026_04": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2026-04-01",
+      "start": "2025-10-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 7,
+            "btc_fills": 0,
+            "end_cash_usdt": 453.54557353,
+            "eth_fills": 7,
+            "max_drawdown_pct": 20.14991179,
+            "min_cash_usdt": 124.4373125,
+            "net_usdt": -46.45442647,
+            "paid_fees_usdt": 0.71591209,
+            "turnover_x_start_cash": 1.43182419
+          },
+          "severe": {
+            "asset_fill_count": 7,
+            "btc_fills": 0,
+            "end_cash_usdt": 451.89632542,
+            "eth_fills": 7,
+            "max_drawdown_pct": 20.20147479,
+            "min_cash_usdt": 123.49859375,
+            "net_usdt": -48.10367458,
+            "paid_fees_usdt": 1.78948896,
+            "turnover_x_start_cash": 1.43159117
+          },
+          "stress": {
+            "asset_fill_count": 7,
+            "btc_fills": 0,
+            "end_cash_usdt": 452.88573054,
+            "eth_fills": 7,
+            "max_drawdown_pct": 20.17055156,
+            "min_cash_usdt": 124.0619375,
+            "net_usdt": -47.11426946,
+            "paid_fees_usdt": 1.07380478,
+            "turnover_x_start_cash": 1.4317397
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 276.16358007,
+            "eth_fills": 2,
+            "max_drawdown_pct": 55.69792039,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -223.83641993,
+            "paid_fees_usdt": 0.77594052,
+            "turnover_x_start_cash": 1.55188104
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 274.78620519,
+            "eth_fills": 2,
+            "max_drawdown_pct": 55.69792039,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -225.21379481,
+            "paid_fees_usdt": 1.93557002,
+            "turnover_x_start_cash": 1.54845602
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 275.61180427,
+            "eth_fills": 2,
+            "max_drawdown_pct": 55.69792039,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -224.38819573,
+            "paid_fees_usdt": 1.16291545,
+            "turnover_x_start_cash": 1.55055393
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 298.11377002,
+            "eth_fills": 0,
+            "max_drawdown_pct": 49.84306771,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -201.88622998,
+            "paid_fees_usdt": 0.79791268,
+            "turnover_x_start_cash": 1.59582536
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 296.62691786,
+            "eth_fills": 0,
+            "max_drawdown_pct": 49.84306771,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -203.37308214,
+            "paid_fees_usdt": 1.99030865,
+            "turnover_x_start_cash": 1.59224692
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 297.51813767,
+            "eth_fills": 0,
+            "max_drawdown_pct": 49.84306771,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -202.48186233,
+            "paid_fees_usdt": 1.19582431,
+            "turnover_x_start_cash": 1.59443242
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 254.21339012,
+            "eth_fills": 2,
+            "max_drawdown_pct": 61.34810715,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -245.78660988,
+            "paid_fees_usdt": 0.75396836,
+            "turnover_x_start_cash": 1.50793671
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 252.94549253,
+            "eth_fills": 2,
+            "max_drawdown_pct": 61.34810715,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -247.05450747,
+            "paid_fees_usdt": 1.8808314,
+            "turnover_x_start_cash": 1.50466512
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 253.70547088,
+            "eth_fills": 2,
+            "max_drawdown_pct": 61.34810715,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -246.29452912,
+            "paid_fees_usdt": 1.13000659,
+            "turnover_x_start_cash": 1.50667545
+          }
+        }
+      }
+    },
+    "2025_Q1_REPEAT_PRIOR_FIXED": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2025-04-01",
+      "start": "2025-01-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 9,
+            "btc_fills": 9,
+            "end_cash_usdt": 508.43707258,
+            "eth_fills": 0,
+            "max_drawdown_pct": 6.74354902,
+            "min_cash_usdt": 249.624875,
+            "net_usdt": 8.43707258,
+            "paid_fees_usdt": 0.53165028,
+            "turnover_x_start_cash": 1.06330056
+          },
+          "severe": {
+            "asset_fill_count": 9,
+            "btc_fills": 9,
+            "end_cash_usdt": 507.1014304,
+            "eth_fills": 0,
+            "max_drawdown_pct": 6.75157584,
+            "min_cash_usdt": 248.9990625,
+            "net_usdt": 7.1014304,
+            "paid_fees_usdt": 1.32897653,
+            "turnover_x_start_cash": 1.06318122
+          },
+          "stress": {
+            "asset_fill_count": 9,
+            "btc_fills": 9,
+            "end_cash_usdt": 507.90278653,
+            "eth_fills": 0,
+            "max_drawdown_pct": 6.74675724,
+            "min_cash_usdt": 249.374625,
+            "net_usdt": 7.90278653,
+            "paid_fees_usdt": 0.79743853,
+            "turnover_x_start_cash": 1.06325137
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 354.64883799,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.54093508,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -145.35116201,
+            "paid_fees_usdt": 0.85450434,
+            "turnover_x_start_cash": 1.70900868
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 352.88001532,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.54093508,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -147.11998468,
+            "paid_fees_usdt": 2.13129386,
+            "turnover_x_start_cash": 1.70503509
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 353.94024837,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.54093508,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -146.05975163,
+            "paid_fees_usdt": 1.28058462,
+            "turnover_x_start_cash": 1.70744616
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 438.49813179,
+            "eth_fills": 0,
+            "max_drawdown_pct": 27.38993997,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -61.50186821,
+            "paid_fees_usdt": 0.93843757,
+            "turnover_x_start_cash": 1.87687514
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 436.31110803,
+            "eth_fills": 0,
+            "max_drawdown_pct": 27.38993997,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -63.68889197,
+            "paid_fees_usdt": 2.34039434,
+            "turnover_x_start_cash": 1.87231547
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 437.62201099,
+            "eth_fills": 0,
+            "max_drawdown_pct": 27.38993997,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -62.37798901,
+            "paid_fees_usdt": 1.40629583,
+            "turnover_x_start_cash": 1.87506111
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 270.79954418,
+            "eth_fills": 2,
+            "max_drawdown_pct": 51.58483597,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -229.20045582,
+            "paid_fees_usdt": 0.77057111,
+            "turnover_x_start_cash": 1.54114223
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 269.44892261,
+            "eth_fills": 2,
+            "max_drawdown_pct": 51.58483597,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -230.55107739,
+            "paid_fees_usdt": 1.92219338,
+            "turnover_x_start_cash": 1.5377547
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 270.25848575,
+            "eth_fills": 2,
+            "max_drawdown_pct": 51.58483597,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -229.74151425,
+            "paid_fees_usdt": 1.15487341,
+            "turnover_x_start_cash": 1.53983121
+          }
+        }
+      }
+    },
+    "2026_04_to_2026_08": {
+      "each_approach_starts_at_500_USDT": true,
+      "end": "2026-08-01",
+      "start": "2026-04-01",
+      "strategies": {
+        "cash_100_percent": {
+          "conservative": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "severe": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          },
+          "stress": {
+            "asset_fill_count": 0,
+            "btc_fills": 0,
+            "end_cash_usdt": 500.0,
+            "eth_fills": 0,
+            "max_drawdown_pct": -0.0,
+            "min_cash_usdt": 500.0,
+            "net_usdt": 0.0,
+            "paid_fees_usdt": 0.0,
+            "turnover_x_start_cash": 0.0
+          }
+        },
+        "original_v3_dual_rotation_fixed": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 4,
+            "end_cash_usdt": 400.41806088,
+            "eth_fills": 0,
+            "max_drawdown_pct": 20.99464588,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -99.58193912,
+            "paid_fees_usdt": 0.90031938,
+            "turnover_x_start_cash": 1.80063876
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 4,
+            "end_cash_usdt": 398.40172675,
+            "eth_fills": 0,
+            "max_drawdown_pct": 21.08601455,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -101.59827325,
+            "paid_fees_usdt": 2.24538336,
+            "turnover_x_start_cash": 1.79630669
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 4,
+            "end_cash_usdt": 399.61030475,
+            "eth_fills": 0,
+            "max_drawdown_pct": 21.01643993,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -100.38969525,
+            "paid_fees_usdt": 1.34919262,
+            "turnover_x_start_cash": 1.79892349
+          }
+        },
+        "passive_50_BTC_50_ETH_Spot": {
+          "conservative": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 450.67847603,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08606791,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -49.32152397,
+            "paid_fees_usdt": 0.95063011,
+            "turnover_x_start_cash": 1.90126021
+          },
+          "severe": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 448.43070241,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08606791,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -51.56929759,
+            "paid_fees_usdt": 2.37076927,
+            "turnover_x_start_cash": 1.89661541
+          },
+          "stress": {
+            "asset_fill_count": 4,
+            "btc_fills": 2,
+            "end_cash_usdt": 449.77801886,
+            "eth_fills": 2,
+            "max_drawdown_pct": 32.08606791,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -50.22198114,
+            "paid_fees_usdt": 1.42455723,
+            "turnover_x_start_cash": 1.89940965
+          }
+        },
+        "passive_BTC_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 459.86892285,
+            "eth_fills": 0,
+            "max_drawdown_pct": 29.2568022,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -40.13107715,
+            "paid_fees_usdt": 0.95982975,
+            "turnover_x_start_cash": 1.9196595
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 457.57531158,
+            "eth_fills": 0,
+            "max_drawdown_pct": 29.2568022,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -42.42468842,
+            "paid_fees_usdt": 2.39368809,
+            "turnover_x_start_cash": 1.91495047
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 2,
+            "end_cash_usdt": 458.95010314,
+            "eth_fills": 0,
+            "max_drawdown_pct": 29.2568022,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -41.04989686,
+            "paid_fees_usdt": 1.43833603,
+            "turnover_x_start_cash": 1.91778137
+          }
+        },
+        "passive_ETH_Spot_100_percent": {
+          "conservative": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 441.4880292,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.71912431,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -58.5119708,
+            "paid_fees_usdt": 0.94143046,
+            "turnover_x_start_cash": 1.88286092
+          },
+          "severe": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 439.28609324,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.71912431,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -60.71390676,
+            "paid_fees_usdt": 2.34785045,
+            "turnover_x_start_cash": 1.87828036
+          },
+          "stress": {
+            "asset_fill_count": 2,
+            "btc_fills": 0,
+            "end_cash_usdt": 440.60593458,
+            "eth_fills": 2,
+            "max_drawdown_pct": 36.71912431,
+            "min_cash_usdt": 0.0,
+            "net_usdt": -59.39406542,
+            "paid_fees_usdt": 1.41077844,
+            "turnover_x_start_cash": 1.88103792
+          }
+        }
+      }
+    }
+  },
+  "periods_overlap_for_Q1_cross_check_and_continuous_not_independent_samples": true,
+  "portfolio_initial_cash_per_era_usdt": 500,
+  "profiles": {
+    "conservative": {
+      "fee_bps": 10,
+      "initial_cash": 500,
+      "slippage_bps": 5
+    },
+    "severe": {
+      "fee_bps": 25,
+      "initial_cash": 500,
+      "slippage_bps": 15
+    },
+    "stress": {
+      "fee_bps": 15,
+      "initial_cash": 500,
+      "slippage_bps": 10
+    }
+  },
+  "schema": "nexus.portfolio-v3-500-source-six-regimes-vs-passive.v1",
+  "source_original_parquet_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "source_previously_inspected_not_prospective": true,
+  "source_semantic_archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
+}
