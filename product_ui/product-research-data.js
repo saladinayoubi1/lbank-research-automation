@@ -76,6 +76,21 @@
     validation_already_inspected: 'اعتبارسنجیِ بررسی‌شده', historical_test_already_inspected: 'آزمون تاریخیِ بررسی‌شده',
     historically_inspected_test: 'بازهٔ قبلاً بررسی‌شده'}[part] || 'بازهٔ اخیر');
   const measured = value => typeof value === 'number' && Number.isFinite(value) ? esc(value.toFixed(4)) : '—';
+  function entryPrefixSection(proof) {
+    if (!proof) return '';
+    const counts = proof.counts;
+    const compatible = (counts.unique_compatible_witness || 0) + (counts.multiple_compatible_witnesses || 0);
+    return '<p>تطبیق ساختاری ورودهای ثبت‌شده: <b>' + esc(compatible) + ' از ' + esc(proof.recorded_unique_entries_checked) +
+      '</b> سازگار؛ بدون شاهد: ' + esc(counts.incompatible || 0) + '؛ دارای چند زنجیرهٔ سازگار: ' + esc(counts.multiple_compatible_witnesses || 0) +
+      '. فقط کندل‌های بستهٔ پیش از ورود بررسی شده‌اند. این بازسازی پسینی، هویت سیگنال اصلیِ صادرشده را ثابت نمی‌کند.</p>' +
+      '<details><summary>زنجیرهٔ کندل‌های پیش از هر ورود</summary><div class="table-wrap"><table><thead><tr>' +
+      '<th>بازه</th><th>نماد</th><th>کندل ورود</th><th>کف صفر</th><th>سقف یک</th><th>کف دو</th><th>کندل تأیید دو</th><th>بازآزمایی</th><th>بازپس‌گیری</th><th>زمان تکمیل تأیید UTC</th></tr></thead><tbody>' +
+      proof.entries.map(e => (e.witnesses.length ? e.witnesses : [null]).map(w => '<tr>' +
+        [partLabel(e.part), e.symbol, e.entry_index, w?.pivot_w0_center, w?.pivot_w1_center, w?.pivot_w2_center,
+          w?.w2_known_after_closed_index, w?.retest_completed_index, w?.reclaim_completed_index,
+          w?.reclaim_available_utc].map(v => '<td>' + esc(v ?? '—') + '</td>').join('') + '</tr>').join('')).join('') +
+      '</tbody></table></div></details>';
+  }
   function elliottSection(item) {
     const report = item.report;
     const names = {context: 'داده و زمینه', pattern: 'الگو', entry: 'ورود', exit: 'خروج',
@@ -84,7 +99,8 @@
       '<p class="badge warn">رد تاریخی: هر سه بازه در هر دو سناریوی هزینه منفی‌اند</p>' +
       '<p>سرمایهٔ مشترک مبنا: <b>' + esc(item.reference_capital_usdt) + ' USDT</b> برای BTC و ETH؛ موجودی در هر بازه و سناریو از نو آغاز شده است.</p>' +
       '<p>۷۷ مسیر معامله با دو هزینه محاسبه شده‌اند؛ ۱۵۴ مشاهدهٔ مستقل نیستند. این روش یک الگوی جزئیِ موج ۲ است؛ شمارش کامل الیوت و آزمون آیندهٔ دست‌نخورده ندارد.</p>' +
-      '<p>QA مستقل فقط حسابداری و مسیر فیزیکی معاملات ثبت‌شده را بررسی کرده است؛ صحت انتخاب سیگنال‌ها مستقلاً بازتولید نشده است. هیچ بک‌تست تازه‌ای اجرا نشده است.</p>' +
+      '<p>حسابداری و مسیر خروج معاملات ثبت‌شده مستقلاً بررسی شده‌اند. هویت سیگنال اصلی در دفتر قدیمی ثبت نشده؛ هیچ بک‌تست تازه‌ای اجرا نشده است.</p>' +
+      entryPrefixSection(report.entry_prefix_qa) +
       '<div class="table-wrap"><table><thead><tr><th>بازه</th><th>هزینه</th><th>از</th><th>تا</th><th>معاملهٔ بسته</th>' +
       '<th>ناخالص USDT</th><th>کارمزد USDT</th><th>لغزش USDT</th><th>خالص USDT</th><th>میانگین USDT</th><th>بازده ٪</th><th>افت Equity ٪</th></tr></thead><tbody>' +
       report.rows.map(r => '<tr><td>' + esc(partLabel(r.part)) + '</td><td>' +

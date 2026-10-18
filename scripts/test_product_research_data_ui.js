@@ -83,8 +83,9 @@ async function main() {
   const assets = path.join(__dirname, '../product_ui/research-reports');
   const ledger = JSON.parse(fs.readFileSync(path.join(assets, 'elliott-v119-completed-study.json'), 'utf8'));
   const qa = JSON.parse(fs.readFileSync(path.join(assets, 'elliott-v119-fixed-path-accounting-qa.json'), 'utf8'));
+  const entryProof = JSON.parse(fs.readFileSync(path.join(assets, 'elliott-v119-entry-witness-qa.json'), 'utf8'));
   reviewed.reports = [{id: 'ELLIOTT-V119', reference_capital_usdt: 500, evidence_url: 'https://github.com/example/evidence',
-    report: {system_rules: {context: '<script>untrusted</script>'}, rows: qa.rows.map(r => ({...r,
+    report: {system_rules: {context: '<script>untrusted</script>'}, entry_prefix_qa: entryProof, rows: qa.rows.map(r => ({...r,
       first_decision_utc: ledger.results[r.part].start_utc,
       last_decision_utc: ledger.results[r.part].end_utc,
       max_drawdown_pct: null, monthly: ledger.results[r.part].profiles[r.profile].monthly}))}}];
@@ -97,6 +98,9 @@ async function main() {
   assert.match(reportHtml, /<td>—<\/td>/);
   assert.match(reportHtml, /شمارش کامل الیوت/);
   assert.match(reportHtml, /عملکرد ماهانه/);
+  assert.match(reportHtml, /77 از 77/);
+  assert.match(reportHtml, /زنجیرهٔ کندل‌های پیش از هر ورود/);
+  assert.match(reportHtml, /بازسازی پسینی/);
   assert.match(reportHtml, /&lt;script&gt;untrusted&lt;\/script&gt;/);
   assert(!reportHtml.includes('<script>untrusted</script>'));
   assert(!reportHtml.includes('۱۰٬۰۰۰'));
