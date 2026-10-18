@@ -23,6 +23,7 @@ from typing import Any, Callable, Mapping
 from nexus_composite_validation_candidate import verify_candidate
 
 SCHEMA = "nexus.composite-runtime-requalification.v1"
+TRACE_SCHEMA = "nexus.composite-runtime-requalification.v2"
 VERIFY_SCHEMA = "nexus.composite-runtime-requalification-verification.v1"
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
 TIMEFRAMES = ("minute15", "hour1", "hour4")
@@ -90,8 +91,12 @@ def _atomic_json(path: str | Path, value: Mapping[str, Any]) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
     with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        # Per-event v2 evidence is bounded by the existing transport. Avoid
+        # nested indentation multiplying its uncompressed artifact size.
+        formatting = ({"separators": (",", ":")} if value.get("schema_version") == TRACE_SCHEMA
+                      else {"indent": 2})
         handle.write(
-            json.dumps(dict(value), indent=2, sort_keys=True, ensure_ascii=False)
+            json.dumps(dict(value), sort_keys=True, ensure_ascii=False, **formatting)
         )
         handle.write("\n")
         handle.flush()
@@ -224,6 +229,7 @@ def _validate_evaluation(
     value: Mapping[str, Any],
     *,
     candidate: Mapping[str, Any],
+    source_sha: str,
 ) -> dict[str, Any]:
     if not isinstance(value, Mapping) or value.get("symbol") not in SYMBOLS:
         raise CompositeRuntimeRequalificationError("runtime symbol evaluation is invalid")
@@ -258,6 +264,14 @@ def _validate_evaluation(
     }
     clean_profiles = [_validate_profile(row) for row in profiles]
     clean_profiles.sort(key=lambda row: PROFILES.index(row["profile"]))
+    if "emitted_signal_trace" in value:
+        from nexus_composite_signal_trace import SignalTraceError, verify_trace
+        try:
+            verify_trace(value["emitted_signal_trace"], candidate=candidate,
+                         source_sha=source_sha, symbol=value["symbol"], datasets=clean_datasets,
+                         peer_binding=value.get("peer_minute15_binding_sha256"), profiles=clean_profiles)
+        except (SignalTraceError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError("emitted signal trace rejected") from exc
     result = dict(value)
     result["datasets"] = clean_datasets
     result["profiles"] = clean_profiles
@@ -277,6 +291,7 @@ def _default_evaluator(
     from product_research_runtime import ProductResearchRuntime
     from nexus_canonical_paged_history import fetch_verified_15m_window
     from nexus_composite_fill_oracle import CompositeFillOracleError, verify_fills
+    from nexus_composite_signal_trace import capture_signals, bind_fill_audits
 
     runtime = ProductResearchRuntime(
         None,  # type: ignore[arg-type]
@@ -321,7 +336,35 @@ def _default_evaluator(
             },
             peer_15m=peer,
         )
+        dataset_rows = {}
+        for timeframe in TIMEFRAMES:
+            artifact = artifacts[symbol][timeframe]
+            rows = artifact.get("rows")
+            if (
+                not isinstance(rows, list)
+                or len(rows) < 60
+                or not isinstance(rows[0], Mapping)
+                or not isinstance(rows[-1], Mapping)
+            ):
+                raise CompositeRuntimeRequalificationError(
+                    f"fresh canonical {symbol}/{timeframe} rows are unavailable"
+                )
+            dataset_rows[timeframe] = {
+                "timeframe": timeframe,
+                "binding_sha256": artifact.get("binding_sha256"),
+                "row_count": artifact.get("row_count"),
+                "first_open_time_ms": rows[0].get("open_time_ms"),
+                "last_open_time_ms": rows[-1].get("open_time_ms"),
+            }
+
         signals = composite.signal_for(feature_frame, config)
+        capture = capture_signals(
+            feature_frame, signals, candidate=candidate, source_sha=source_sha,
+            symbol=symbol, datasets=dataset_rows,
+            peer_binding=(artifacts[peer_symbol]["minute15"].get("binding_sha256")
+                          if peer is not None else None),
+        )
+        fill_audits = {}
         profile_rows: list[dict[str, Any]] = []
         for profile, fee_bps, slip_bps in (
             (
@@ -359,40 +402,20 @@ def _default_evaluator(
             # This intentionally runs AGAIN during independent QA replay.
             # It neither alters v1 receipt fields nor grants Paper authority.
             try:
-                verify_fills(
+                fill_audits[profile] = verify_fills(
                     feature_frame,
                     signals,
                     fee_bps=fee_bps,
                     slip_bps=slip_bps,
                     risk_variant=int(config["risk_variant"]),
                     observed=first,
+                    include_trace=True,
                 )
             except CompositeFillOracleError as exc:
                 raise CompositeRuntimeRequalificationError(
                     f"independent fill accounting disagrees for {symbol}/{profile}"
                 ) from exc
             profile_rows.append({"profile": profile, **first})
-
-        dataset_rows = {}
-        for timeframe in TIMEFRAMES:
-            artifact = artifacts[symbol][timeframe]
-            rows = artifact.get("rows")
-            if (
-                not isinstance(rows, list)
-                or len(rows) < 60
-                or not isinstance(rows[0], Mapping)
-                or not isinstance(rows[-1], Mapping)
-            ):
-                raise CompositeRuntimeRequalificationError(
-                    f"fresh canonical {symbol}/{timeframe} rows are unavailable"
-                )
-            dataset_rows[timeframe] = {
-                "timeframe": timeframe,
-                "binding_sha256": artifact.get("binding_sha256"),
-                "row_count": artifact.get("row_count"),
-                "first_open_time_ms": rows[0].get("open_time_ms"),
-                "last_open_time_ms": rows[-1].get("open_time_ms"),
-            }
 
         evaluations.append({
             "symbol": symbol,
@@ -405,6 +428,7 @@ def _default_evaluator(
                 if peer is not None else None
             ),
             "profiles": profile_rows,
+            "emitted_signal_trace": bind_fill_audits(capture, fill_audits),
             "deterministic_replay_verified": True,
             "data_origin": "canonical_public_bybit_runtime",
             "closed_candle_finality_verified": True,
@@ -448,10 +472,13 @@ def build_requalification(
             "fresh runtime evaluator must return the complete two-symbol grid"
         )
     evaluations = [
-        _validate_evaluation(row, candidate=verified_candidate)
+        _validate_evaluation(row, candidate=verified_candidate, source_sha=source_sha)
         for row in rows
     ]
     evaluations.sort(key=lambda row: SYMBOLS.index(row["symbol"]))
+    traced = ["emitted_signal_trace" in row for row in evaluations]
+    if any(traced) and not all(traced):
+        raise CompositeRuntimeRequalificationError("both symbols require emitted signal traces")
 
     for timeframe in TIMEFRAMES:
         last_opens = {
@@ -514,7 +541,7 @@ def build_requalification(
         reasons = ["FRESH_CANONICAL_RUNTIME_REPLAY_PASSED"]
 
     core = {
-        "schema_version": SCHEMA,
+        "schema_version": TRACE_SCHEMA if all(traced) else SCHEMA,
         "system_map_node": "VAL-40",
         "candidate_digest": verified_candidate["candidate_digest"],
         "candidate_source_sha": verified_candidate["source_sha"],
@@ -572,7 +599,7 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         core = dict(value)
         claimed = core.pop("requalification_digest", None)
         checks["schema"] = bool(
-            core.get("schema_version") == SCHEMA
+            core.get("schema_version") in {SCHEMA, TRACE_SCHEMA}
             and core.get("system_map_node") == "VAL-40"
         )
         checks["digest"] = isinstance(claimed, str) and claimed == digest(core)
@@ -600,7 +627,8 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         clean_rows = []
         if isinstance(rows, list) and len(rows) == len(SYMBOLS):
             clean_rows = [
-                _validate_evaluation(row, candidate=verified_candidate)
+                _validate_evaluation(row, candidate=verified_candidate,
+                                     source_sha=core.get("requalification_source_sha"))
                 for row in rows
             ]
             clean_rows.sort(key=lambda row: SYMBOLS.index(row["symbol"]))
@@ -644,6 +672,8 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
             len(clean_rows) == len(SYMBOLS)
             and {row["symbol"] for row in clean_rows} == set(SYMBOLS)
             and aligned
+            and all(("emitted_signal_trace" in row) == (core.get("schema_version") == TRACE_SCHEMA)
+                    for row in clean_rows)
             and core.get("evaluations_digest") == digest(clean_rows)
             and (
                 core.get("fresh_history_limit_per_timeframe") == HISTORY_LIMIT

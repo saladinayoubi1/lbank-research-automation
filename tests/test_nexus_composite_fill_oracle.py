@@ -215,6 +215,7 @@ def test_val40_real_entrypoint_refuses_corrupted_engine_numeric_output(
 
     monkeypatch.setattr(producer, "backtest", broken_backtest)
     candidate = {
+        "candidate_digest": "b" * 64,
         "strategy_config": {"mechanism": "structural_pullback", "risk_variant": 0},
         "mechanism": "structural_pullback",
     }
