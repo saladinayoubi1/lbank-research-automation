@@ -24,6 +24,9 @@ FREEZE_FILE=ROOT/"research/portfolio_v3_forward_bybit_source_freeze_20261018.jso
 SCHEMA="nexus.portfolio-v3-forward-bybit-spot-source-freeze.v1"
 INPUT_SCHEMA="nexus.portfolio-v3-external-4h-claimed-source-receipt.v1"
 RESULT_SCHEMA="nexus.portfolio-v3-forward-source-coverage-only.v1"
+# The Git-reviewed original 2026-10-18 freeze file is byte-locked; only CRLF
+# checkout normalization is permitted, never content, keys or benchmark edits.
+EXPECTED_FREEZE_SHA256="99d70217e1ce05fe6429c075e04e7b6f99e042d61947216e51f06493732baed4"
 SYMBOLS=("BTCUSDT","ETHUSDT")
 SHA=re.compile(r"^[a-f0-9]{64}$")
 SOURCE_START=pd.Timestamp("2026-08-01T00:00:00Z")
@@ -85,7 +88,10 @@ def verified_freeze(path:Path=FREEZE_FILE)->tuple[dict,str]:
         or o.get("paper_eligible") is not False
         or o.get("automatic_demo_promotion") is not False):
         raise ForwardSourceError("future source freeze altered or missing exact risk/cash/date contract")
-    return o,sha256(path.read_bytes().replace(b"\r\n",b"\n")).hexdigest()
+    fixed_digest=sha256(path.read_bytes().replace(b"\r\n",b"\n")).hexdigest()
+    if fixed_digest!=EXPECTED_FREEZE_SHA256:
+        raise ForwardSourceError("pre-committed future research freeze byte identity changed")
+    return o,fixed_digest
 
 
 def validate_physical_4h(frame:pd.DataFrame,symbol:str)->dict:
