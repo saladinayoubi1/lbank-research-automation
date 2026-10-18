@@ -1,0 +1,56 @@
+{
+  "schema": "nexus.portfolio-original-engine-shared500-fixed-calibration.v1",
+  "research_only": true,
+  "paper_only": true,
+  "live_trading_authority": false,
+  "automatic_paper_promotion": false,
+  "legacy_execution_engine": "bybit_portfolio_search_v3.exact_backtest",
+  "legacy_experiment": "experiments/bybit_portfolio_search_v3.json",
+  "source_authentication": "six_exact_local_immutable_Bybit_Spot_source_sha256",
+  "source_original_archive_identity": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "source_legacy_v3_manifest_claim": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668",
+  "legacy_manifest_claim_unverified_against_original_pinned_source": true,
+  "model": "fixed_existing_dual_rotation_not_a_new_strategy",
+  "candidate": {
+    "family": "dual_rotation",
+    "params": {
+      "lookbacks": [
+        30,
+        90,
+        180
+      ],
+      "absolute_days": 90,
+      "ma_filter_days": 0,
+      "minimum_absolute_return": 0,
+      "allocation": "winner",
+      "vol_days": 30,
+      "target_vol": 0.3,
+      "rebalance_days": 7,
+      "quantum": 0.25
+    }
+  },
+  "scope": {
+    "start": "2025-01-01",
+    "end": "2025-04-01",
+    "historical_preinspected": true
+  },
+  "execution": {
+    "conservative": {
+      "initial_cash": 500,
+      "fee_bps": 10,
+      "slippage_bps": 5
+    },
+    "stress": {
+      "initial_cash": 500,
+      "fee_bps": 15,
+      "slippage_bps": 10
+    },
+    "severe": {
+      "initial_cash": 500,
+      "fee_bps": 25,
+      "slippage_bps": 15
+    }
+  },
+  "comparison_policy": "no_parameter_tuning_or_selection_after_observed_outcome",
+  "qualification_authority": false
+}
