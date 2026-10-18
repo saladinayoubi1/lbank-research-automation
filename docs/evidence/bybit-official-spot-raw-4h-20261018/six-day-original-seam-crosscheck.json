@@ -1,0 +1,652 @@
+{
+  "comparisons": {
+    "BTCUSDT": {
+      "2026-07-31": {
+        "4h_bars": [
+          {
+            "close": 64367.2,
+            "first_trade_ms": 1785456000346,
+            "high": 65422.4,
+            "last_trade_ms": 1785470396311,
+            "low": 64171.8,
+            "open": 64780.2,
+            "timestamp": "2026-07-31 00:00:00+00:00",
+            "trades": 90505,
+            "volume": 1295.927358000824
+          },
+          {
+            "close": 63934.7,
+            "first_trade_ms": 1785470400152,
+            "high": 64493,
+            "last_trade_ms": 1785484799412,
+            "low": 63858.4,
+            "open": 64365.5,
+            "timestamp": "2026-07-31 04:00:00+00:00",
+            "trades": 60725,
+            "volume": 858.0183250000506
+          },
+          {
+            "close": 63803.2,
+            "first_trade_ms": 1785484800021,
+            "high": 64011.3,
+            "last_trade_ms": 1785499199657,
+            "low": 63601.3,
+            "open": 63934.7,
+            "timestamp": "2026-07-31 08:00:00+00:00",
+            "trades": 59926,
+            "volume": 954.548143000176
+          },
+          {
+            "close": 62717.5,
+            "first_trade_ms": 1785499200672,
+            "high": 63833.2,
+            "last_trade_ms": 1785513598189,
+            "low": 62446.9,
+            "open": 63803.2,
+            "timestamp": "2026-07-31 12:00:00+00:00",
+            "trades": 154435,
+            "volume": 2337.5474710023173
+          },
+          {
+            "close": 62972.6,
+            "first_trade_ms": 1785513600304,
+            "high": 63301.2,
+            "last_trade_ms": 1785527999607,
+            "low": 62707,
+            "open": 62717.5,
+            "timestamp": "2026-07-31 16:00:00+00:00",
+            "trades": 76482,
+            "volume": 1162.2248190004518
+          },
+          {
+            "close": 62885.8,
+            "first_trade_ms": 1785528000099,
+            "high": 63059.5,
+            "last_trade_ms": 1785542398587,
+            "low": 62837.6,
+            "open": 62972.6,
+            "timestamp": "2026-07-31 20:00:00+00:00",
+            "trades": 39395,
+            "volume": 547.6936679999568
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-07-31 00:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 04:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 08:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 12:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 16:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 20:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          }
+        },
+        "raw_compressed_bytes": 3128914,
+        "raw_sha256": "3d2a7d32eed34a28ee90c2861b29fc2d5fbf1461f7f6b0223ae9bc05836aae7a",
+        "trade_rows": 481468
+      },
+      "2026-08-01": {
+        "4h_bars": [
+          {
+            "close": 62998.4,
+            "first_trade_ms": 1785542401142,
+            "high": 63102.8,
+            "last_trade_ms": 1785556792649,
+            "low": 62884.3,
+            "open": 62885.8,
+            "timestamp": "2026-08-01 00:00:00+00:00",
+            "trades": 34148,
+            "volume": 802.8887240000735
+          },
+          {
+            "close": 63046.4,
+            "first_trade_ms": 1785556803677,
+            "high": 63139.9,
+            "last_trade_ms": 1785571198953,
+            "low": 62994.9,
+            "open": 62998.4,
+            "timestamp": "2026-08-01 04:00:00+00:00",
+            "trades": 23128,
+            "volume": 475.1217559999483
+          },
+          {
+            "close": 63075.3,
+            "first_trade_ms": 1785571200021,
+            "high": 63146,
+            "last_trade_ms": 1785585594099,
+            "low": 62987,
+            "open": 63046.4,
+            "timestamp": "2026-08-01 08:00:00+00:00",
+            "trades": 23270,
+            "volume": 467.45462099997246
+          },
+          {
+            "close": 63005.9,
+            "first_trade_ms": 1785585601155,
+            "high": 63127.4,
+            "last_trade_ms": 1785599999966,
+            "low": 63004.9,
+            "open": 63075.3,
+            "timestamp": "2026-08-01 12:00:00+00:00",
+            "trades": 18535,
+            "volume": 382.7355659999999
+          },
+          {
+            "close": 62530.8,
+            "first_trade_ms": 1785600000498,
+            "high": 63029.3,
+            "last_trade_ms": 1785614399080,
+            "low": 62272.5,
+            "open": 63005.8,
+            "timestamp": "2026-08-01 16:00:00+00:00",
+            "trades": 83503,
+            "volume": 1918.2477490007627
+          },
+          {
+            "close": 62823.3,
+            "first_trade_ms": 1785614400565,
+            "high": 62868.5,
+            "last_trade_ms": 1785628786787,
+            "low": 62484.9,
+            "open": 62530.8,
+            "timestamp": "2026-08-01 20:00:00+00:00",
+            "trades": 38567,
+            "volume": 717.9076430000545
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-08-01 00:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 04:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 08:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 12:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 16:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 20:00:00+00:00": {
+            "matched": false
+          }
+        },
+        "raw_compressed_bytes": 1416832,
+        "raw_sha256": "be6bf75c371f8cd1afd302bad339e91a17bc6b189343b6712a587b0fba5f7d94",
+        "trade_rows": 221151
+      },
+      "2026-10-17": {
+        "4h_bars": [
+          {
+            "close": 81565.7,
+            "first_trade_ms": 1792195203571,
+            "high": 81673,
+            "last_trade_ms": 1792209599873,
+            "low": 81404.7,
+            "open": 81614,
+            "timestamp": "2026-10-17 00:00:00+00:00",
+            "trades": 71985,
+            "volume": 638.3084780000042
+          },
+          {
+            "close": 81738.8,
+            "first_trade_ms": 1792209601613,
+            "high": 81775,
+            "last_trade_ms": 1792223996617,
+            "low": 81512.5,
+            "open": 81565.7,
+            "timestamp": "2026-10-17 04:00:00+00:00",
+            "trades": 54507,
+            "volume": 503.56255500002675
+          },
+          {
+            "close": 81572.6,
+            "first_trade_ms": 1792224000016,
+            "high": 81770.2,
+            "last_trade_ms": 1792238399620,
+            "low": 81548.6,
+            "open": 81738.8,
+            "timestamp": "2026-10-17 08:00:00+00:00",
+            "trades": 49868,
+            "volume": 520.7444830000975
+          },
+          {
+            "close": 81353.7,
+            "first_trade_ms": 1792238406427,
+            "high": 81617.1,
+            "last_trade_ms": 1792252799150,
+            "low": 81295.5,
+            "open": 81572.6,
+            "timestamp": "2026-10-17 12:00:00+00:00",
+            "trades": 76964,
+            "volume": 664.0625799997354
+          },
+          {
+            "close": 81601.5,
+            "first_trade_ms": 1792252800211,
+            "high": 81659,
+            "last_trade_ms": 1792267196995,
+            "low": 81189.3,
+            "open": 81353.7,
+            "timestamp": "2026-10-17 16:00:00+00:00",
+            "trades": 81390,
+            "volume": 722.664365999816
+          },
+          {
+            "close": 81487.5,
+            "first_trade_ms": 1792267200147,
+            "high": 81700,
+            "last_trade_ms": 1792281599121,
+            "low": 80810.3,
+            "open": 81601.6,
+            "timestamp": "2026-10-17 20:00:00+00:00",
+            "trades": 133982,
+            "volume": 1036.001838999738
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-10-17 00:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 04:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 08:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 12:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 16:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 20:00:00+00:00": {
+            "matched": false
+          }
+        },
+        "raw_compressed_bytes": 2793440,
+        "raw_sha256": "63ec60563660bbe9bef265405b3c8eb7c56a6b981fd35c9f07ce7c32eab0d3b3",
+        "trade_rows": 468696
+      }
+    },
+    "ETHUSDT": {
+      "2026-07-31": {
+        "4h_bars": [
+          {
+            "close": 1908.78,
+            "first_trade_ms": 1785456000496,
+            "high": 1936.38,
+            "last_trade_ms": 1785470397441,
+            "low": 1899.16,
+            "open": 1918.66,
+            "timestamp": "2026-07-31 00:00:00+00:00",
+            "trades": 28588,
+            "volume": 11072.421280000131
+          },
+          {
+            "close": 1890,
+            "first_trade_ms": 1785470400267,
+            "high": 1911.26,
+            "last_trade_ms": 1785484798430,
+            "low": 1884.46,
+            "open": 1908.78,
+            "timestamp": "2026-07-31 04:00:00+00:00",
+            "trades": 22773,
+            "volume": 8406.721909999955
+          },
+          {
+            "close": 1884.32,
+            "first_trade_ms": 1785484800523,
+            "high": 1893.28,
+            "last_trade_ms": 1785499197362,
+            "low": 1877.77,
+            "open": 1890,
+            "timestamp": "2026-07-31 08:00:00+00:00",
+            "trades": 20470,
+            "volume": 8087.638980000078
+          },
+          {
+            "close": 1862.92,
+            "first_trade_ms": 1785499200537,
+            "high": 1890.55,
+            "last_trade_ms": 1785513597194,
+            "low": 1848.35,
+            "open": 1884.32,
+            "timestamp": "2026-07-31 12:00:00+00:00",
+            "trades": 55271,
+            "volume": 24206.192370001198
+          },
+          {
+            "close": 1868.3,
+            "first_trade_ms": 1785513600353,
+            "high": 1878.08,
+            "last_trade_ms": 1785527999646,
+            "low": 1860.8,
+            "open": 1862.91,
+            "timestamp": "2026-07-31 16:00:00+00:00",
+            "trades": 17970,
+            "volume": 5732.698330000009
+          },
+          {
+            "close": 1862.46,
+            "first_trade_ms": 1785528000103,
+            "high": 1870.74,
+            "last_trade_ms": 1785542399900,
+            "low": 1858.75,
+            "open": 1868.3,
+            "timestamp": "2026-07-31 20:00:00+00:00",
+            "trades": 15236,
+            "volume": 6439.263620000123
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-07-31 00:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 04:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 08:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 12:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 16:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          },
+          "2026-07-31 20:00:00+00:00": {
+            "matched": true,
+            "price_deltas": {
+              "close": 0,
+              "high": 0,
+              "low": 0,
+              "open": 0
+            },
+            "volume_delta": 0
+          }
+        },
+        "raw_compressed_bytes": 1426166,
+        "raw_sha256": "1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851",
+        "trade_rows": 160308
+      },
+      "2026-08-01": {
+        "4h_bars": [
+          {
+            "close": 1869.93,
+            "first_trade_ms": 1785542400784,
+            "high": 1869.94,
+            "last_trade_ms": 1785556791341,
+            "low": 1862.36,
+            "open": 1862.62,
+            "timestamp": "2026-08-01 00:00:00+00:00",
+            "trades": 8809,
+            "volume": 2546.4348499999724
+          },
+          {
+            "close": 1869.67,
+            "first_trade_ms": 1785556801356,
+            "high": 1871.93,
+            "last_trade_ms": 1785571198923,
+            "low": 1865.31,
+            "open": 1869.94,
+            "timestamp": "2026-08-01 04:00:00+00:00",
+            "trades": 9120,
+            "volume": 2490.855650000027
+          },
+          {
+            "close": 1866.81,
+            "first_trade_ms": 1785571204897,
+            "high": 1870.74,
+            "last_trade_ms": 1785585590703,
+            "low": 1863,
+            "open": 1869.67,
+            "timestamp": "2026-08-01 08:00:00+00:00",
+            "trades": 9501,
+            "volume": 3773.1420099999955
+          },
+          {
+            "close": 1870.23,
+            "first_trade_ms": 1785585600079,
+            "high": 1875.6,
+            "last_trade_ms": 1785599997174,
+            "low": 1866.82,
+            "open": 1866.82,
+            "timestamp": "2026-08-01 12:00:00+00:00",
+            "trades": 11057,
+            "volume": 3483.409230000112
+          },
+          {
+            "close": 1837.17,
+            "first_trade_ms": 1785600003272,
+            "high": 1873.64,
+            "last_trade_ms": 1785614390940,
+            "low": 1821.9,
+            "open": 1870.23,
+            "timestamp": "2026-08-01 16:00:00+00:00",
+            "trades": 38467,
+            "volume": 11425.338540000428
+          },
+          {
+            "close": 1844.93,
+            "first_trade_ms": 1785614400338,
+            "high": 1849.23,
+            "last_trade_ms": 1785628797686,
+            "low": 1833,
+            "open": 1837.16,
+            "timestamp": "2026-08-01 20:00:00+00:00",
+            "trades": 12553,
+            "volume": 4424.413880000002
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-08-01 00:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 04:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 08:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 12:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 16:00:00+00:00": {
+            "matched": false
+          },
+          "2026-08-01 20:00:00+00:00": {
+            "matched": false
+          }
+        },
+        "raw_compressed_bytes": 767275,
+        "raw_sha256": "c70b166659252a288f77ffbf409b90e6896bf6fd2bdc1aba6da14e1f2f7429f5",
+        "trade_rows": 89507
+      },
+      "2026-10-17": {
+        "4h_bars": [
+          {
+            "close": 2428.09,
+            "first_trade_ms": 1792195200785,
+            "high": 2433.84,
+            "last_trade_ms": 1792209599464,
+            "low": 2417.71,
+            "open": 2423.63,
+            "timestamp": "2026-10-17 00:00:00+00:00",
+            "trades": 29351,
+            "volume": 7729.006349999676
+          },
+          {
+            "close": 2435.21,
+            "first_trade_ms": 1792209600221,
+            "high": 2438.89,
+            "last_trade_ms": 1792223998592,
+            "low": 2425.55,
+            "open": 2428.09,
+            "timestamp": "2026-10-17 04:00:00+00:00",
+            "trades": 25830,
+            "volume": 5307.948559999889
+          },
+          {
+            "close": 2434.52,
+            "first_trade_ms": 1792224000534,
+            "high": 2442.04,
+            "last_trade_ms": 1792238398847,
+            "low": 2433.4,
+            "open": 2435.21,
+            "timestamp": "2026-10-17 08:00:00+00:00",
+            "trades": 22449,
+            "volume": 4527.408019999939
+          },
+          {
+            "close": 2410.57,
+            "first_trade_ms": 1792238400299,
+            "high": 2435.97,
+            "last_trade_ms": 1792252799624,
+            "low": 2407.6,
+            "open": 2434.53,
+            "timestamp": "2026-10-17 12:00:00+00:00",
+            "trades": 38851,
+            "volume": 7305.472360000156
+          },
+          {
+            "close": 2419.01,
+            "first_trade_ms": 1792252800251,
+            "high": 2421.63,
+            "last_trade_ms": 1792267199180,
+            "low": 2398.94,
+            "open": 2410.56,
+            "timestamp": "2026-10-17 16:00:00+00:00",
+            "trades": 38995,
+            "volume": 7245.999609999827
+          },
+          {
+            "close": 2402.88,
+            "first_trade_ms": 1792267200148,
+            "high": 2425.42,
+            "last_trade_ms": 1792281598961,
+            "low": 2357.1,
+            "open": 2419.02,
+            "timestamp": "2026-10-17 20:00:00+00:00",
+            "trades": 56841,
+            "volume": 11611.589619999844
+          }
+        ],
+        "old_canonical_overlaps": {
+          "2026-10-17 00:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 04:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 08:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 12:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 16:00:00+00:00": {
+            "matched": false
+          },
+          "2026-10-17 20:00:00+00:00": {
+            "matched": false
+          }
+        },
+        "raw_compressed_bytes": 1567092,
+        "raw_sha256": "4819e90143c0571f19e71004d6cafdf5fda7a58b3f4d0da3caf3246fe6eb0c90",
+        "trade_rows": 212317
+      }
+    }
+  },
+  "method": "STREAM_RAW_TRADES_4H_NO_IMPUTED_CANDLES",
+  "source": "https://public.bybit.com/spot/{symbol}/{symbol}_{date}.csv.gz"
+}
