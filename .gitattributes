@@ -31,6 +31,8 @@ research/system_development_requests/*.json text eol=lf
 research/complete_systems/*.json text eol=lf
 research/source_system_economic_requests/*.json text eol=lf
 scripts/nexus_source_system_economic_execution.py text eol=lf
+scripts/select_nexus_bybit_replay_artifact.py text eol=lf
+nexus_demo_archive_replay.py text eol=lf
 requirements.lock text eol=lf
 requirements-dev.lock text eol=lf
 
