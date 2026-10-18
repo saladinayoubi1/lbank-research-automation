@@ -89,12 +89,12 @@ def test_new_executable_grammar_is_not_executable_until_separate_review(tmp_path
     assert value["orders"]==0 and value["live_enabled"] is False
 
 
-def test_separately_signed_exact_contract_can_pass_only_research_gate(tmp_path):
+def test_signal_only_review_cannot_approve_an_incomplete_system(tmp_path):
     root,rel,_,_=materialized(tmp_path)
     allow=approval_base()
     allow["approved_executable_contracts"]=[permit(root,rel)]
     row=module.inspect_candidate(root,rel,allow)
-    assert row["status"]=="APPROVED_FOR_RESEARCH_SIMULATION_ONLY"
+    assert row["status"]=="REVIEW_REQUIRED_COMPLETE_SYSTEM_SPECIFICATION"
     assert row["global_economic_semantic_novelty_proven"] is False
     assert row["strategy_proven_profitable"] is False
 

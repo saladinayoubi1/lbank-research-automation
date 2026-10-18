@@ -1,0 +1,25 @@
+{
+  "schema": "nexus.strategy-source-note.v1",
+  "source_url": "https://www.elliottwave.com/waveopedia/impulse/",
+  "publisher": "Elliott Wave International",
+  "title": "Impulse",
+  "retrieved_utc_date": "2026-10-18",
+  "content_kind": "research_paraphrase_not_provider_raw_bytes",
+  "provider_authentication_verified": false,
+  "findings": [
+    "The public article describes impulse structure, internal subdivisions and non-overlap in cash markets.",
+    "The article distinguishes mandatory counting rules from typical guidelines.",
+    "A complete executable order-entry, position-sizing and portfolio-exit protocol is not specified on this page. This coverage assessment is a research interpretation, not a claim about all Elliott methods."
+  ],
+  "coverage": {
+    "context": "Impulse pattern structure and cash-market wave-count constraints.",
+    "entry": null,
+    "exit": null,
+    "sizing": null,
+    "no_trade": null
+  },
+  "status": "PATTERN_SOURCE_ONLY_COMPLETE_TRADING_SYSTEM_REQUIRED",
+  "automatic_implementation": false,
+  "paper_eligible": false,
+  "live_enabled": false
+}
