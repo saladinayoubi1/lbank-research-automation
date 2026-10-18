@@ -42,6 +42,10 @@ The complete-system schema requires:
 - one frozen study window and no post-hoc tournament;
 - research-only authority with Paper/Live/automatic promotion false.
 
+The six hashes must match the actually imported executor as well as the
+reviewed files. Rehashing a different caller-provided source tree cannot
+impersonate the running code.
+
 Changed source notes, reviewed bytes, executable source or unsupported
 exits/risk fail closed. A changed study window is refused before market input
 lookup. Candidate identity is checked again before signal execution, and the
@@ -65,7 +69,7 @@ No trading rules are invented and attributed to this page.
 
 ## Verification and remaining delivery
 
-Isolated native Laptop2 Python 3.12: **55 tests passed** across complete-system
+Isolated native Laptop2 Python 3.12: **56 tests passed** across complete-system
 integration, existing executable intake and shared-cash physical execution.
 Fixtures test the actual validators with synthetic review/source records.
 They cover missing components, unsupported exits/risk, source/code/window

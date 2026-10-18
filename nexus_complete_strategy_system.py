@@ -102,8 +102,11 @@ def validate_system(root: Path, candidate: Mapping[str, Any], permit: Mapping[st
     if (value["execution_contract"] != dict(execution)
         or permit["execution_contract_digest"] != digest(dict(execution))):
         raise CompleteSystemError("unsupported exit/risk contract requires implementation review")
-    actual_sources = implementation_hashes(root)
-    if value["execution_source_sha256"] != actual_sources:
+    # A caller's data/spec root is not proof of the code actually imported.
+    # A reviewed copy of different source files cannot stand in for this runtime.
+    actual_sources = implementation_hashes(Path(__file__).resolve().parent)
+    if (implementation_hashes(root) != actual_sources
+        or value["execution_source_sha256"] != actual_sources):
         raise CompleteSystemError("complete-system executor code changed after review")
     if (value["selection_basis"] != "one_frozen_hypothesis_no_posthoc_tournament"
         or value["research_only"] is not True or value["paper_eligible"] is not False

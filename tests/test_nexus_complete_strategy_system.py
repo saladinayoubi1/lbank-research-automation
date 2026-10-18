@@ -127,6 +127,16 @@ def test_changed_executor_cannot_reuse_complete_system_review(tmp_path):
         intake.inspect_candidate(root,rel,allow)
 
 
+def test_resealed_alternate_source_tree_cannot_impersonate_the_imported_executor(tmp_path):
+    root,rel,value,allow=full_system(tmp_path)
+    path=root/contract.EXECUTOR_FILES[0]
+    path.write_bytes(path.read_bytes()+b"\n# unexecuted alternate tree\n")
+    value["execution_source_sha256"]=contract.implementation_hashes(root)
+    reseal(root,value,allow)
+    with pytest.raises(intake.IntakeError,match="executor code changed"):
+        intake.inspect_candidate(root,rel,allow)
+
+
 def test_source_article_with_no_entry_rule_cannot_be_attributed_an_entry_rule(tmp_path):
     root,rel,value,allow=full_system(tmp_path)
     value["rule_bindings"]["entry"].update(origin="source",source_ids=["synthetic"])
