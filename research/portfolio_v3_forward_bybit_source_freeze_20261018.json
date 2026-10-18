@@ -1,0 +1,65 @@
+{
+  "schema": "nexus.portfolio-v3-forward-bybit-spot-source-freeze.v1",
+  "research_only": true,
+  "live_enabled": false,
+  "paper_eligible": false,
+  "automatic_demo_promotion": false,
+  "as_of_utc_date": "2026-10-18",
+  "base_main_commit_sha": "2f7ec90a5b01753ec58e5959b0fec6aaa4c2ff01",
+  "original_strategy_id": "b4e4a2c33304aec1",
+  "original_strategy_family": "dual_rotation",
+  "original_fixed_contract": "research/portfolio_existing_engine_shared500_calibration_v1.json",
+  "risk_policy": {
+    "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+    "max_closed_bar_drawdown_fraction": 0.2,
+    "halt_rest_of_research_period": true,
+    "exit": "next_4h_open_sell_first_no_reentry",
+    "live_authority": false
+  },
+  "risk_threshold_selected_after_seeing_historical_34pct_drawdown": true,
+  "source_claim": "Bybit Spot BTCUSDT ETHUSDT direct 4h completed OHLC, independently verified before qualification",
+  "source_extension_start_utc": "2026-08-01T00:00:00Z",
+  "original_pinned_archive_last_4h_open_utc": "2026-07-31T20:00:00Z",
+  "future_scoring_start_utc": "2026-10-19T00:00:00Z",
+  "future_scoring_end_exclusive_utc": "2027-01-17T00:00:00Z",
+  "original_2026_aug_through_2026_oct18_gap_fill_is_warmup_not_independent_scored_evidence": true,
+  "full_horizon_required_for_readiness": true,
+  "required_symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "required_period_hours": 4,
+  "original_wallet_start_cash_usdt": 500,
+  "original_execution_cost_profiles": {
+    "conservative": {
+      "initial_cash": 500,
+      "fee_bps": 10,
+      "slippage_bps": 5
+    },
+    "stress": {
+      "initial_cash": 500,
+      "fee_bps": 15,
+      "slippage_bps": 10
+    },
+    "severe": {
+      "initial_cash": 500,
+      "fee_bps": 25,
+      "slippage_bps": 15
+    }
+  },
+  "comparators": [
+    "existing_dual_rotation_unmodified",
+    "existing_dual_rotation_dd20",
+    "passive_BTC_Spot",
+    "passive_ETH_Spot",
+    "passive_50_50_BTC_ETH",
+    "cash_only"
+  ],
+  "independent_qa_required": true,
+  "no_parameter_search": true,
+  "no_minimum_trade_count_gate": true,
+  "auto_qualification": false,
+  "current_provider_connectivity": "LAPTOP2_PUBLIC_BYBIT_HTTP_403_ON_2026_10_18",
+  "source_readiness": "BLOCKED_NO_INDEPENDENTLY_ATTESTED_FUTURE_DATA",
+  "runtime_deployment": "NONE"
+}
