@@ -50,6 +50,7 @@ def fixture(tmp_path):
 def test_precommitted_forward_protocol_starts_after_known_archive():
     freeze,digest=module.verified_freeze()
     assert len(digest)==64
+    assert digest==module.EXPECTED_FREEZE_SHA256
     assert module.SCORE_START==pd.Timestamp("2026-10-19T00:00:00Z")
     assert module.SCORE_END==pd.Timestamp("2027-01-17T00:00:00Z")
     assert module.SOURCE_START==pd.Timestamp("2026-08-01T00:00:00Z")
@@ -69,6 +70,8 @@ def test_precommitted_forward_protocol_starts_after_known_archive():
     ("live_enabled",True),
     ("auto_qualification",True),
     ("risk_policy",{"schema":"something_else"}),
+    ("comparators",["cash_only"]),
+    ("current_provider_connectivity","UNVERIFIED_CLAIM_OF_HTTP200"),
 ])
 def test_freeze_cannot_be_tuned_later(tmp_path,field,value):
     original,_=module.verified_freeze()
