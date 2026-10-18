@@ -46,3 +46,8 @@ product_ui/research-reports/elliott-v119-fixed-path-accounting-qa.json text eol=
 nexus_elliott_v119_entry_witness_qa.py text eol=lf
 product_ui/research-reports/elliott-v119-entry-witness-qa.json text eol=lf
 
+# Source-bound future replay traces use identical code bytes on every platform.
+nexus_composite_signal_trace.py text eol=lf
+nexus_composite_fill_oracle.py text eol=lf
+nexus_composite_runtime_requalification.py text eol=lf
+

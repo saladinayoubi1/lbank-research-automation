@@ -73,6 +73,7 @@ def recompute(frame: Any, signals: Sequence[bool], *,
         max_dd = Decimal("0")
         open_lot: dict[str, Any] | None = None
         next_atr: Decimal | None = None
+        next_signal: int | None = None
         current_day = None
         baseline = START_CASH
         paused = False
@@ -80,6 +81,7 @@ def recompute(frame: Any, signals: Sequence[bool], *,
         closed = wins = exposure = 0
         gain = loss = turnover = Decimal("0")
         fills: list[dict[str, Any]] = []
+        decisions: dict[int, str] = {}
         previous = None
 
         for idx, row in enumerate(frame.itertuples(index=False)):
@@ -104,7 +106,10 @@ def recompute(frame: Any, signals: Sequence[bool], *,
             entered = False
             if open_lot is None and next_atr is not None and not stopped and not paused:
                 entry_atr = next_atr
+                signal_bar = next_signal
                 next_atr = None
+                next_signal = None
+                decisions[signal_bar] = "INVALID_STOP_GEOMETRY"
                 entry_price = op * (ONE + slip)
                 stop_price = entry_price - entry_atr * stop_multiplier
                 target_price = entry_price + entry_atr * stop_multiplier * reward_multiplier
@@ -115,18 +120,22 @@ def recompute(frame: Any, signals: Sequence[bool], *,
                     quantity = min(capital_qty, risk_qty)
                     paid = quantity * entry_price
                     in_fee = paid * fee
+                    decisions[signal_bar] = "NO_COLLATERAL_CAPACITY"
                     if quantity > 0 and paid + in_fee <= balance:
                         balance -= paid + in_fee
                         open_lot = {
                             "quantity": quantity, "entry": entry_price,
                             "entry_fee": in_fee, "stop": stop_price,
                             "target": target_price, "bars": 0,
+                            "signal_bar": signal_bar,
                         }
                         turnover += paid
                         entered = True
+                        decisions[signal_bar] = "ENTRY_FILLED"
                         fills.append({
                             "bar": idx, "side": "BUY", "price": entry_price,
                             "quantity": quantity, "fee": in_fee,
+                            "signal_bar": signal_bar,
                         })
             if open_lot is not None:
                 exposure += 1
@@ -158,6 +167,7 @@ def recompute(frame: Any, signals: Sequence[bool], *,
                         "bar": idx, "side": "SELL", "price": exit_price,
                         "quantity": size, "fee": out_fee, "pnl": profit,
                         "reason": reason,
+                        "signal_bar": open_lot["signal_bar"],
                     })
                     open_lot = None
             mark = balance + (open_lot["quantity"] * cl if open_lot else 0)
@@ -167,11 +177,24 @@ def recompute(frame: Any, signals: Sequence[bool], *,
                 paused = True
             if max_dd > Decimal("0.10"):
                 stopped = True
-            if open_lot is None and not entered and not stopped and not paused and idx < len(frame) - 1:
-                if bool(signals[idx]):
+            if bool(signals[idx]):
+                if stopped:
+                    decisions[idx] = "DRAWDOWN_HALT"
+                elif paused:
+                    decisions[idx] = "DAILY_LOSS_PAUSE"
+                elif open_lot is not None:
+                    decisions[idx] = "POSITION_OCCUPIED"
+                elif entered:
+                    decisions[idx] = "ENTRY_BAR_REARM_SUPPRESSED"
+                elif idx == len(frame) - 1:
+                    decisions[idx] = "TERMINAL_NO_NEXT_OPEN"
+                else:
                     atr = _num(row.atr, "atr")
+                    decisions[idx] = "UNAVAILABLE_POSITIVE_PRIOR_RANGE"
                     if atr > 0:
                         next_atr = atr
+                        next_signal = idx
+                        decisions[idx] = "PENDING_NEXT_OPEN"
         if open_lot is not None:
             raise CompositeFillOracleError("unliquidated position at data end")
         net = balance - START_CASH
@@ -192,12 +215,14 @@ def recompute(frame: Any, signals: Sequence[bool], *,
             "concurrent_risk_model":
                 "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
             "fills": fills,
+            "signal_decisions": [{"signal_bar": i, "outcome": reason}
+                                 for i, reason in sorted(decisions.items())],
         }
 
 
 def verify_fills(frame: Any, signals: Sequence[bool], *,
                  fee_bps: float, slip_bps: float, risk_variant: int,
-                 observed: Mapping[str, Any]) -> dict[str, Any]:
+                 observed: Mapping[str, Any], include_trace: bool = False) -> dict[str, Any]:
     """Fail closed on a *distinct* accounting implementation's discrepancy."""
     if not isinstance(observed, Mapping):
         raise CompositeFillOracleError("oracle observed profile missing")
@@ -232,10 +257,15 @@ def verify_fills(frame: Any, signals: Sequence[bool], *,
             != _num(slip_bps, "slippage_bps")
     ):
         raise CompositeFillOracleError("independent fill oracle cost profile changed")
-    return {
+    result = {
         "decision": "PASS_RESEARCH_ONLY",
         "closed_round_trips": own["closed_round_trips"],
         "evaluated_fills": len(own["fills"]),
         "owner_demo_admission": False,
         "live_trading_authority": False,
     }
+    if include_trace:
+        result["signal_decisions"] = own["signal_decisions"]
+        result["fills"] = [{key: str(value) if isinstance(value, Decimal) else value
+                            for key, value in fill.items()} for fill in own["fills"]]
+    return result

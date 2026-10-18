@@ -67,6 +67,8 @@ def test_runtime_never_receives_qualification_paper_or_live_authority() -> None:
 def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     text = _text()
     assert "tests/test_nexus_composite_runtime_requalification.py" in text
+    assert "tests/test_nexus_composite_signal_trace.py" in text
+    assert 'result.get("schema_version") != TRACE_SCHEMA' in text
     assert "tests/test_nexus_composite_runtime_requalification_workflow.py" in text
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text
@@ -96,8 +98,8 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=" in physical
-    assert 'test "$evidence_size" -le 500000' in physical
-    assert 'test "${#evidence_b64}" -le 700000' in physical
+    assert 'test "$evidence_size" -le 3000000' in physical
+    assert 'test "${#evidence_b64}" -le 4200000' in physical
     assert "zipfile.ZIP_DEFLATED" in physical
     assert "$WORK_ROOT/evidence.zip" in physical
     assert "needs: runtime-requalification" in hosted
