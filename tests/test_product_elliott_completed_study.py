@@ -12,7 +12,7 @@ from nexus_elliott_v119_accounting_qa import (
     ENGINE_SHA256, LEDGER_SHA256, RESULT_DIGEST, digest, fixed_trade_exit,
 )
 from product_elliott_research import (
-    DISPOSITION, LEDGER_FILE, QA_FILE, REPORT_ID, WORKSPACE_ID, completed_study,
+    DISPOSITION, ENTRY_QA_FILE, LEDGER_FILE, QA_FILE, REPORT_ID, WORKSPACE_ID, completed_study,
 )
 from product_research_reports import ResearchReportStore, safe_json
 from product_strategy_workspace import StrategyWorkspace, StrategyWorkspaceError
@@ -49,9 +49,23 @@ def test_projection_preserves_shared_cash_negative_results_and_evidence_limits()
     assert set(report["system_rules"]) == {"context", "pattern", "entry", "exit", "timeout", "sizing", "no_trade", "costs"}
 
 
+def test_entry_prefix_proof_covers_exact_recorded_entries_without_promoting_its_scope():
+    item = completed_study(ASSETS, safe_json)
+    proof = item["report"]["entry_prefix_qa"]
+    assert proof["counts"] == {"unique_compatible_witness": 77}
+    assert proof["recorded_unique_entries_checked"] == len(proof["entries"]) == 77
+    assert proof["all_recorded_entries_compatible"] is True
+    assert proof["historical_backtest_reexecuted"] is False
+    assert proof["original_signal_event_identity_verified"] is False
+    assert proof["signal_to_entry_causality_independently_verified"] is False
+    assert item["report"]["signal_to_entry_causality_independently_verified"] is False
+    assert item["original_verdict"] == DISPOSITION and item["execution_eligible"] is False
+
+
 @pytest.mark.parametrize("target,mutation", [
     (LEDGER_FILE, "positive_result"), (LEDGER_FILE, "promote"),
     (QA_FILE, "scope"), (QA_FILE, "missing"), (QA_FILE, "duplicate_key"),
+    (ENTRY_QA_FILE, "missing"), (ENTRY_QA_FILE, "entry_scope"), (ENTRY_QA_FILE, "entry_index"),
 ])
 def test_missing_or_changed_evidence_cannot_publish_a_verified_elliott_report(tmp_path, target, mutation):
     shutil.copytree(ASSETS, tmp_path / "research-reports")
@@ -67,6 +81,12 @@ def test_missing_or_changed_evidence_cannot_publish_a_verified_elliott_report(tm
             value["result_digest"] = digest({k: v for k, v in value.items() if k != "result_digest"})
         elif mutation == "promote":
             value["paper_eligible"] = True
+        elif mutation == "entry_scope":
+            value["original_signal_event_identity_verified"] = True
+            value["entry_witness_qa_digest"] = digest({k: v for k, v in value.items() if k != "entry_witness_qa_digest"})
+        elif mutation == "entry_index":
+            value["entries"][0]["entry_index"] += 1
+            value["entry_witness_qa_digest"] = digest({k: v for k, v in value.items() if k != "entry_witness_qa_digest"})
         else:
             value["signal_to_entry_causality_independently_verified"] = True
             value["qa_digest"] = digest({k: v for k, v in value.items() if k != "qa_digest"})

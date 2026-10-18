@@ -43,4 +43,6 @@ requirements-dev.lock text eol=lf
 research/elliott_v119_wave2_support/retest_v119.py text eol=lf
 product_ui/research-reports/elliott-v119-completed-study.json text eol=lf
 product_ui/research-reports/elliott-v119-fixed-path-accounting-qa.json text eol=lf
+nexus_elliott_v119_entry_witness_qa.py text eol=lf
+product_ui/research-reports/elliott-v119-entry-witness-qa.json text eol=lf
 

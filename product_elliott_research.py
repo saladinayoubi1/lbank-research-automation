@@ -5,6 +5,7 @@ No engine import, signal generation, worker dispatch or qualification authority.
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from pathlib import Path
 
 from nexus_elliott_v119_accounting_qa import (
@@ -16,6 +17,9 @@ WORKSPACE_ID = "research:elliott_wave2_support_v119"
 LEDGER_FILE = "elliott-v119-completed-study.json"
 QA_FILE = "elliott-v119-fixed-path-accounting-qa.json"
 QA_DIGEST = "4b3f45e619c1e3814a9b60400e58127673af3ffb6b69a30589bbeda1c967dd0a"
+ENTRY_QA_FILE = "elliott-v119-entry-witness-qa.json"
+ENTRY_QA_DIGEST = "9770c358544cfb53430306bba92e48816c4f2380b2a3ab208225e8ea1f7ce6ae"
+ENTRY_CHECKER_SHA256 = "22d8b83982ee5248628a009209e84cd8039207ad8438fed8e43794b520d6c2cf"
 SOURCE_COMMIT = "1b8066939d3790cb3dd558946e5f19b25a96d646"
 DISPOSITION = "HISTORICAL_NEGATIVE_DO_NOT_RETUNE"
 EVIDENCE_URL = (
@@ -35,6 +39,61 @@ def workspace_entry():
         "hypothesis": "بازآزمایی حمایت موج ۲ پس از تأیید پیوت، بازپس‌گیری صعودی و ورود در بازشدن کندل بعد؛ یک الگوی جزئی، بدون شمارش کامل الیوت.",
         "invalidation": "آزمون تاریخی ثابت در هر سه بازه و هر دو سناریوی هزینه منفی است؛ پژوهش رد شده و تنظیم مجدد روی همین داده‌ها انجام نمی‌شود.",
     }
+
+
+def entry_prefix_qa(root, load_json, ledger):
+    proof = load_json(root / ENTRY_QA_FILE)
+    if (proof.get("entry_witness_qa_digest") != ENTRY_QA_DIGEST
+            or digest({k: v for k, v in proof.items() if k != "entry_witness_qa_digest"}) != ENTRY_QA_DIGEST):
+        raise ValueError("V119 entry-prefix QA digest mismatch")
+    if (proof.get("schema") != "nexus.elliott-v119-recorded-entry-prefix-witness-qa.v1"
+            or proof.get("audit_completed") is not True
+            or proof.get("fixed_recorded_entry_prefixes_checked") is not True
+            or proof.get("source_shas") != SOURCE_SHAS
+            or proof.get("ledger_raw_sha256") != LEDGER_SHA256
+            or proof.get("result_digest") != RESULT_DIGEST
+            or proof.get("engine_raw_sha256") != ENGINE_SHA256
+            or proof.get("entry_checker_raw_sha256") != ENTRY_CHECKER_SHA256
+            or proof.get("recorded_unique_entries_checked") != 77
+            or proof.get("costed_ledger_rows_represented") != 154):
+        raise ValueError("V119 entry-prefix source/coverage mismatch")
+    if (any(proof.get(k) is not False for k in (
+        "all_source_signal_universe_regenerated", "new_entry_selection_performed",
+        "historical_backtest_reexecuted", "economic_result_recomputed",
+        "original_signal_event_identity_verified", "signal_to_entry_causality_independently_verified",
+        "full_elliott_wave_count_verified", "independent_future_holdout",
+        "paper_eligible", "automatic_demo_promotion", "live_enabled",
+    )) or proof.get("orders") != 0 or proof.get("disposition") != DISPOSITION
+            or proof.get("evidence_kind") != "retrospectively_reconstructed_closed_prefix_compatibility"):
+        raise ValueError("V119 entry-prefix evidence scope/authority mismatch")
+    expected = {(part, trade["symbol"], trade["entry_index"], trade["exit_index"])
+                for part in PARTS for trade in ledger["results"][part]["profiles"]["conservative"]["trades"]}
+    entries = proof.get("entries")
+    if not isinstance(entries, list) or len(entries) != 77:
+        raise ValueError("V119 entry-prefix rows incomplete")
+    actual = {(e["part"], e["symbol"], e["entry_index"], e["exit_index"]) for e in entries}
+    if actual != expected or len(actual) != 77:
+        raise ValueError("V119 entry-prefix ledger correspondence mismatch")
+    counts = Counter()
+    for entry in entries:
+        witnesses = entry["witnesses"]
+        status = "incompatible" if not witnesses else "unique_compatible_witness" if len(witnesses) == 1 else "multiple_compatible_witnesses"
+        if entry["compatible_witness_count"] != len(witnesses) or entry["status"] != status:
+            raise ValueError("V119 entry-prefix ambiguity coverage mismatch")
+        counts[status] += 1
+        for w in witnesses:
+            if (digest({k: v for k, v in w.items() if k != "reconstructed_witness_sha256"}) != w["reconstructed_witness_sha256"]
+                    or not 0 <= w["pivot_w0_center"] < w["pivot_w1_center"] < w["pivot_w2_center"]
+                    or w["w2_known_after_closed_index"] != w["pivot_w2_center"] + 3
+                    or not w["w2_known_after_closed_index"] < w["retest_completed_index"] < w["reclaim_completed_index"]
+                    or w["retest_completed_index"] != entry["entry_index"] - 2
+                    or w["reclaim_completed_index"] != w["prefix_last_index"]
+                    or w["entry_index"] != entry["entry_index"]
+                    or w["reclaim_completed_index"] != entry["entry_index"] - 1):
+                raise ValueError("V119 entry-prefix chronology/digest mismatch")
+    if proof["counts"] != dict(counts) or proof["all_recorded_entries_compatible"] is not (counts["incompatible"] == 0):
+        raise ValueError("V119 entry-prefix summary mismatch")
+    return proof
 
 
 def completed_study(root: Path, load_json):
@@ -96,11 +155,13 @@ def completed_study(root: Path, load_json):
         "no_trade": "شکستن کف موج ۲ پیش از ورود، بازشدن نامعتبر، نسبت سود به زیان ناکافی، هدف غیرقابل‌دسترس پس از لغزش، اشغال حساب یا کمبود موجودی باعث عدم ورود می‌شود.",
         "costs": "محافظه‌کارانه: کارمزد ۱۰ و لغزش ۵ واحد پایه در هر سمت؛ سخت: کارمزد ۲۵ و لغزش ۱۵ واحد پایه در هر سمت.",
     }
+    entry_proof = entry_prefix_qa(root, load_json, ledger)
     return {
         "id": REPORT_ID, "status": "verified", "provider": "Bybit",
         "reference_capital_usdt": 500, "report_sha256": RESULT_DIGEST,
         "source_sha": SOURCE_COMMIT, "engine_raw_sha256": ENGINE_SHA256,
         "ledger_raw_sha256": LEDGER_SHA256, "accounting_qa_digest": QA_DIGEST,
+        "entry_prefix_qa_digest": ENTRY_QA_DIGEST,
         "original_verdict": DISPOSITION, "evidence_kind": "fixed_recorded_path_accounting_qa",
         "evidence_url": EVIDENCE_URL, "run_url": None, "verified_data": None,
         "execution_eligible": False,
@@ -108,6 +169,7 @@ def completed_study(root: Path, load_json):
                    "system_rules": rules, "frozen_config": ledger["input_frozen_config"],
                    "full_elliott_wave_count_verified": False, "independent_future_holdout": False,
                    "signal_to_entry_causality_independently_verified": False,
+                   "entry_prefix_qa": entry_proof,
                    "backtest_reexecuted": False, "cash_resets_per_partition_and_profile": True,
                    "unique_recorded_trade_paths": 77, "recorded_costed_trade_rows": 154,
                    "paper_eligible": False, "live_enabled": False},
