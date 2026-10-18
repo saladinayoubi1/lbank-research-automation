@@ -33,8 +33,8 @@
       byId(prefix + 'MarketPanel')?.setAttribute('data-provider', market.provider);
     }
     panel(byId('view-research'), 'reviewedResearchPanel',
-      '<header><div><span>A6 / A7 / A9</span><h2>گزارش‌های بررسی‌شدهٔ پژوهش</h2></div><button id="reviewedReportsRefresh" class="small-btn">بازخوانی گزارش‌ها</button></header>' +
-      '<p>مبنای محاسبات هر پژوهش ۱۰٬۰۰۰ USDT است. سناریوهای هزینه مستقل‌اند و تعداد معاملاتشان با هم جمع نمی‌شود.</p><div id="reviewedResearchReports"></div>');
+      '<header><div><span>A6 / A7 / A9 / ELLIOTT</span><h2>گزارش‌های بررسی‌شدهٔ پژوهش</h2></div><button id="reviewedReportsRefresh" class="small-btn">بازخوانی گزارش‌ها</button></header>' +
+      '<p>سرمایهٔ مبنا در هر گزارش درج شده است. سناریوهای هزینه مستقل‌اند و تعداد معاملاتشان با هم جمع نمی‌شود.</p><div id="reviewedResearchReports"></div>');
   }
   function marketRow(d, market) {
     return '<tr><td>' + market.label + ' · Spot</td><td>' + esc(d.symbol) + '</td><td>' + esc(d.timeframe) + '</td><td>' +
@@ -72,7 +72,36 @@
     if (state) state.textContent = error.message;
     byId(market.prefix + 'MarketTable')?.querySelectorAll('[data-current]').forEach(cell => { cell.textContent = 'تازگی تأیید نشده'; });
   }
-  const partLabel = part => ({train: 'آموزش', validation: 'اعتبارسنجی', historically_inspected_test: 'بازهٔ قبلاً بررسی‌شده'}[part] || 'بازهٔ اخیر');
+  const partLabel = part => ({train: 'آموزش', training: 'آموزش', validation: 'اعتبارسنجی',
+    validation_already_inspected: 'اعتبارسنجیِ بررسی‌شده', historical_test_already_inspected: 'آزمون تاریخیِ بررسی‌شده',
+    historically_inspected_test: 'بازهٔ قبلاً بررسی‌شده'}[part] || 'بازهٔ اخیر');
+  const measured = value => typeof value === 'number' && Number.isFinite(value) ? esc(value.toFixed(4)) : '—';
+  function elliottSection(item) {
+    const report = item.report;
+    const names = {context: 'داده و زمینه', pattern: 'الگو', entry: 'ورود', exit: 'خروج',
+      timeout: 'مهلت خروج', sizing: 'اندازه و ریسک', no_trade: 'عدم ورود', costs: 'هزینه'};
+    return '<section class="reviewed-report"><h3>ELLIOTT-V119 · Bybit Spot · 15m</h3>' +
+      '<p class="badge warn">رد تاریخی: هر سه بازه در هر دو سناریوی هزینه منفی‌اند</p>' +
+      '<p>سرمایهٔ مشترک مبنا: <b>' + esc(item.reference_capital_usdt) + ' USDT</b> برای BTC و ETH؛ موجودی در هر بازه و سناریو از نو آغاز شده است.</p>' +
+      '<p>۷۷ مسیر معامله با دو هزینه محاسبه شده‌اند؛ ۱۵۴ مشاهدهٔ مستقل نیستند. این روش یک الگوی جزئیِ موج ۲ است؛ شمارش کامل الیوت و آزمون آیندهٔ دست‌نخورده ندارد.</p>' +
+      '<p>QA مستقل فقط حسابداری و مسیر فیزیکی معاملات ثبت‌شده را بررسی کرده است؛ صحت انتخاب سیگنال‌ها مستقلاً بازتولید نشده است. هیچ بک‌تست تازه‌ای اجرا نشده است.</p>' +
+      '<div class="table-wrap"><table><thead><tr><th>بازه</th><th>هزینه</th><th>از</th><th>تا</th><th>معاملهٔ بسته</th>' +
+      '<th>ناخالص USDT</th><th>کارمزد USDT</th><th>لغزش USDT</th><th>خالص USDT</th><th>میانگین USDT</th><th>بازده ٪</th><th>افت Equity ٪</th></tr></thead><tbody>' +
+      report.rows.map(r => '<tr><td>' + esc(partLabel(r.part)) + '</td><td>' +
+        (r.profile === 'stress' ? 'سخت' : 'محافظه‌کارانه') + '</td><td>' + esc(r.first_decision_utc) + '</td><td>' + esc(r.last_decision_utc) +
+        '</td><td>' + esc(r.round_trips) + '</td>' + [r.gross_pnl_usdt, r.fees_usdt, r.slippage_usdt, r.net_pnl_usdt,
+          r.mean_pnl_usdt, r.net_return_pct, r.max_drawdown_pct].map(v => '<td>' + measured(v) + '</td>').join('') + '</tr>').join('') +
+      '</tbody></table></div><p>افت Equity در شواهد اصلی اندازه‌گیری نشده است؛ علامت — به معنی صفر نیست. زمان خروج در دفتر، زمان بازشدن کندل منبع است.</p>' +
+      '<details><summary>قواعد ثابت سیستم</summary>' + Object.entries(report.system_rules).map(([key, value]) =>
+        '<p><b>' + esc(names[key] || key) + ':</b> ' + esc(value) + '</p>').join('') + '</details>' +
+      '<details><summary>عملکرد ماهانهٔ هر بازه و هزینه</summary>' + report.rows.map(r => '<h4>' + esc(partLabel(r.part)) + ' · ' + esc(r.profile) + '</h4>' +
+        '<div class="table-wrap"><table><thead><tr><th>ماه خروج</th><th>معامله</th><th>خالص USDT</th><th>میانگین USDT</th></tr></thead><tbody>' +
+        r.monthly.map(m => '<tr><td>' + esc(m.month) + '</td><td>' + esc(m.round_trips) + '</td><td>' + measured(m.net_pnl_usdt) + '</td><td>' +
+          measured(m.mean_pnl_usdt) + '</td></tr>').join('') + '</tbody></table></div>').join('') + '</details>' +
+      '<p>این نتیجه برای دمو پذیرفته نشده است و روی همین بازه‌ها دوباره تنظیم نمی‌شود. <a href="' + esc(item.evidence_url) +
+      '" target="_blank" rel="noopener noreferrer">شواهد پژوهش ثابت</a></p>' +
+      '<details><summary>شواهد و محدودهٔ بررسی</summary><pre>' + esc(JSON.stringify(item, null, 2)) + '</pre></details></section>';
+  }
   function reportRow(r) {
     const values = [r.symbol, partLabel(r.part), r.profile === 'stress' ? 'سخت' : 'محافظه‌کارانه',
       r.first_decision_utc, r.last_decision_utc, r.bars, r.closed_round_trips ?? r.closed_trades,
@@ -80,12 +109,13 @@
     return '<tr>' + values.map(v => '<td>' + esc(v) + '</td>').join('') + '</tr>';
   }
   function reportSection(item) {
+    if (item.id === 'ELLIOTT-V119') return elliottSection(item);
     const report = item.report;
     const rows = [...report.rows].sort((a, b) => (b.symbol + ':' + (b.part || '') + ':' + b.profile).localeCompare(a.symbol + ':' + (a.part || '') + ':' + a.profile));
     const verdict = item.id === 'A7' ? 'رد شد: هیچ سلول اخیر در سناریوی سخت مثبت نبود' : 'تأیید نشد: دادهٔ آیندهٔ مستقل لازم است';
-    const dataNote = item.verified_data ? '<p>دادهٔ تاریخی BTC/ETH: بررسی مستقل ۶۰ آرشیو و ۵٬۷۶۰ کندل موفق. راهبرد A6 در هر شش بخش هزینهٔ تنش منفی و برای ورود به دمو رد شده است. دادهٔ آیندهٔ دست‌نخورده و تطبیق زندهٔ سمت معامله هنوز موجود نیست.</p>' : '';
+    const dataNote = item.id === 'A6' && item.verified_data ? '<p>دادهٔ تاریخی BTC/ETH: بررسی مستقل ۶۰ آرشیو و ۵٬۷۶۰ کندل موفق. راهبرد A6 در هر شش بخش هزینهٔ تنش منفی و برای ورود به دمو رد شده است. دادهٔ آیندهٔ دست‌نخورده و تطبیق زندهٔ سمت معامله هنوز موجود نیست.</p>' : '';
     return '<section class="reviewed-report"><h3>' + esc(item.id) + ' · Bybit</h3><p class="badge warn">' + esc(verdict) + '</p>' +
-      '<p>' + esc(item.original_verdict) + '</p><p>منبع کد: <span class="mono">' + esc(item.source_sha.slice(0, 12)) +
+      '<p>سرمایهٔ مبنا: ' + esc(item.reference_capital_usdt) + ' USDT</p><p>' + esc(item.original_verdict) + '</p><p>منبع کد: <span class="mono">' + esc(item.source_sha.slice(0, 12)) +
       '</span> · <a href="' + esc(item.evidence_url || item.run_url) + '" target="_blank" rel="noopener noreferrer">' + (item.evidence_kind === 'physical_local_research' ? 'مدرک اجرای محلی و QA مستقل' : 'اجرای ثبت‌شده') + '</a></p>' + dataNote +
       '<div class="table-wrap"><table><thead><tr><th>نماد</th><th>بازه</th><th>هزینه</th><th>از</th><th>تا</th><th>کندل</th><th>معاملهٔ بسته</th><th>بازده خالص ٪</th><th>افت سرمایه ٪</th></tr></thead><tbody>' +
       rows.map(reportRow).join('') + '</tbody></table></div><details><summary>مدرک و نتیجهٔ اصلی پژوهش</summary><pre>' +

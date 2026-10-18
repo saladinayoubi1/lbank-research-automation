@@ -1,0 +1,155 @@
+{
+  "absolute_usdt_tolerance": "0.000001",
+  "automatic_demo_promotion": false,
+  "backtest_reexecuted": false,
+  "disposition": "HISTORICAL_NEGATIVE_DO_NOT_RETUNE",
+  "engine_raw_sha256": "c19d49e644fe0067e405b5cc25366f54b33d403c5445bd9dd56d7210c9de1672",
+  "exit_utc_semantics": "source_bar_open_timestamp_not_exact_intrabar_fill_time",
+  "fixed_recorded_trade_paths_checked": true,
+  "full_elliott_wave_count_verified": false,
+  "independent_future_holdout": false,
+  "ledger_raw_sha256": "46be9c744f14d73d0be391f3b164d127ef93e5bcc80f701225b34ab8838e2546",
+  "live_enabled": false,
+  "monthly_rows_checked": 74,
+  "orders": 0,
+  "paper_eligible": false,
+  "partition_cost_cells_checked": 6,
+  "passed": true,
+  "qa_digest": "4b3f45e619c1e3814a9b60400e58127673af3ffb6b69a30589bbeda1c967dd0a",
+  "recorded_trade_rows_checked": 154,
+  "result_digest": "bd27b37d66caabfd79e7d19ad158bdf665e0efce51772167e98ea05957f90fb8",
+  "rows": [
+    {
+      "ending_cash_usdt": 477.19685404,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 14,
+        "STRUCTURE_STOP_ONLY": 25,
+        "TIMEOUT_OR_PARTITION_END_OPEN": 3
+      },
+      "fees_usdt": 19.66829789,
+      "gross_pnl_usdt": 6.69930255,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 5.60539759,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -0.54293205,
+      "monthly_rows_checked": 20,
+      "net_pnl_usdt": -22.80314596,
+      "net_return_pct": -4.56062919,
+      "part": "training",
+      "profile": "conservative",
+      "round_trips": 42,
+      "slippage_usdt": 9.83415062
+    },
+    {
+      "ending_cash_usdt": 444.96295258,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 14,
+        "STRUCTURE_STOP_ONLY": 25,
+        "TIMEOUT_OR_PARTITION_END_OPEN": 3
+      },
+      "fees_usdt": 37.3270568,
+      "gross_pnl_usdt": 4.686254,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 11.19579669,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -1.31040589,
+      "monthly_rows_checked": 20,
+      "net_pnl_usdt": -55.03704742,
+      "net_return_pct": -11.00740948,
+      "part": "training",
+      "profile": "stress",
+      "round_trips": 42,
+      "slippage_usdt": 22.39624462
+    },
+    {
+      "ending_cash_usdt": 480.0585327,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 5,
+        "STRUCTURE_STOP_ONLY": 14
+      },
+      "fees_usdt": 8.17188627,
+      "gross_pnl_usdt": -7.68363982,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 3.98829346,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -1.04955091,
+      "monthly_rows_checked": 10,
+      "net_pnl_usdt": -19.9414673,
+      "net_return_pct": -3.98829346,
+      "part": "validation_already_inspected",
+      "profile": "conservative",
+      "round_trips": 19,
+      "slippage_usdt": 4.08594121
+    },
+    {
+      "ending_cash_usdt": 469.87668509,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 5,
+        "STRUCTURE_STOP_ONLY": 14
+      },
+      "fees_usdt": 15.004738,
+      "gross_pnl_usdt": -6.11574788,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 6.02466298,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -1.58543763,
+      "monthly_rows_checked": 10,
+      "net_pnl_usdt": -30.12331491,
+      "net_return_pct": -6.02466298,
+      "part": "validation_already_inspected",
+      "profile": "stress",
+      "round_trips": 19,
+      "slippage_usdt": 9.00282904
+    },
+    {
+      "ending_cash_usdt": 493.59221406,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 7,
+        "STRUCTURE_STOP_ONLY": 9
+      },
+      "fees_usdt": 7.36229142,
+      "gross_pnl_usdt": 4.63565234,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 1.90452365,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -0.40048662,
+      "monthly_rows_checked": 7,
+      "net_pnl_usdt": -6.40778594,
+      "net_return_pct": -1.28155719,
+      "part": "historical_test_already_inspected",
+      "profile": "conservative",
+      "round_trips": 16,
+      "slippage_usdt": 3.68114687
+    },
+    {
+      "ending_cash_usdt": 481.1822442,
+      "exit_causes": {
+        "PRECOMMITTED_TARGET": 7,
+        "STRUCTURE_STOP_ONLY": 9
+      },
+      "fees_usdt": 13.58327049,
+      "gross_pnl_usdt": 2.91548355,
+      "initial_shared_cash_usdt": 500,
+      "max_closed_cash_drawdown_pct": 3.76355116,
+      "max_equity_drawdown_pct": null,
+      "mean_pnl_usdt": -1.17610974,
+      "monthly_rows_checked": 7,
+      "net_pnl_usdt": -18.8177558,
+      "net_return_pct": -3.76355116,
+      "part": "historical_test_already_inspected",
+      "profile": "stress",
+      "round_trips": 16,
+      "slippage_usdt": 8.14996885
+    }
+  ],
+  "schema": "nexus.elliott-v119-fixed-recorded-path-accounting-qa.v1",
+  "signal_generation_replayed": false,
+  "signal_to_entry_causality_independently_verified": false,
+  "source_bars_per_asset_checked": 128544,
+  "source_shas": {
+    "BTC": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "ETH": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "structural_pivot_identity_independently_verified": false,
+  "unique_recorded_trade_paths": 77
+}

@@ -101,6 +101,7 @@
   }
   function itemLabel(x){
     return x.kind==='owner_research_proposal'?'PROPOSAL / REVIEW REQUIRED':
+      x.kind==='frozen_research_system'?'ELLIOTT / HISTORICALLY REJECTED':
       x.kind==='legacy_reference_only'?'LEGACY / MANUAL BASELINE':'COMPOSITE / AGENT REQUIRED';
   }
   function allItems(){
@@ -141,11 +142,12 @@
       '<div class="sw-empty"><b>هنوز استراتژی انتخاب نشده</b><p>از کتابخانهٔ مکانیزم‌های واقعی یکی را انتخاب کن یا فرضیهٔ تازه ثبت کن.</p></div>';return;}
     var input=(x.required_data||[]).map(function(i){return '<span>'+esc(dataNames[i]||i)+'</span>';}).join('');
     var manual=x.execution==='canonical_manual_offline_available';
+    var frozen=x.execution==='historically_rejected_read_only';
     var data=(s.data.datasets||[]).filter(function(d){return d&&d.binding_sha256&&/^[0-9a-f]{64}$/.test(d.binding_sha256);});
     host.innerHTML='<span class="sw-kicker">SELECTED / READ-ONLY FOCUS</span><h3>'+esc(x.name)+'</h3>'+
       '<p class="sw-status">'+esc(itemLabel(x))+'</p>'+
       '<div class="sw-facts"><div><span>مکانیزم</span><b>'+esc(x.mechanism)+'</b></div>'+
-      '<div><span>اجرای مستقیم</span><b>'+(manual?'فقط مقایسهٔ مرجع با دادهٔ معتبر':'نیازمند عامل پژوهش و بازبینی کد')+'</b></div>'+
+      '<div><span>اجرای مستقیم</span><b>'+(manual?'فقط مقایسهٔ مرجع با دادهٔ معتبر':frozen?'آرشیو پژوهش ردشده؛ فقط مطالعه':'نیازمند عامل پژوهش و بازبینی کد')+'</b></div>'+
       '<div><span>مجوز دمو</span><b>قفل؛ ارزیابی مستقل و آینده‌نگر لازم است</b></div></div>'+
       (x.hypothesis?'<div class="sw-narrative"><strong>فرضیه</strong><p>'+esc(x.hypothesis)+'</p>'+
       '<strong>ابطال</strong><p>'+esc(x.invalidation)+'</p></div>':'')+
@@ -156,7 +158,8 @@
         }),null)+'</select></label>'+
         '<button type="button" class="sw-primary" id="workspaceRun" '+(data.length?'':'disabled')+
         '>اجرای Research مرجع از دادهٔ واقعی</button></div>':
-      '<p class="sw-notice">این مکانیزم فقط به‌عنوان هدف پژوهش انتخاب شده است. اتصال به صف واقعی Supervisor / Developer Agent و QA هنوز باید با شواهد اجرایی تأیید شود؛ اجرا یا نتیجهٔ ساختگی نشان داده نمی‌شود.</p>')+
+      (frozen?'<p class="sw-notice">گزارش ELLIOTT-V119 در بخش پژوهش موجود است: حساب مشترک ۵۰۰ USDT، هر سه بازه و هر دو هزینه منفی. الگوی جزئی موج ۲ است و شمارش کامل الیوت ندارد؛ انتخاب آن اجرای تازه یا تنظیم مجدد را شروع نمی‌کند.</p>':
+      '<p class="sw-notice">این مکانیزم فقط به‌عنوان هدف پژوهش انتخاب شده است. اتصال به صف واقعی Supervisor / Developer Agent و QA هنوز باید با شواهد اجرایی تأیید شود؛ اجرا یا نتیجهٔ ساختگی نشان داده نمی‌شود.</p>'))+
       '<div id="workspaceSelectedState" class="sw-footnote" role="status">انتخاب فقط در حافظهٔ محلی ثبت شده است.</div>';
     if(manual){
       var run=el('workspaceRun');

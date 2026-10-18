@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from product_elliott_research import workspace_entry as elliott_workspace_entry
+
 WORKSPACE_CONTRACT = "nexus.product-strategy-workspace.v1"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT")
 TIMEFRAMES = ("15m", "1h", "4h")
@@ -64,7 +66,7 @@ def _catalog() -> list[dict[str, Any]]:
          "execution": "canonical_manual_offline_available",
          "paper_admission": False, "live_enabled": False}
         for key, label in MANUAL
-    ]
+    ] + [elliott_workspace_entry()]
 
 
 def _text(value: Any, name: str, lo: int, hi: int) -> str:
