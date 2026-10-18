@@ -310,6 +310,7 @@ def exact_backtest(
     market: dict[str, Any], weights: np.ndarray, period: dict[str, str], profile: dict[str, float],
     *, rebalance_mask: np.ndarray | None = None,
     fill_trace: dict[str, Any] | None = None,
+    risk_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Trade prior-closed-bar targets at the next open; never borrow spot cash.
 
@@ -349,6 +350,34 @@ def exact_backtest(
     total_fees = total_notional = 0.0
     asset_fills = np.zeros(opens.shape[1], dtype=int)
     minimum_cash, rebalance_events = cash, 0
+
+    # Research-only causal kill policy. Exact fixed 20% closed-4h drawdown
+    # protocol, with next-open real execution and permanent cash quarantine.
+    # None retains the original simulator byte-for-byte economic behavior.
+    risk_active = risk_policy is not None
+    risk_peak = cash
+    risk_armed = risk_halted = False
+    trigger_time = exit_time = None
+    trigger_equity = exit_cash = None
+    forced_sell_count = 0
+    if risk_active:
+        expected = {
+            "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+            "max_closed_bar_drawdown_fraction": 0.20,
+            "halt_rest_of_research_period": True,
+            "exit": "next_4h_open_sell_first_no_reentry",
+            "live_authority": False,
+        }
+        if type(risk_policy) is not dict or risk_policy != expected:
+            raise PortfolioSearchError("Unreviewed risk switch or threshold")
+        source_times = market.get("timestamps")
+        if not isinstance(source_times, pd.Series):
+            raise PortfolioSearchError("4h source timestamps required for causal risk")
+        source_times = pd.to_datetime(source_times, utc=True)
+        if (source_times.isna().any() or source_times.duplicated().any()
+            or not source_times.is_monotonic_increasing or
+            not (source_times.diff().dropna() == pd.Timedelta(hours=4)).all()):
+            raise PortfolioSearchError("Causal risk requires exact completed UTC 4h source")
 
     # Optional observation ONLY. The default path remains EXACTLY the old
     # execution model, and none of the fills, sizing, weights, fees, ordering,
@@ -406,7 +435,35 @@ def exact_backtest(
             selected[row - 1], selected[row - 2]
         )
         scheduled_due = scheduled is not None and row > 0 and bool(scheduled[idx[row - 1]])
-        if row > 0 and (row == 1 or target_changed or scheduled_due):
+        if risk_active and risk_armed and row > 0:
+            # The previous closed bar armed the risk switch; this is its
+            # first actually executable open. NEVER use trigger-bar close or
+            # a future bar low to invent a fill. Sell all inventory before
+            # considering any planned strategy rebalance.
+            forced_trade = False
+            for asset in np.where(quantity > 1e-12)[0]:
+                amount = float(quantity[asset])
+                fill = opens[row, asset] * (1.0 - slippage)
+                gross = amount * fill
+                fee = gross * fee_rate
+                cash += gross - fee
+                quantity[asset] = 0.0
+                total_notional += gross
+                total_fees += fee
+                asset_fills[asset] += 1
+                forced_sell_count += 1
+                if recording:
+                    observed_fill(asset, "sell", row, amount, fill, fee)
+                forced_trade = True
+            if cash < -1e-7 or (quantity < -1e-12).any():
+                raise PortfolioSearchError("Causal risk forced exit breached Spot wallet")
+            minimum_cash = min(minimum_cash, cash)
+            rebalance_events += int(forced_trade)
+            risk_halted = True
+            risk_armed = False
+            exit_time = source_times.iloc[idx[row]].isoformat()
+            exit_cash = float(cash)
+        if row > 0 and not risk_halted and not risk_armed and (row == 1 or target_changed or scheduled_due):
             equity_at_open = cash + float(np.dot(quantity, opens[row]))
             desired = equity_at_open * selected[row - 1] / opens[row]
             changes = desired - quantity
@@ -455,6 +512,16 @@ def exact_backtest(
             minimum_cash = min(minimum_cash, cash)
             rebalance_events += int(traded)
         equity_rows.append(cash + float(np.dot(quantity, closes[row])))
+        if risk_active and not risk_halted and not risk_armed:
+            # Mark-to-market is observed ONLY when 4h candle closes. A
+            # drawdown trigger cannot liquidate before the following open.
+            observed_closed_equity = float(equity_rows[-1])
+            risk_peak = max(risk_peak, observed_closed_equity)
+            if observed_closed_equity <= risk_peak * (1.0 - 0.20):
+                risk_armed = True
+                trigger_time = (source_times.iloc[idx[row]] +
+                                pd.Timedelta(hours=4)).isoformat()
+                trigger_equity = observed_closed_equity
         if recording:
             source_open = decision_times.iloc[idx[row]]
             fill_trace["equity_marks"].append({
@@ -490,7 +557,7 @@ def exact_backtest(
     drawdown = equity / np.maximum.accumulate(equity) - 1.0
     sd = float(np.std(returns, ddof=0)) if len(returns) else 0.0
     sharpe = float(np.mean(returns) / sd * math.sqrt(BARS_PER_YEAR)) if sd > 0 else 0.0
-    return {
+    result = {
         "total_return": float(equity[-1] / profile["initial_cash"] - 1.0),
         "max_drawdown": float(-drawdown.min()),
         "sharpe": sharpe,
@@ -502,6 +569,24 @@ def exact_backtest(
         "minimum_cash_usdt": float(minimum_cash),
         "rebalance_event_count": int(rebalance_events),
     }
+    if risk_active:
+        result["causal_risk_audit"] = {
+            "schema": risk_policy["schema"],
+            "closed_bar_threshold_fraction": 0.20,
+            "trigger_observed_after_close_utc": trigger_time,
+            "trigger_mark_to_market_equity_usdt": trigger_equity,
+            "first_actual_next_open_exit_utc": exit_time,
+            "liquidation_cash_after_all_sales_usdt": exit_cash,
+            "forced_sell_fill_count": forced_sell_count,
+            "halted_for_rest_of_period": risk_halted,
+            "trigger_on_last_bar_no_next_open": bool(risk_armed),
+            "could_gap_beyond_threshold": True,
+            "no_reentry_after_exit": True,
+            "research_only": True,
+            "paper_eligible": False,
+            "live_enabled": False,
+        }
+    return result
 
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     returns = [float(x["total_return"]) for x in rows]

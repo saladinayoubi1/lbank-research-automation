@@ -1,0 +1,453 @@
+{
+  "decision_after_completed_4h_candle": true,
+  "digest": "22f723c4ef707cbb51f903593ba0510d3c5a21e2ca2659c4ae6f1b376481ad46",
+  "engine_module_sha256": "1f086b5958a59c19657dea5b642a888d9039d6db2fd088893f7870dd7f549688",
+  "forced_exit_only_at_actual_next_4h_open": true,
+  "gap_loss_can_exceed_20pct": true,
+  "live_enabled": false,
+  "no_new_strategy_generated": true,
+  "no_true_exchange_depth_proof": true,
+  "not_an_auto_trade_approval": true,
+  "one_shared_spot_cash_initial_usdt": 500.0,
+  "original_fixed_config_digest": "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4",
+  "original_reviewed_fixed_candidate_id": "b4e4a2c33304aec1",
+  "paper_eligible": false,
+  "prior_historical_original_drawdown_already_known": true,
+  "real_orders": 0,
+  "risk_policy_exact_frozen": {
+    "exit": "next_4h_open_sell_first_no_reentry",
+    "halt_rest_of_research_period": true,
+    "live_authority": false,
+    "max_closed_bar_drawdown_fraction": 0.2,
+    "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1"
+  },
+  "schema": "nexus.portfolio-v3-causal-dd20-source-cost-diagnostic.v1",
+  "scopes": {
+    "2023_2026_CONTINUOUS_PREVIOUSLY_INSPECTED": {
+      "independent_500_usdt_period_reset": true,
+      "period": {
+        "end": "2026-08-01",
+        "start": "2023-09-01"
+      },
+      "profiles": {
+        "conservative": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 3.919568793417459,
+            "fifo_matched_lot_segments": 39,
+            "fifo_winning_segments": 26,
+            "fill_events": 51,
+            "max_drawdown_pct": 20.16420603,
+            "model_fees_usdt": 10.610719,
+            "monthly_fifo_exit": {
+              "2023-09": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": 3.70888728,
+                "winning_segments": 1
+              },
+              "2023-11": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 0.49611572,
+                "winning_segments": 4
+              },
+              "2023-12": {
+                "fifo_matched_lot_segments": 5,
+                "net_pnl_usdt": 90.31826511,
+                "winning_segments": 5
+              },
+              "2024-01": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -34.3579937,
+                "winning_segments": 1
+              },
+              "2024-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 10.24098418,
+                "winning_segments": 3
+              },
+              "2024-03": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": 206.58229069,
+                "winning_segments": 6
+              },
+              "2024-04": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -0.26827561,
+                "winning_segments": 1
+              },
+              "2024-05": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": -2.51820416,
+                "winning_segments": 3
+              },
+              "2024-06": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -44.2870325,
+                "winning_segments": 1
+              },
+              "2024-08": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -77.05185406,
+                "winning_segments": 1
+              }
+            },
+            "net_pnl_usdt": 152.86318294,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": "2024-08-05T00:00:00+00:00",
+              "forced_sell_fill_count": 1,
+              "halted_for_rest_of_period": true,
+              "liquidation_cash_after_all_sales_usdt": 652.8631829432809,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": 653.5711807338262,
+              "trigger_observed_after_close_utc": "2024-08-05T00:00:00+00:00",
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "289397c4ae9142337e261089ced01b4a5d4e7c2ce8079097a0fd80bef9e0dcee",
+          "unmodified_original": {
+            "fill_events": 106,
+            "max_drawdown_pct": 34.43365449,
+            "model_fees_usdt": 21.59696755,
+            "net_pnl_usdt": 343.66115005
+          }
+        },
+        "severe": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 3.4276088980458193,
+            "fifo_matched_lot_segments": 39,
+            "fifo_winning_segments": 25,
+            "fill_events": 51,
+            "max_drawdown_pct": 21.00827844,
+            "model_fees_usdt": 26.0180787,
+            "monthly_fifo_exit": {
+              "2023-09": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -0.67352381,
+                "winning_segments": 1
+              },
+              "2023-11": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 0.45515589,
+                "winning_segments": 4
+              },
+              "2023-12": {
+                "fifo_matched_lot_segments": 5,
+                "net_pnl_usdt": 87.29563931,
+                "winning_segments": 5
+              },
+              "2024-01": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -36.06157042,
+                "winning_segments": 1
+              },
+              "2024-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 9.81998142,
+                "winning_segments": 3
+              },
+              "2024-03": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": 198.50225092,
+                "winning_segments": 6
+              },
+              "2024-04": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -0.37171557,
+                "winning_segments": 1
+              },
+              "2024-05": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": -4.566127,
+                "winning_segments": 3
+              },
+              "2024-06": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -49.44620849,
+                "winning_segments": 1
+              },
+              "2024-08": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -71.27713522,
+                "winning_segments": 0
+              }
+            },
+            "net_pnl_usdt": 133.67674702,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": "2024-08-04T16:00:00+00:00",
+              "forced_sell_fill_count": 1,
+              "halted_for_rest_of_period": true,
+              "liquidation_cash_after_all_sales_usdt": 633.6767470237869,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": 635.5532951389242,
+              "trigger_observed_after_close_utc": "2024-08-04T16:00:00+00:00",
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "452dd72489fbb5ca77509691a5d2ec5af3d3827c01a1272d2328e293d25fa3fa",
+          "unmodified_original": {
+            "fill_events": 106,
+            "max_drawdown_pct": 34.74926622,
+            "model_fees_usdt": 51.95824696,
+            "net_pnl_usdt": 285.97596337
+          }
+        },
+        "stress": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 3.6452458845772187,
+            "fifo_matched_lot_segments": 39,
+            "fifo_winning_segments": 25,
+            "fill_events": 51,
+            "max_drawdown_pct": 20.8678687,
+            "model_fees_usdt": 15.78873547,
+            "monthly_fifo_exit": {
+              "2023-09": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": 1.95216573,
+                "winning_segments": 1
+              },
+              "2023-11": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 0.48047481,
+                "winning_segments": 4
+              },
+              "2023-12": {
+                "fifo_matched_lot_segments": 5,
+                "net_pnl_usdt": 89.10291984,
+                "winning_segments": 5
+              },
+              "2024-01": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -35.04259455,
+                "winning_segments": 1
+              },
+              "2024-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 10.07126991,
+                "winning_segments": 3
+              },
+              "2024-03": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": 203.32430372,
+                "winning_segments": 6
+              },
+              "2024-04": {
+                "fifo_matched_lot_segments": 2,
+                "net_pnl_usdt": -0.31022785,
+                "winning_segments": 1
+              },
+              "2024-05": {
+                "fifo_matched_lot_segments": 7,
+                "net_pnl_usdt": -3.34963322,
+                "winning_segments": 3
+              },
+              "2024-06": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -46.39017519,
+                "winning_segments": 1
+              },
+              "2024-08": {
+                "fifo_matched_lot_segments": 3,
+                "net_pnl_usdt": -77.6739137,
+                "winning_segments": 0
+              }
+            },
+            "net_pnl_usdt": 142.1645895,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": "2024-08-05T00:00:00+00:00",
+              "forced_sell_fill_count": 1,
+              "halted_for_rest_of_period": true,
+              "liquidation_cash_after_all_sales_usdt": 642.1645894985113,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": 643.3343915781527,
+              "trigger_observed_after_close_utc": "2024-08-05T00:00:00+00:00",
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "1ee387d77cb1302d0fd3d275e861d5038411dfe1147f9763ae337c598625e8b5",
+          "unmodified_original": {
+            "fill_events": 106,
+            "max_drawdown_pct": 34.54781221,
+            "model_fees_usdt": 31.90041032,
+            "net_pnl_usdt": 320.11394615
+          }
+        }
+      }
+    },
+    "2025_Q1_PREVIOUSLY_INSPECTED": {
+      "independent_500_usdt_period_reset": true,
+      "period": {
+        "end": "2025-04-01",
+        "start": "2025-01-01"
+      },
+      "profiles": {
+        "conservative": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 1.0546340730531252,
+            "fifo_matched_lot_segments": 8,
+            "fifo_winning_segments": 7,
+            "fill_events": 9,
+            "max_drawdown_pct": 6.74354902,
+            "model_fees_usdt": 0.53165028,
+            "monthly_fifo_exit": {
+              "2025-01": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 1.09042962,
+                "winning_segments": 4
+              },
+              "2025-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 7.34664296,
+                "winning_segments": 3
+              }
+            },
+            "net_pnl_usdt": 8.43707258,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": null,
+              "forced_sell_fill_count": 0,
+              "halted_for_rest_of_period": false,
+              "liquidation_cash_after_all_sales_usdt": null,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": null,
+              "trigger_observed_after_close_utc": null,
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "45e3f8e769058dd5b435a3bcc599a14e372fadc9fe9124cb28bf5b0b8dbc5c9e",
+          "unmodified_original": {
+            "fill_events": 9,
+            "max_drawdown_pct": 6.74354902,
+            "model_fees_usdt": 0.53165028,
+            "net_pnl_usdt": 8.43707258
+          }
+        },
+        "severe": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 0.8876788001812819,
+            "fifo_matched_lot_segments": 8,
+            "fifo_winning_segments": 7,
+            "fill_events": 9,
+            "max_drawdown_pct": 6.75157584,
+            "model_fees_usdt": 1.32897653,
+            "monthly_fifo_exit": {
+              "2025-01": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 1.01266117,
+                "winning_segments": 4
+              },
+              "2025-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 6.08876923,
+                "winning_segments": 3
+              }
+            },
+            "net_pnl_usdt": 7.1014304,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": null,
+              "forced_sell_fill_count": 0,
+              "halted_for_rest_of_period": false,
+              "liquidation_cash_after_all_sales_usdt": null,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": null,
+              "trigger_observed_after_close_utc": null,
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "c34d7c646c52a17ecdca8e31be5b323c4290f806c6c2a3e453f1f1d8ce9050f2",
+          "unmodified_original": {
+            "fill_events": 9,
+            "max_drawdown_pct": 6.75157584,
+            "model_fees_usdt": 1.32897653,
+            "net_pnl_usdt": 7.1014304
+          }
+        },
+        "stress": {
+          "causal_risk20": {
+            "fifo_average_net_per_matched_segment_usdt": 0.9878483163632917,
+            "fifo_matched_lot_segments": 8,
+            "fifo_winning_segments": 7,
+            "fill_events": 9,
+            "max_drawdown_pct": 6.74675724,
+            "model_fees_usdt": 0.79743853,
+            "monthly_fifo_exit": {
+              "2025-01": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 1.05969201,
+                "winning_segments": 4
+              },
+              "2025-02": {
+                "fifo_matched_lot_segments": 4,
+                "net_pnl_usdt": 6.84309452,
+                "winning_segments": 3
+              }
+            },
+            "net_pnl_usdt": 7.90278653,
+            "risk_audit": {
+              "closed_bar_threshold_fraction": 0.2,
+              "could_gap_beyond_threshold": true,
+              "first_actual_next_open_exit_utc": null,
+              "forced_sell_fill_count": 0,
+              "halted_for_rest_of_period": false,
+              "liquidation_cash_after_all_sales_usdt": null,
+              "live_enabled": false,
+              "no_reentry_after_exit": true,
+              "paper_eligible": false,
+              "research_only": true,
+              "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1",
+              "trigger_mark_to_market_equity_usdt": null,
+              "trigger_observed_after_close_utc": null,
+              "trigger_on_last_bar_no_next_open": false
+            }
+          },
+          "independent_fifo_digest": "61f6d22b7f18b78f4008e429b6338f7260159ba21346c4d03580e9836d662960",
+          "unmodified_original": {
+            "fill_events": 9,
+            "max_drawdown_pct": 6.74675724,
+            "model_fees_usdt": 0.79743853,
+            "net_pnl_usdt": 7.90278653
+          }
+        }
+      }
+    }
+  },
+  "single_threshold_fixed_before_this_risk_policy_replay": true,
+  "source_already_inspected_not_future_holdout": true,
+  "source_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "source_six_raw_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "threshold_selection_not_prospective_blind": true
+}
