@@ -309,6 +309,7 @@ def approximate_backtest(
 def exact_backtest(
     market: dict[str, Any], weights: np.ndarray, period: dict[str, str], profile: dict[str, float],
     *, rebalance_mask: np.ndarray | None = None,
+    fill_trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Trade prior-closed-bar targets at the next open; never borrow spot cash.
 
@@ -349,6 +350,57 @@ def exact_backtest(
     asset_fills = np.zeros(opens.shape[1], dtype=int)
     minimum_cash, rebalance_events = cash, 0
 
+    # Optional observation ONLY. The default path remains EXACTLY the old
+    # execution model, and none of the fills, sizing, weights, fees, ordering,
+    # returns, or portfolio cash policy depend on this additional argument.
+    # Explicitly reject non-empty/reused trace buffers to avoid mixing periods.
+    recording = fill_trace is not None
+    if recording:
+        if type(fill_trace) is not dict or fill_trace:
+            raise PortfolioSearchError("Fill trace must be a fresh empty dict")
+        symbols = market.get("symbols")
+        times = market.get("timestamps")
+        if (not isinstance(symbols, list) or len(symbols) != len(quantity)
+            or len(set(symbols)) != len(symbols) or
+            not isinstance(times, pd.Series) or
+            not pd.api.types.is_datetime64_any_dtype(times)):
+            raise PortfolioSearchError("Exact source symbol and time grid required for fill journal")
+        decision_times = pd.to_datetime(times, utc=True)
+        if (decision_times.isna().any() or decision_times.duplicated().any()
+            or not decision_times.is_monotonic_increasing or
+            not (decision_times.diff().dropna() == pd.Timedelta(hours=4)).all()):
+            raise PortfolioSearchError("Fill journal requires uninterrupted completed UTC 4h candles")
+        fill_trace.update({
+            "schema": "nexus.portfolio-v3-original-fill-trace.v1",
+            "initial_cash_usdt": cash,
+            "period": dict(period),
+            "symbols": list(symbols),
+            "fills": [],
+            "equity_marks": [],
+        })
+
+    def observed_fill(
+        asset: int, side: str, row_index: int, amount: float,
+        unit_price: float, fee_amount: float, *, terminal: bool = False,
+    ) -> None:
+        if not recording:
+            return
+        source_open = decision_times.iloc[idx[row_index]]
+        execution_at = (source_open + pd.Timedelta(hours=4)) if terminal else source_open
+        fill_trace["fills"].append({
+            "sequence": len(fill_trace["fills"]),
+            "symbol": symbols[asset],
+            "side": side,
+            "fill_kind": "terminal_bar_close" if terminal else "next_bar_open",
+            "source_bar_open_utc": source_open.isoformat(),
+            "executed_at_utc": execution_at.isoformat(),
+            "quantity": float(amount),
+            "price_usdt": float(unit_price),
+            "fee_usdt": float(fee_amount),
+            "cash_after_usdt": float(cash),
+            "asset_quantity_after": float(quantity[asset]),
+        })
+
     for row in range(len(idx)):
         target_changed = row > 1 and not np.array_equal(
             selected[row - 1], selected[row - 2]
@@ -370,6 +422,8 @@ def exact_backtest(
                 total_notional += gross
                 total_fees += fee
                 asset_fills[asset] += 1
+                if recording:
+                    observed_fill(asset, "sell", row, amount, fill, fee)
                 traded = True
 
             purchases = np.where(changes > 1e-12)[0]
@@ -391,6 +445,8 @@ def exact_backtest(
                 total_notional += gross
                 total_fees += fee
                 asset_fills[asset] += 1
+                if recording:
+                    observed_fill(asset, "buy", row, amount, fill, fee)
                 traded = True
 
             if cash < -1e-7 or (quantity < -1e-12).any():
@@ -399,6 +455,14 @@ def exact_backtest(
             minimum_cash = min(minimum_cash, cash)
             rebalance_events += int(traded)
         equity_rows.append(cash + float(np.dot(quantity, closes[row])))
+        if recording:
+            source_open = decision_times.iloc[idx[row]]
+            fill_trace["equity_marks"].append({
+                "bar_closed_at_utc": (source_open + pd.Timedelta(hours=4)).isoformat(),
+                "equity_usdt": float(equity_rows[-1]),
+                "cash_usdt": float(cash),
+                "asset_quantities": quantity.tolist(),
+            })
 
     # Research ends flat; liquidation itself pays fees and adverse slippage.
     for asset in range(len(quantity)):
@@ -411,8 +475,16 @@ def exact_backtest(
             total_fees += fee
             asset_fills[asset] += 1
             quantity[asset] = 0.0
+            if recording:
+                observed_fill(asset, "sell", len(idx) - 1, gross / fill, fill, fee, terminal=True)
     minimum_cash = min(minimum_cash, cash)
     equity_rows[-1] = cash
+    if recording:
+        fill_trace["equity_marks"][-1]["equity_usdt"] = float(cash)
+        fill_trace["equity_marks"][-1]["cash_usdt"] = float(cash)
+        fill_trace["equity_marks"][-1]["asset_quantities"] = quantity.tolist()
+        fill_trace["terminal_cash_usdt"] = float(cash)
+        fill_trace["terminal_quantities"] = quantity.tolist()
     equity = np.asarray(equity_rows, dtype=float)
     returns = pd.Series(equity).pct_change().replace([np.inf, -np.inf], np.nan).dropna().to_numpy(float)
     drawdown = equity / np.maximum.accumulate(equity) - 1.0
