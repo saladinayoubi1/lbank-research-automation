@@ -215,3 +215,29 @@ def test_started_task_without_finished_evidence_stops_instead_of_replaying(tmp_p
     with pytest.raises(qa.EconomicTaskError,match="do not replay automatically"):
         qa.restore_result(tmp_path/"out.json",task_id)
     assert not (tmp_path/"out.json").exists()
+
+
+def test_actual_committed_source_request_only_approves_one_frozen_research_system():
+    req,row,task_id = qa.load_task()
+    assert task_id.startswith("SYSTEM-ECON-")
+    assert row["status"] == "APPROVED_FOR_RESEARCH_SIMULATION_ONLY"
+    assert row["complete_system"]["source_interpretation_independently_attested_here"] is False
+    assert row["complete_system"]["study_window"]["start_utc"] == "2025-01-01T00:00:00Z"
+    assert row["review_pr_url"].endswith("/2733")
+    assert row["paper_eligible"] is False and row["live_enabled"] is False
+    assert req["automatic_strategy_promotion"] is False
+    assert set(req["support_source_sha256"]) == set(qa.SUPPORT)
+
+
+def test_changed_worker_pin_blocks_before_any_market_access(tmp_path,monkeypatch):
+    from pathlib import Path
+    req = json.loads((qa.ROOT/qa.REQUEST).read_text())
+    req["worker_source_sha256"] = "0"*64
+    dest = tmp_path/qa.REQUEST
+    dest.parent.mkdir(parents=True)
+    dest.write_text(json.dumps(req))
+    def forbidden(*args,**kwargs):
+        raise AssertionError("unfrozen task touched physical market inputs")
+    monkeypatch.setattr(qa.intake,"evaluate_approved",forbidden)
+    with pytest.raises(qa.EconomicTaskError,match="worker changed"):
+        qa.load_task(tmp_path)

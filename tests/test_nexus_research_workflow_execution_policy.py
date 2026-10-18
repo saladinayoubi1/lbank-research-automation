@@ -130,20 +130,24 @@ class ResearchWorkflowExecutionPolicyTests(unittest.TestCase):
     def test_source_system_requires_explicit_main_push_authorization(self) -> None:
         # A source/QA push by itself cannot launch this experiment or the old
         # exhausted discovery. The frozen request is additionally SHA-reviewed.
-        expression = self.workflows[DISCOVERY]["jobs"]["source-system-research"]["if"]
+        expression = self.workflows[DISCOVERY]["jobs"]["discover"]["if"]
         for event in ("push", "pull_request", "workflow_dispatch", "schedule"):
             for ref in ("refs/heads/main", "refs/heads/feature"):
                 for message in ("ordinary code fix", "run [source-system-evaluation] fixed request"):
                     context = _context(event,ref)
                     context["event"]["head_commit"] = {"message":message}
                     with self.subTest(event=event,ref=ref,message=message):
-                        self.assertEqual(_condition(expression,context),
-                                         event=="push" and ref=="refs/heads/main" and "[source-system-evaluation]" in message)
+                        self.assertEqual(_condition(expression,context),ref=="refs/heads/main" and (
+                            event=="workflow_dispatch" or event=="push" and "[source-system-evaluation]" in message))
                         if event=="push":
-                            self.assertFalse(self.allowed(DISCOVERY,"discover",context))
-        qa = self.workflows[DISCOVERY]["jobs"]["source-system-numerical-qa"]
-        self.assertEqual(qa["needs"],"source-system-research")
-        self.assertNotIn("continue-on-error",qa)
+                            self.assertEqual(self.allowed(DISCOVERY,"discover",context),
+                                             ref=="refs/heads/main" and "[source-system-evaluation]" in message)
+        steps = self.workflows[DISCOVERY]["jobs"]["discover"]["steps"]
+        numerical_qa = next(s for s in steps if s.get("name","").startswith("Separate QA process"))
+        self.assertEqual(numerical_qa["if"],"github.event_name == 'push'")
+        self.assertNotIn("continue-on-error",numerical_qa)
+        legacy = next(s for s in steps if s.get("name")=="Research next previously unseen composite mechanism and backtest historical folds")
+        self.assertEqual(legacy["if"],"github.event_name == 'workflow_dispatch'")
 
     def test_multipair_entire_pipeline_requires_main_dispatch(self) -> None:
         # Deliberately provide successful parents and nonempty old outputs:

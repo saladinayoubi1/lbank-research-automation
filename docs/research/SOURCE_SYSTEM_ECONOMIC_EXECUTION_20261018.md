@@ -72,12 +72,16 @@ pullback, V52/V101/V117 protocols or earlier economic failures.
 
 ## Actual Research execution and numerical QA
 
-The existing `nexus_multitimeframe_strategy_discovery.yml` receives two bounded
-jobs, using its existing contents/actions read permissions and immutable Bybit
-archive restore. Ordinary source pushes still run contracts only. An explicit
+The existing `nexus_multitimeframe_strategy_discovery.yml` runs the Research
+producer and a separate QA process within its existing approved `discover` job.
+The frozen permission policy permits that existing job inventory; no new jobs
+or token scopes are added. It reuses the original immutable Bybit archive
+restore. Ordinary source pushes still run contracts only. An explicit
 `[source-system-evaluation]` merge marker launches the one committed SHA-bound
-economic request on main after contracts. The old `discover` job still requires
-manual main dispatch, so this task does not replay the exhausted discovery.
+economic request on main after contracts. Every old discovery/frontier step
+still requires manual main dispatch, so this task does not replay the exhausted
+discovery. The exact economic worker and its supporting code/dependency locks
+are pinned in addition to the six existing executor files.
 
 The actual existing `evaluate_approved` intake is the Research producer. It
 checks the candidate, reviewed full specification, implementation hashes,
@@ -86,8 +90,8 @@ The window remains warmup 2024-12-01, trial 2025-01-01 through 2025-04-01
 exclusive. Every 60/20/20 segment resets one shared 500-USDT book and is labeled
 already inspected. No future/OOS or prospective claim is made.
 
-A separate QA job restores the exact producer artifact, independently restores
-and authenticates the six original source files, and checks its own explicit
+A separate QA process reads the exact completed producer result, independently
+authenticates and reloads the six original source files, and checks its own explicit
 signal equations and event/cash reference. This reference does not call
 `factory_signal`, `replay_shared_cash` or `sidecar_summary`. It checks every
 closed trade, entry/exit event, stop/target, quantity, denial, cost, gross/net PNL,

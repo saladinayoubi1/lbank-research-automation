@@ -1,10 +1,24 @@
 {
-  "schema": "nexus.strategy-finder-executable-intake-allowlist.v1",
-  "status": "NO_INDEPENDENTLY_REVIEWED_NEW_EXECUTABLE_CONTRACTS",
-  "research_only": true,
-  "paper_only": true,
-  "live_trading_authority": false,
+  "approved_executable_contracts": [
+    {
+      "candidate_id": "factory_prior_day_sweep_peer_resilience",
+      "candidate_path": "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+      "candidate_sha256": "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d",
+      "execution_contract_digest": "9d50dbae4150ba8c2686325968366a3ec1fa2ce5e997b2a49c662a9b6f89122a",
+      "independent_legacy_semantic_review": true,
+      "qualitative_signature": "e83d180e07abb446a1ad8ab4452e3e8375e6479d3fe1e14783689d5109a42fa3",
+      "rationale": "Separate source/code review in PR2733 documents known failed-breakout-family overlap, two-way legacy counterexamples and the limited 114-mechanism event audit. It approves only the previously unevaluated exact signal-low-stop complete system for one frozen historical falsification; no new-family, outside-human-review, publisher-attestation, pristine-OOS or profitability claim. The orthogonal numerical QA remains required.",
+      "review_pr_url": "https://github.com/saladinayoubi1/lbank-research-automation/pull/2733",
+      "source_provenance_review": true,
+      "system_specification_path": "research/complete_systems/failure_test_structural_v1.json",
+      "system_specification_sha256": "df3c670011f0c7a1811d7852b95bb850cc237634716841042b8ba7ec19004eab"
+    }
+  ],
   "automatic_strategy_promotion": false,
+  "live_trading_authority": false,
+  "paper_only": true,
   "qualification_authority": false,
-  "approved_executable_contracts": []
+  "research_only": true,
+  "schema": "nexus.strategy-finder-executable-intake-allowlist.v1",
+  "status": "ONE_FROZEN_COMPLETE_SOURCE_SYSTEM_RESEARCH_FALSIFICATION_ONLY"
 }

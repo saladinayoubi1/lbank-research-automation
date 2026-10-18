@@ -38,6 +38,9 @@ SYMBOLS = ("BTCUSDT", "ETHUSDT")
 REPOSITORY = "saladinayoubi1/lbank-research-automation"
 SCHEMA = "nexus.source-system-economic-task.v1"
 SCRIPT = "scripts/nexus_source_system_economic_execution.py"
+SUPPORT = ("nexus_complete_strategy_system.py","scripts/select_nexus_bybit_replay_artifact.py",
+           "nexus_demo_archive_replay.py","research/mechanism_factory_v1.json",
+           "requirements.lock","requirements-dev.lock")
 
 
 class EconomicTaskError(ValueError):
@@ -56,7 +59,7 @@ def read_json(path: Path, limit: int = 5_000_000) -> dict:
 def load_task(root: Path = ROOT) -> tuple[dict, dict, str]:
     req = read_json(root / REQUEST, 100_000)
     keys = {"schema", "id", "candidate_path", "system_specification_path",
-            "system_specification_sha256", "worker_source_sha256", "selection_basis",
+            "system_specification_sha256", "worker_source_sha256", "support_source_sha256", "selection_basis",
             "research_only", "paper_eligible", "live_enabled", "automatic_strategy_promotion"}
     if (set(req) != keys or req["schema"] != SCHEMA or req["id"] != "failure_test_structural_v1"
         or req["selection_basis"] != "one_frozen_hypothesis_no_posthoc_tournament"
@@ -66,6 +69,16 @@ def load_task(root: Path = ROOT) -> tuple[dict, dict, str]:
     actual = hashlib.sha256((Path(__file__).resolve()).read_bytes()).hexdigest()
     if req["worker_source_sha256"] != actual or hashlib.sha256((root / SCRIPT).read_bytes()).hexdigest() != actual:
         raise EconomicTaskError("economic worker changed after request freeze")
+    def support_hashes(base):
+        result = {}
+        for relative in SUPPORT:
+            p = base/relative
+            if p.is_symlink() or p.parent.is_symlink() or not p.is_file():
+                raise EconomicTaskError("economic supporting source missing or linked")
+            result[relative] = hashlib.sha256(p.read_bytes()).hexdigest()
+        return result
+    if req["support_source_sha256"] != support_hashes(ROOT) or support_hashes(root) != support_hashes(ROOT):
+        raise EconomicTaskError("economic supporting code or dependency locks changed after freeze")
     permits = intake._load_json_strict(root / intake.DEFAULT_ALLOWLIST, 200_000)
     row = intake.inspect_candidate(root, req["candidate_path"], permits)
     complete = row.get("complete_system", {})
