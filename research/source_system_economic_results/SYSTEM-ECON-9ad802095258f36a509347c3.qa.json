@@ -1,0 +1,147 @@
+{
+  "demo_eligible": false,
+  "disposition": "HISTORICAL_NEGATIVE_DO_NOT_RETUNE",
+  "economic_edge_established": false,
+  "event_overlap": {
+    "BTCUSDT": {
+      "legacy_union_overlap": 3,
+      "overlapping_mechanisms": {
+        "factory_gen_wick_pressure_range_local_breakout": 2,
+        "factory_gen_wick_pressure_range_midpoint_reclaim": 1,
+        "factory_gen_wick_pressure_range_vwap_reclaim": 2,
+        "factory_gen_wick_range_local_breakout": 1,
+        "factory_gen_wick_range_midpoint_reclaim": 1,
+        "factory_gen_wick_range_vwap_reclaim": 1,
+        "range_midpoint_reclaim": 1
+      },
+      "proposal_events": 7,
+      "unmatched_on_this_window": 4
+    },
+    "ETHUSDT": {
+      "legacy_union_overlap": 7,
+      "overlapping_mechanisms": {
+        "bar_proxy_vwap_reclaim": 1,
+        "cross_pair_relative_reclaim": 2,
+        "downside_exhaustion_rebound": 1,
+        "factory_gen_downside_tail_exhaustion_midpoint_reclaim": 1,
+        "factory_gen_wick_pressure_range_failed_downside_reclaim": 1,
+        "factory_gen_wick_pressure_range_local_breakout": 1,
+        "factory_gen_wick_pressure_range_midpoint_reclaim": 1,
+        "factory_gen_wick_pressure_range_vwap_reclaim": 1,
+        "factory_gen_wick_range_local_breakout": 2,
+        "factory_gen_wick_range_midpoint_reclaim": 3,
+        "factory_gen_wick_range_vwap_reclaim": 1,
+        "factory_peer_volatility_midpoint_catchup": 2,
+        "failed_range_break_reversal": 2,
+        "range_midpoint_reclaim": 3,
+        "regime_conditional_composite": 2,
+        "relative_weakness_exhaustion_rebound": 1
+      },
+      "proposal_events": 8,
+      "unmatched_on_this_window": 1
+    }
+  },
+  "feature_engine_shared_with_producer": true,
+  "global_semantic_novelty_proven": false,
+  "independent_execution_arithmetic_verified": true,
+  "independent_signal_equations_verified": true,
+  "legacy_mechanisms_compared": 114,
+  "live_enabled": false,
+  "minimum_trade_count": null,
+  "orders": 0,
+  "paper_eligible": false,
+  "partitions": {
+    "historical_test_already_inspected": {
+      "conservative": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 500.07168326,
+        "equal_budget_buy_hold_net_pnl_usdt": -2.64096618,
+        "gross_price_pnl_usdt": 0.82253957,
+        "max_drawdown_pct": 0.25512221,
+        "mean_pnl_usdt": 0.07168326,
+        "net_pnl_usdt": 0.07168326,
+        "total_friction_usdt": 0.75085631,
+        "trades": 1
+      },
+      "stress": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 498.97998597,
+        "equal_budget_buy_hold_net_pnl_usdt": -5.12156547,
+        "gross_price_pnl_usdt": 0.7111741,
+        "max_drawdown_pct": 0.26886742,
+        "mean_pnl_usdt": -1.02001403,
+        "net_pnl_usdt": -1.02001403,
+        "total_friction_usdt": 1.73118813,
+        "trades": 1
+      }
+    },
+    "training": {
+      "conservative": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 500.21281324,
+        "equal_budget_buy_hold_net_pnl_usdt": -34.00767845,
+        "gross_price_pnl_usdt": 6.03853112,
+        "max_drawdown_pct": 1.80718159,
+        "mean_pnl_usdt": 0.02364592,
+        "net_pnl_usdt": 0.21281324,
+        "total_friction_usdt": 5.82571787,
+        "trades": 9
+      },
+      "stress": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 492.497901,
+        "equal_budget_buy_hold_net_pnl_usdt": -36.33184748,
+        "gross_price_pnl_usdt": 5.28103258,
+        "max_drawdown_pct": 2.09960382,
+        "mean_pnl_usdt": -0.83356656,
+        "net_pnl_usdt": -7.502099,
+        "total_friction_usdt": 12.78313159,
+        "trades": 9
+      }
+    },
+    "validation_already_inspected": {
+      "conservative": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 497.79858146,
+        "equal_budget_buy_hold_net_pnl_usdt": -125.3312666,
+        "gross_price_pnl_usdt": -0.98626235,
+        "max_drawdown_pct": 0.83173588,
+        "mean_pnl_usdt": -1.10070927,
+        "net_pnl_usdt": -2.20141854,
+        "total_friction_usdt": 1.21515618,
+        "trades": 2
+      },
+      "stress": {
+        "benchmark_entry": "first_permitted_next_open_after_initial_partition_close",
+        "benchmark_is_research_comparison_not_strategy_selection": true,
+        "cash_only_net_pnl_usdt": 0.0,
+        "ending_shared_cash_usdt": 496.96922318,
+        "equal_budget_buy_hold_net_pnl_usdt": -127.20002496,
+        "gross_price_pnl_usdt": -0.72286375,
+        "max_drawdown_pct": 0.80808213,
+        "mean_pnl_usdt": -1.51538841,
+        "net_pnl_usdt": -3.03077682,
+        "total_friction_usdt": 2.30791307,
+        "trades": 2
+      }
+    }
+  },
+  "producer_result_digest": "9bcae5e9fd401a8dd08c74e89b37af219325e03a824d3d1a56e8bf9a29c5f45a",
+  "prospective_holdout": false,
+  "receipt_digest": "e2c06a2764b60878c1554a1f37dbb25975fa92aa46ef718b599dc9921a262ffd",
+  "schema": "nexus.source-system-economic-task.v1",
+  "status": "DONE_NUMERICAL_QA",
+  "task_id": "SYSTEM-ECON-9ad802095258f36a509347c3",
+  "verifier": "qa-verifier-agent",
+  "verifier_source_sha": "8bfe55c5fec22a1ba29e6c1dddd9f37b90368961"
+}
