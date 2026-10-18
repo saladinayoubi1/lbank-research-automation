@@ -1,0 +1,41 @@
+{
+  "schema": "nexus.bybit-official-spot-raw-trade-sample-claims.v1",
+  "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "study_scope": "historical_source_seam_and_warmup_examples_only",
+  "source_claim_not_exchange_signed": true,
+  "samples": [
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-31",
+      "raw_sha256": "3d2a7d32eed34a28ee90c2861b29fc2d5fbf1461f7f6b0223ae9bc05836aae7a"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-08-01",
+      "raw_sha256": "be6bf75c371f8cd1afd302bad339e91a17bc6b189343b6712a587b0fba5f7d94"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-10-17",
+      "raw_sha256": "63ec60563660bbe9bef265405b3c8eb7c56a6b981fd35c9f07ce7c32eab0d3b3"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "date": "2026-07-31",
+      "raw_sha256": "1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "date": "2026-08-01",
+      "raw_sha256": "c70b166659252a288f77ffbf409b90e6896bf6fd2bdc1aba6da14e1f2f7429f5"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "date": "2026-10-17",
+      "raw_sha256": "4819e90143c0571f19e71004d6cafdf5fda7a58b3f4d0da3caf3246fe6eb0c90"
+    }
+  ]
+}
