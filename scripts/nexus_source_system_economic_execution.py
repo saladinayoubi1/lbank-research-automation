@@ -182,8 +182,11 @@ def reference_partition(frames: dict, lo: int, hi: int, profile: str) -> dict:
                 gross = qty*(float(mark)-p["mid"])
                 slippage = qty*((p["buy"]-p["mid"])+(float(mark)-sell))
                 cash += qty*sell-exit_fee
+                open_exit = reason in {"STOP_GAP_AT_WORSE_OPEN","TIMEOUT_AT_PHYSICAL_NEXT_OPEN"}
                 rows.append(dict(symbol=p["symbol"], entry_open_ms=int(ts[p["symbol"]][p["i"]]-900000),
-                                 exit_event_ms=int(ts[p["symbol"]][i]), exit_reason=reason,
+                                 exit_event_ms=int(ts[p["symbol"]][i]-(900000 if open_exit else 0)),
+                                 exit_bar_close_ms=int(ts[p["symbol"]][i]), exit_reason=reason,
+                                 exit_clock="exact_open" if open_exit else "bounded_to_completed_15m_bar",
                                  qty=round(qty,8), entry_mid=round(p["mid"],8), exit_mid=round(float(mark),8),
                                  entry_fill=round(p["buy"],8), exit_fill=round(sell,8),
                                  stop=round(p["stop"],8), target=round(p["target"],8),
@@ -251,11 +254,14 @@ def benchmark(frames: dict, lo: int, hi: int, profile: str) -> dict:
     fee, slip = {"conservative":(.001,.0005), "stress":(.0025,.0015)}[profile]
     cash = 500.
     for f in frames.values():
-        buy = float(f.open.iloc[lo])*(1+slip)
+        # lo is the partition's initial completed-close decision. The earliest
+        # observable fill for both strategy and benchmark is the next open.
+        buy = float(f.open.iloc[lo+1])*(1+slip)
         qty = math.floor((250/(buy*(1+fee)))*1e8)/1e8
         cash -= qty*buy*(1+fee)
         cash += qty*float(f.close.iloc[hi-1])*(1-slip)*(1-fee)
     return {"cash_only_net_pnl_usdt":0., "equal_budget_buy_hold_net_pnl_usdt":round(cash-500,8),
+            "benchmark_entry":"first_permitted_next_open_after_initial_partition_close",
             "benchmark_is_research_comparison_not_strategy_selection":True}
 
 

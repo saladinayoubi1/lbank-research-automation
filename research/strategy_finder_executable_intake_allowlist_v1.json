@@ -11,7 +11,7 @@
       "review_pr_url": "https://github.com/saladinayoubi1/lbank-research-automation/pull/2733",
       "source_provenance_review": true,
       "system_specification_path": "research/complete_systems/failure_test_structural_v1.json",
-      "system_specification_sha256": "df3c670011f0c7a1811d7852b95bb850cc237634716841042b8ba7ec19004eab"
+      "system_specification_sha256": "4301bb8bd33db3c4f706c7d5ee2c610c3c40da5ef0ed254ccce2845ee30f9550"
     }
   ],
   "automatic_strategy_promotion": false,

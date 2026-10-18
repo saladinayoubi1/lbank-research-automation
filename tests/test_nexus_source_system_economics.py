@@ -54,6 +54,9 @@ def test_later_gap_retains_loss_larger_than_nominal_budget():
     got = run(f)
     assert got["ledger"][0]["exit_reason"] == "STOP_GAP_AT_WORSE_OPEN"
     assert got["ledger"][0]["pnl_usdt"] < -2.5
+    bar_close_ms = int(pd.Timestamp(f["BTCUSDT"].decision_at.iloc[7]).value//1_000_000)
+    assert got["ledger"][0]["exit_bar_close_ms"] == bar_close_ms
+    assert got["ledger"][0]["exit_event_ms"] == bar_close_ms-900000
     qa.verify_partition(got,qa.reference_partition(f,0,110,"conservative"))
 
 
@@ -160,6 +163,9 @@ def test_passive_benchmark_charges_costs_inside_single_500_cash_budget():
     a,b = qa.benchmark(f,0,110,"conservative"),qa.benchmark(f,0,110,"stress")
     assert b["equal_budget_buy_hold_net_pnl_usdt"] < a["equal_budget_buy_hold_net_pnl_usdt"] < 0
     assert a["cash_only_net_pnl_usdt"] == 0
+    for source in f.values():
+        source.loc[0,["open","low"]] = [10.,9.]
+    assert qa.benchmark(f,0,110,"conservative") == a
 
 
 def test_finished_native_result_is_reused_without_market_replay(tmp_path,monkeypatch):

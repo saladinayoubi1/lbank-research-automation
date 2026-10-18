@@ -16,6 +16,6 @@
     "scripts/select_nexus_bybit_replay_artifact.py": "5ceb8bbfccf7876c292f0b6dbbe07e62d2a25267b1647b3d9c4e8bd49bf623fa"
   },
   "system_specification_path": "research/complete_systems/failure_test_structural_v1.json",
-  "system_specification_sha256": "df3c670011f0c7a1811d7852b95bb850cc237634716841042b8ba7ec19004eab",
-  "worker_source_sha256": "f04d5b20dd698d5c9e8b8777ec4d564b0e8b68685597b96da7e985a173dbd48e"
+  "system_specification_sha256": "4301bb8bd33db3c4f706c7d5ee2c610c3c40da5ef0ed254ccce2845ee30f9550",
+  "worker_source_sha256": "d0a4d85a97d3e195b581afcbdebc6498ab56cf3bcfc50c81e3bf53d93841d814"
 }

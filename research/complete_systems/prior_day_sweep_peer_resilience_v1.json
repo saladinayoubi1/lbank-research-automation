@@ -65,7 +65,7 @@
     "nexus_composite_strategy_research.py": "63854147e0b7ff00bd93383e165912d210ca2e489011b64fe062c4665db8fb80",
     "nexus_mechanism_factory.py": "fefd72d50f363f34213c2a5968e9aacdadb6701c2d3286b5ed7bef1421f41516",
     "nexus_multitimeframe_verified_archive_discovery.py": "cdd2a182f6f5f34248fb9ab4d0224bf1f692a6e77503af9c971a16744c397e22",
-    "research/strategy_finder_shared_cash_physical.py": "638f7395c5ca6d32f1197c6f976ddbfcba3a8f2ff66decc8a4656bf8cccbd421",
+    "research/strategy_finder_shared_cash_physical.py": "d7509c58feac819ab7a7abbb94be928563b3cf7d582f2444767ea9217f56a0b7",
     "scripts/nexus_strategy_finder_executable_intake.py": "160ec6efdefb0656e1d5fbcc3efdb2f014afb2e5aa3d87c25e5d70e205e7c35c",
     "scripts/nexus_strategy_finder_shared_cash_eval.py": "8848a9afaf034338923ce51de1fedb51912a02f32eefccdaef8e5b88891e09cb"
   },

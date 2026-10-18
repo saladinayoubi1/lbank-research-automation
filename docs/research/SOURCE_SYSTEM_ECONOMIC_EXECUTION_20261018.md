@@ -38,7 +38,10 @@ or endorsed this entire combined system. This is not an Elliott wave counter.
 The existing research diagnostic has no portfolio drawdown kill or venue lot-size
 execution adapter. It reports drawdown, fills are historical hypothetical fills,
 and its partition end liquidation is explicit. Intrabar exits are bounded to a
-15-minute bar, not claimed tick timestamps. It cannot qualify a production system.
+15-minute bar, not claimed tick timestamps. Structural-policy gap/timeout exit
+events use the actual observable open, with the source bar close recorded
+separately. The passive benchmark starts at the same first permitted next open,
+not the preceding source bar's open. It cannot qualify a production system.
 
 ## Separate source/code overlap review
 

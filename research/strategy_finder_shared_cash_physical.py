@@ -281,10 +281,14 @@ def replay_shared_cash(
                 friction=slippage+active["entry_fee"]+exit_fee
                 if abs(gross-friction-pnl)>1e-7:
                     raise SharedCashDiagnosticError("gross/friction/net identity drift")
+                bar_close_ms=int(times[i].value//10**6)
+                open_exit=label in {"STOP_GAP_AT_WORSE_OPEN","TIMEOUT_AT_PHYSICAL_NEXT_OPEN"}
                 closed.append({
                     "symbol":active["symbol"],
                     "entry_open_ms":active["entry_open_ms"],
-                    "exit_event_ms":int(times[i].value//10**6),
+                    "exit_event_ms":bar_close_ms-GRANULARITY_MS if (
+                        stop_policy=="signal_bar_low_v1" and open_exit) else bar_close_ms,
+                    "exit_bar_close_ms":bar_close_ms,
                     "exit_reason":label,
                     "qty":round(qty,8),
                     "entry_mid":round(active["entry_mid"],8),
@@ -296,9 +300,9 @@ def replay_shared_cash(
                     "slippage_usdt":round(slippage,8),
                     "gross_price_pnl_usdt":round(gross,8),
                     "total_friction_usdt":round(friction,8),
-                    "exit_clock":"exact_open" if label in {
-                        "STOP_GAP_AT_WORSE_OPEN","TIMEOUT_AT_PHYSICAL_NEXT_OPEN"
-                    } else "bounded_to_completed_15m_bar",
+                    "exit_clock":("exact_open" if stop_policy=="signal_bar_low_v1" else
+                                  "open_execution_recorded_at_legacy_bar_close")
+                                 if open_exit else "bounded_to_completed_15m_bar",
                     "stop":round(stop,8),"target":round(target,8),
                     "pnl_usdt":round(pnl,8),
                 })
