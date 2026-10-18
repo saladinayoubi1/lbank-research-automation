@@ -25,6 +25,8 @@ def test_standalone_entrypoints_find_real_feedback_without_pythonpath(tmp_path, 
         "scripts/nexus_phase3_task.py",
         "nexus_strategy_discovery_feedback.py",
         "product_research_reports.py",
+        "product_elliott_research.py",
+        "nexus_elliott_v119_accounting_qa.py",
     ]:
         target = project / relative
         shutil.copy2(ROOT / relative, target)
