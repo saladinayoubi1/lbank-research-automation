@@ -33,6 +33,7 @@ async function main() {
     };
   }
   const calls = [], failures = new Set();
+  let reviewed = {reports: [], errors: []};
   const window = {};
   const context = {
     document: {readyState: 'complete', hidden: false, getElementById: id => nodes.get(id), createElement: () => new Element()},
@@ -40,7 +41,7 @@ async function main() {
     fetch: async (url, options) => {
       calls.push({url, options});
       if (failures.has(url)) throw new Error('gateway unavailable');
-      if (url === '/api/product/research/reports') return {ok: true, json: async () => ({reports: [], errors: []})};
+      if (url === '/api/product/research/reports') return {ok: true, json: async () => structuredClone(reviewed)};
       const provider = url.includes('lbank-market') ? 'lbank' : 'bitget';
       if (options.method === 'POST') {
         if (url.endsWith('/polling')) snapshots[provider].polling_enabled = JSON.parse(options.body).enabled;
@@ -79,6 +80,28 @@ async function main() {
   await first;
   assert.equal(calls.length - count, 3);
   assert(calls.every(c => c.options.credentials === 'same-origin'));
+  const assets = path.join(__dirname, '../product_ui/research-reports');
+  const ledger = JSON.parse(fs.readFileSync(path.join(assets, 'elliott-v119-completed-study.json'), 'utf8'));
+  const qa = JSON.parse(fs.readFileSync(path.join(assets, 'elliott-v119-fixed-path-accounting-qa.json'), 'utf8'));
+  reviewed.reports = [{id: 'ELLIOTT-V119', reference_capital_usdt: 500, evidence_url: 'https://github.com/example/evidence',
+    report: {system_rules: {context: '<script>untrusted</script>'}, rows: qa.rows.map(r => ({...r,
+      first_decision_utc: ledger.results[r.part].start_utc,
+      last_decision_utc: ledger.results[r.part].end_utc,
+      max_drawdown_pct: null, monthly: ledger.results[r.part].profiles[r.profile].monthly}))}}];
+  await window.NexusResearchData.refresh();
+  const reportHtml = nodes.get('reviewedResearchReports').innerHTML;
+  assert.match(reportHtml, /500 USDT/);
+  assert.match(reportHtml, /-22\.8031/);
+  assert.match(reportHtml, /-55\.0370/);
+  assert.match(reportHtml, /-0\.4005/);
+  assert.match(reportHtml, /<td>—<\/td>/);
+  assert.match(reportHtml, /شمارش کامل الیوت/);
+  assert.match(reportHtml, /عملکرد ماهانه/);
+  assert.match(reportHtml, /&lt;script&gt;untrusted&lt;\/script&gt;/);
+  assert(!reportHtml.includes('<script>untrusted</script>'));
+  assert(!reportHtml.includes('۱۰٬۰۰۰'));
+  assert(!reportHtml.includes('۶۰ آرشیو'));
+  assert(!nodes.get('reviewedResearchPanel').innerHTML.includes('مبنای محاسبات هر پژوهش ۱۰٬۰۰۰'));
   console.log('Research data UI: independent provider controls, identity rejection, stale/error display and bounded reads pass.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
