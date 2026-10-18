@@ -1,0 +1,1011 @@
+{
+  "account_topology": "one_500_usdt_shared_cash_BTC_ETH_spot_long_only",
+  "all_params_fixed_no_tuning": true,
+  "complete_system_digest": "ab0b7ea343610fdca28ef3ddaa0e9cb491de0de22ce9b6ecf2deb44a02cf787b",
+  "demo_eligible": false,
+  "economic_task": {
+    "lane": "github-cloud",
+    "producer": "research-agent",
+    "source_sha": "8bfe55c5fec22a1ba29e6c1dddd9f37b90368961",
+    "task_id": "SYSTEM-ECON-9ad802095258f36a509347c3",
+    "workflow_run_id": "39107550009"
+  },
+  "evaluation_end_exclusive_utc": "2025-04-01T00:00:00+00:00",
+  "evaluation_start_utc": "2025-01-01T00:00:00+00:00",
+  "exact_market_file_sha256": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "execution_contract": {
+    "cost_profiles_bps": {
+      "conservative": {
+        "fee": 10.0,
+        "slippage": 5.0
+      },
+      "stress": {
+        "fee": 25.0,
+        "slippage": 15.0
+      }
+    },
+    "decision_timeframe": "15m_with_completed_1h_4h_context",
+    "entry": "next_observable_open_after_signal_close",
+    "exit_precedence": [
+      "gap_stop_at_worse_open",
+      "timeout_at_open",
+      "intrabar_stop_before_target",
+      "target",
+      "partition_final_close"
+    ],
+    "historical_holdout": "already_inspected_not_pristine",
+    "initial_shared_cash_usdt": 500.0,
+    "live_enabled": false,
+    "market": "bybit_spot_long_only",
+    "max_concurrent_portfolio_positions": 1,
+    "max_gross_usdt": 250.0,
+    "max_nominal_gapless_stop_loss_usdt": 2.5,
+    "minimum_trade_count": null,
+    "no_trade": [
+      "no_reviewed_signal",
+      "shared_cash_position_occupied",
+      "next_open_at_or_below_signal_low",
+      "invalid_stop_geometry",
+      "no_shared_cash_or_risk_capacity"
+    ],
+    "orders": 0,
+    "paper_eligible": false,
+    "partitions": "chronological_60_20_20_cash_reset_per_partition",
+    "portfolio_drawdown_kill": "not_implemented_in_this_research_diagnostic",
+    "quantity_rounding": "floor_to_8_decimal_places",
+    "range_proxy": "not_used_for_structural_stop",
+    "schema": "nexus.shared-cash-execution-contract.v1",
+    "signal": "reviewed_factory_context_and_entry_at_completed_close",
+    "simultaneous_signal_priority": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "stop_anchor": "low_of_completed_signal_bar_without_buffer",
+    "stop_policy": "signal_bar_low_v1",
+    "stop_range_multiple": null,
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "target_r": 2.0,
+    "timeout_bars": 64
+  },
+  "historical_source_already_inspected": true,
+  "independent_untouched_future_holdout": false,
+  "legacy_account_topology_incompatible": "original_10000_usdt_independent_per_symbol_backtest",
+  "live_enabled": false,
+  "not_qualified_for_demo": true,
+  "orders": 0,
+  "paper_eligible": false,
+  "partitions": {
+    "historical_test_already_inspected": {
+      "conservative": {
+        "attempt_counts": {
+          "admitted": 1,
+          "next_open_intent": 1
+        },
+        "cost_profile": "conservative",
+        "denial_reasons": {},
+        "end_closed_at_utc": "2025-03-31T23:45:00+00:00",
+        "ending_shared_cash_usdt": 500.07168326,
+        "exit_reasons": {
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "fees_paid_usdt": 0.50057074,
+        "gross_price_pnl_usdt": 0.82253957,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.24999924,
+            "entry_fill": 83977.46775,
+            "entry_mid": 83935.5,
+            "entry_open_ms": 1742574600000,
+            "exit_bar_close_ms": 1742633100000,
+            "exit_clock": "exact_open",
+            "exit_event_ms": 1742632200000,
+            "exit_fee_usdt": 0.2505715,
+            "exit_fill": 84169.6941,
+            "exit_mid": 84211.8,
+            "exit_reason": "TIMEOUT_AT_PHYSICAL_NEXT_OPEN",
+            "gross_price_pnl_usdt": 0.82253957,
+            "pnl_usdt": 0.07168326,
+            "qty": 0.00297698,
+            "slippage_usdt": 0.25028557,
+            "stop": 83634.5,
+            "symbol": "BTCUSDT",
+            "target": 84663.40325,
+            "total_friction_usdt": 0.75085631
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 0.25512221,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": 0.07168326,
+        "monthly": [
+          {
+            "mean_pnl_usdt": 0.07168326,
+            "month": "2025-03",
+            "net_pnl_usdt": 0.07168326,
+            "round_trips": 1
+          }
+        ],
+        "net_pnl_usdt": 0.07168326,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 1,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 1,
+        "slippage_usdt": 0.25028557,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-03-14T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 0.75085631,
+        "trades": 1
+      },
+      "stress": {
+        "attempt_counts": {
+          "admitted": 1,
+          "next_open_intent": 1
+        },
+        "cost_profile": "stress",
+        "denial_reasons": {},
+        "end_closed_at_utc": "2025-03-31T23:45:00+00:00",
+        "ending_shared_cash_usdt": 498.97998597,
+        "exit_reasons": {
+          "TIMEOUT_AT_PHYSICAL_NEXT_OPEN": 1
+        },
+        "fees_paid_usdt": 1.08199158,
+        "gross_price_pnl_usdt": 0.7111741,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.54091832,
+            "entry_fill": 84061.40325,
+            "entry_mid": 83935.5,
+            "entry_open_ms": 1742574600000,
+            "exit_bar_close_ms": 1742633100000,
+            "exit_clock": "exact_open",
+            "exit_event_ms": 1742632200000,
+            "exit_fee_usdt": 0.54107326,
+            "exit_fill": 84085.4823,
+            "exit_mid": 84211.8,
+            "exit_reason": "TIMEOUT_AT_PHYSICAL_NEXT_OPEN",
+            "gross_price_pnl_usdt": 0.7111741,
+            "pnl_usdt": -1.02001403,
+            "qty": 0.00257392,
+            "slippage_usdt": 0.64919655,
+            "stop": 83634.5,
+            "symbol": "BTCUSDT",
+            "target": 84915.20975,
+            "total_friction_usdt": 1.73118813
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 0.26886742,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": -1.02001403,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.02001403,
+            "month": "2025-03",
+            "net_pnl_usdt": -1.02001403,
+            "round_trips": 1
+          }
+        ],
+        "net_pnl_usdt": -1.02001403,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 0,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 1,
+        "slippage_usdt": 0.64919655,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-03-14T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 1.73118813,
+        "trades": 1
+      }
+    },
+    "training": {
+      "conservative": {
+        "attempt_counts": {
+          "admitted": 9,
+          "next_open_intent": 9
+        },
+        "cost_profile": "conservative",
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 2
+        },
+        "end_closed_at_utc": "2025-02-23T23:45:00+00:00",
+        "ending_shared_cash_usdt": 500.21281324,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 3,
+          "STRUCTURAL_STOP": 6
+        },
+        "fees_paid_usdt": 3.88381091,
+        "gross_price_pnl_usdt": 6.03853112,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.24999998,
+            "entry_fill": 3358.688505,
+            "entry_mid": 3357.01,
+            "entry_open_ms": 1736342100000,
+            "exit_bar_close_ms": 1736351100000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1736351100000,
+            "exit_fee_usdt": 0.24845337,
+            "exit_fill": 3337.91021,
+            "exit_mid": 3339.58,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.29738131,
+            "pnl_usdt": -2.04506102,
+            "qty": 0.07443381,
+            "slippage_usdt": 0.24922635,
+            "stop": 3339.58,
+            "symbol": "ETHUSDT",
+            "target": 3396.905515,
+            "total_friction_usdt": 0.74767971
+          },
+          {
+            "entry_fee_usdt": 0.24999999,
+            "entry_fill": 3227.562975,
+            "entry_mid": 3225.95,
+            "entry_open_ms": 1736748000000,
+            "exit_bar_close_ms": 1736750700000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1736750700000,
+            "exit_fee_usdt": 0.24871038,
+            "exit_fill": 3210.91374,
+            "exit_mid": 3212.52,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.04025852,
+            "pnl_usdt": -1.78832382,
+            "qty": 0.07745782,
+            "slippage_usdt": 0.24935493,
+            "stop": 3212.52,
+            "symbol": "ETHUSDT",
+            "target": 3257.648925,
+            "total_friction_usdt": 0.7480653
+          },
+          {
+            "entry_fee_usdt": 0.13681082,
+            "entry_fill": 3318.768555,
+            "entry_mid": 3317.11,
+            "entry_open_ms": 1737200700000,
+            "exit_bar_close_ms": 1737217800000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737217800000,
+            "exit_fee_usdt": 0.13458222,
+            "exit_fill": 3264.70683,
+            "exit_mid": 3266.34,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -2.09291049,
+            "pnl_usdt": -2.49999953,
+            "qty": 0.04122337,
+            "slippage_usdt": 0.135696,
+            "stop": 3266.34,
+            "symbol": "ETHUSDT",
+            "target": 3423.625665,
+            "total_friction_usdt": 0.40708904
+          },
+          {
+            "entry_fee_usdt": 0.24999997,
+            "entry_fill": 3225.001695,
+            "entry_mid": 3223.39,
+            "entry_open_ms": 1737618300000,
+            "exit_bar_close_ms": 1737625500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737625500000,
+            "exit_fee_usdt": 0.24850576,
+            "exit_fill": 3205.726335,
+            "exit_mid": 3207.33,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.24496044,
+            "pnl_usdt": -1.99271872,
+            "qty": 0.07751933,
+            "slippage_usdt": 0.24925255,
+            "stop": 3207.33,
+            "symbol": "ETHUSDT",
+            "target": 3260.345085,
+            "total_friction_usdt": 0.74775828
+          },
+          {
+            "entry_fee_usdt": 0.24999999,
+            "entry_fill": 3231.024705,
+            "entry_mid": 3229.41,
+            "entry_open_ms": 1737639900000,
+            "exit_bar_close_ms": 1737644400000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737644400000,
+            "exit_fee_usdt": 0.25351825,
+            "exit_fill": 3276.49504794,
+            "exit_mid": 3278.134115,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 3.77002012,
+            "pnl_usdt": 3.01474182,
+            "qty": 0.07737483,
+            "slippage_usdt": 0.25176006,
+            "stop": 3207.47,
+            "symbol": "ETHUSDT",
+            "target": 3278.134115,
+            "total_friction_usdt": 0.75527829
+          },
+          {
+            "entry_fee_usdt": 0.11685091,
+            "entry_fill": 96176.754345,
+            "entry_mid": 96128.69,
+            "entry_open_ms": 1738593900000,
+            "exit_bar_close_ms": 1738608300000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1738608300000,
+            "exit_fee_usdt": 0.12121274,
+            "exit_fill": 99766.85465348,
+            "exit_mid": 99816.763035,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 4.48086121,
+            "pnl_usdt": 4.12376462,
+            "qty": 0.00121496,
+            "slippage_usdt": 0.11903294,
+            "stop": 94356.75,
+            "symbol": "BTCUSDT",
+            "target": 99816.763035,
+            "total_friction_usdt": 0.35709659
+          },
+          {
+            "entry_fee_usdt": 0.24999912,
+            "entry_fill": 97348.65,
+            "entry_mid": 97300.0,
+            "entry_open_ms": 1739699100000,
+            "exit_bar_close_ms": 1739704500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1739704500000,
+            "exit_fee_usdt": 0.24938707,
+            "exit_fill": 97110.32055,
+            "exit_mid": 97158.9,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.36235609,
+            "pnl_usdt": -1.11143529,
+            "qty": 0.00256808,
+            "slippage_usdt": 0.24969301,
+            "stop": 97158.9,
+            "symbol": "BTCUSDT",
+            "target": 97728.15,
+            "total_friction_usdt": 0.7490792
+          },
+          {
+            "entry_fee_usdt": 0.18619638,
+            "entry_fill": 2666.642655,
+            "entry_mid": 2665.31,
+            "entry_open_ms": 1739769300000,
+            "exit_bar_close_ms": 1739785500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1739785500000,
+            "exit_fee_usdt": 0.19017656,
+            "exit_fill": 2723.64546102,
+            "exit_mid": 2725.007965,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 4.16836683,
+            "pnl_usdt": 3.60380639,
+            "qty": 0.06982427,
+            "slippage_usdt": 0.18818751,
+            "stop": 2637.46,
+            "symbol": "ETHUSDT",
+            "target": 2725.007965,
+            "total_friction_usdt": 0.56456044
+          },
+          {
+            "entry_fee_usdt": 0.24999998,
+            "entry_fill": 95814.433275,
+            "entry_mid": 95766.55,
+            "entry_open_ms": 1740348000000,
+            "exit_bar_close_ms": 1740349800000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1740349800000,
+            "exit_fee_usdt": 0.24940742,
+            "exit_fill": 95587.332425,
+            "exit_mid": 95635.15,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.34285019,
+            "pnl_usdt": -1.09196121,
+            "qty": 0.00260921,
+            "slippage_usdt": 0.24970361,
+            "stop": 95635.15,
+            "symbol": "BTCUSDT",
+            "target": 96172.999825,
+            "total_friction_usdt": 0.74911102
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 1.80718159,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": 0.02364592,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.06227225,
+            "month": "2025-01",
+            "net_pnl_usdt": -5.31136127,
+            "round_trips": 5
+          },
+          {
+            "mean_pnl_usdt": 1.38104363,
+            "month": "2025-02",
+            "net_pnl_usdt": 5.52417451,
+            "round_trips": 4
+          }
+        ],
+        "net_pnl_usdt": 0.21281324,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 3,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 11,
+        "slippage_usdt": 1.94190696,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-01-01T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 5.82571787,
+        "trades": 9
+      },
+      "stress": {
+        "attempt_counts": {
+          "admitted": 9,
+          "next_open_intent": 9
+        },
+        "cost_profile": "stress",
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 2
+        },
+        "end_closed_at_utc": "2025-02-23T23:45:00+00:00",
+        "ending_shared_cash_usdt": 492.497901,
+        "exit_reasons": {
+          "PRECOMMITTED_TARGET": 3,
+          "STRUCTURAL_STOP": 6
+        },
+        "fees_paid_usdt": 7.98944981,
+        "gross_price_pnl_usdt": 5.28103258,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.47522572,
+            "entry_fill": 3362.045515,
+            "entry_mid": 3357.01,
+            "entry_open_ms": 1736342100000,
+            "exit_bar_close_ms": 1736351100000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1736351100000,
+            "exit_fee_usdt": 0.47134214,
+            "exit_fill": 3334.57063,
+            "exit_mid": 3339.58,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.98549342,
+            "pnl_usdt": -2.49999979,
+            "qty": 0.05654007,
+            "slippage_usdt": 0.5679385,
+            "stop": 3339.58,
+            "symbol": "ETHUSDT",
+            "target": 3406.976545,
+            "total_friction_usdt": 1.51450637
+          },
+          {
+            "entry_fee_usdt": 0.51532424,
+            "entry_fill": 3230.788925,
+            "entry_mid": 3225.95,
+            "entry_open_ms": 1736748000000,
+            "exit_bar_close_ms": 1736750700000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1736750700000,
+            "exit_fee_usdt": 0.51164166,
+            "exit_fill": 3207.70122,
+            "exit_mid": 3212.52,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.85685629,
+            "pnl_usdt": -2.4999998,
+            "qty": 0.06380166,
+            "slippage_usdt": 0.61617761,
+            "stop": 3212.52,
+            "symbol": "ETHUSDT",
+            "target": 3267.326775,
+            "total_friction_usdt": 1.64314351
+          },
+          {
+            "entry_fee_usdt": 0.2692861,
+            "entry_fill": 3322.085665,
+            "entry_mid": 3317.11,
+            "entry_open_ms": 1737200700000,
+            "exit_bar_close_ms": 1737217800000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737217800000,
+            "exit_fee_usdt": 0.26437025,
+            "exit_fill": 3261.44049,
+            "exit_mid": 3266.34,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.64615328,
+            "pnl_usdt": -2.49999974,
+            "qty": 0.03242374,
+            "slippage_usdt": 0.32019011,
+            "stop": 3266.34,
+            "symbol": "ETHUSDT",
+            "target": 3433.576995,
+            "total_friction_usdt": 0.85384646
+          },
+          {
+            "entry_fee_usdt": 0.48288622,
+            "entry_fill": 3228.225085,
+            "entry_mid": 3223.39,
+            "entry_open_ms": 1737618300000,
+            "exit_bar_close_ms": 1737625500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737625500000,
+            "exit_fee_usdt": 0.47904104,
+            "exit_fill": 3202.519005,
+            "exit_mid": 3207.33,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.96091846,
+            "pnl_usdt": -2.49999992,
+            "qty": 0.05983303,
+            "slippage_usdt": 0.57715419,
+            "stop": 3207.33,
+            "symbol": "ETHUSDT",
+            "target": 3270.015255,
+            "total_friction_usdt": 1.53908145
+          },
+          {
+            "entry_fee_usdt": 0.42388555,
+            "entry_fill": 3234.254115,
+            "entry_mid": 3229.41,
+            "entry_open_ms": 1737639900000,
+            "exit_bar_close_ms": 1737648900000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1737648900000,
+            "exit_fee_usdt": 0.43025991,
+            "exit_fill": 3282.89061148,
+            "exit_mid": 3287.822345,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 3.06223915,
+            "pnl_usdt": 1.69559952,
+            "qty": 0.05242452,
+            "slippage_usdt": 0.51249417,
+            "stop": 3207.47,
+            "symbol": "ETHUSDT",
+            "target": 3287.822345,
+            "total_friction_usdt": 1.36663963
+          },
+          {
+            "entry_fee_usdt": 0.23746188,
+            "entry_fill": 96272.883035,
+            "entry_mid": 96128.69,
+            "entry_open_ms": 1738593900000,
+            "exit_bar_close_ms": 1738610100000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1738610100000,
+            "exit_fee_usdt": 0.24654398,
+            "exit_fill": 99954.99138134,
+            "exit_mid": 100105.149105,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 3.92325408,
+            "pnl_usdt": 3.14883587,
+            "qty": 0.00098662,
+            "slippage_usdt": 0.29041235,
+            "stop": 94356.75,
+            "symbol": "BTCUSDT",
+            "target": 100105.149105,
+            "total_friction_usdt": 0.77441821
+          },
+          {
+            "entry_fee_usdt": 0.62499883,
+            "entry_fill": 97445.95,
+            "entry_mid": 97300.0,
+            "entry_open_ms": 1739699100000,
+            "exit_bar_close_ms": 1739704500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1739704500000,
+            "exit_fee_usdt": 0.62222302,
+            "exit_fill": 97013.16165,
+            "exit_mid": 97158.9,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.36199487,
+            "pnl_usdt": -2.35754902,
+            "qty": 0.00256552,
+            "slippage_usdt": 0.7483323,
+            "stop": 97158.9,
+            "symbol": "BTCUSDT",
+            "target": 98020.05,
+            "total_friction_usdt": 1.99555415
+          },
+          {
+            "entry_fee_usdt": 0.34004835,
+            "entry_fill": 2669.307965,
+            "entry_mid": 2665.31,
+            "entry_open_ms": 1739769300000,
+            "exit_bar_close_ms": 1739785500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1739785500000,
+            "exit_fee_usdt": 0.34764045,
+            "exit_fill": 2728.90438916,
+            "exit_mid": 2733.003895,
+            "exit_reason": "PRECOMMITTED_TARGET",
+            "gross_price_pnl_usdt": 3.44946291,
+            "pnl_usdt": 2.34915308,
+            "qty": 0.05095678,
+            "slippage_usdt": 0.41262104,
+            "stop": 2637.46,
+            "symbol": "ETHUSDT",
+            "target": 2733.003895,
+            "total_friction_usdt": 1.10030984
+          },
+          {
+            "entry_fee_usdt": 0.62499882,
+            "entry_fill": 95910.199825,
+            "entry_mid": 95766.55,
+            "entry_open_ms": 1740348000000,
+            "exit_bar_close_ms": 1740349800000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1740349800000,
+            "exit_fee_usdt": 0.62227165,
+            "exit_fill": 95491.697275,
+            "exit_mid": 95635.15,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -0.34250724,
+            "pnl_usdt": -2.33813921,
+            "qty": 0.0026066,
+            "slippage_usdt": 0.74836151,
+            "stop": 95635.15,
+            "symbol": "BTCUSDT",
+            "target": 96460.299475,
+            "total_friction_usdt": 1.99563197
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 2.09960382,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": -0.83356656,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.66087995,
+            "month": "2025-01",
+            "net_pnl_usdt": -8.30439973,
+            "round_trips": 5
+          },
+          {
+            "mean_pnl_usdt": 0.20057518,
+            "month": "2025-02",
+            "net_pnl_usdt": 0.80230072,
+            "round_trips": 4
+          }
+        ],
+        "net_pnl_usdt": -7.502099,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 3,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 11,
+        "slippage_usdt": 4.79368178,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-01-01T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 12.78313159,
+        "trades": 9
+      }
+    },
+    "validation_already_inspected": {
+      "conservative": {
+        "attempt_counts": {
+          "admitted": 2,
+          "next_open_intent": 2
+        },
+        "cost_profile": "conservative",
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 1
+        },
+        "end_closed_at_utc": "2025-03-13T23:45:00+00:00",
+        "ending_shared_cash_usdt": 497.79858146,
+        "exit_reasons": {
+          "PARTITION_LAST_COMPLETED_CLOSE": 1,
+          "STRUCTURAL_STOP": 1
+        },
+        "fees_paid_usdt": 0.81010429,
+        "gross_price_pnl_usdt": -0.98626235,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.19590311,
+            "entry_fill": 2106.862905,
+            "entry_mid": 2105.81,
+            "entry_open_ms": 1741092300000,
+            "exit_bar_close_ms": 1741094100000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1741094100000,
+            "exit_fee_usdt": 0.1937928,
+            "exit_fill": 2084.167395,
+            "exit_mid": 2085.21,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.91545639,
+            "pnl_usdt": -2.49999978,
+            "qty": 0.09298332,
+            "slippage_usdt": 0.19484748,
+            "stop": 2085.21,
+            "symbol": "ETHUSDT",
+            "target": 2150.168715,
+            "total_friction_usdt": 0.58454339
+          },
+          {
+            "entry_fee_usdt": 0.20984469,
+            "entry_fill": 80756.39802,
+            "entry_mid": 80716.04,
+            "entry_open_ms": 1741889700000,
+            "exit_bar_close_ms": 1741909500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1741909500000,
+            "exit_fee_usdt": 0.21056368,
+            "exit_fill": 81033.093185,
+            "exit_mid": 81073.63,
+            "exit_reason": "PARTITION_LAST_COMPLETED_CLOSE",
+            "gross_price_pnl_usdt": 0.92919404,
+            "pnl_usdt": 0.29858124,
+            "qty": 0.00259849,
+            "slippage_usdt": 0.21020442,
+            "stop": 79995.01,
+            "symbol": "BTCUSDT",
+            "target": 82279.17406,
+            "total_friction_usdt": 0.63061279
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 0.83173588,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": -1.10070927,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.10070927,
+            "month": "2025-03",
+            "net_pnl_usdt": -2.20141854,
+            "round_trips": 2
+          }
+        ],
+        "net_pnl_usdt": -2.20141854,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 1,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 3,
+        "slippage_usdt": 0.4050519,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-02-24T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 1.21515618,
+        "trades": 2
+      },
+      "stress": {
+        "attempt_counts": {
+          "admitted": 2,
+          "next_open_intent": 2
+        },
+        "cost_profile": "stress",
+        "denial_reasons": {
+          "SHARED_CASH_POSITION_OCCUPIED": 1
+        },
+        "end_closed_at_utc": "2025-03-13T23:45:00+00:00",
+        "ending_shared_cash_usdt": 496.96922318,
+        "exit_reasons": {
+          "PARTITION_LAST_COMPLETED_CLOSE": 1,
+          "STRUCTURAL_STOP": 1
+        },
+        "fees_paid_usdt": 1.44244669,
+        "gross_price_pnl_usdt": -0.72286375,
+        "initial_shared_cash_usdt": 500.0,
+        "ledger": [
+          {
+            "entry_fee_usdt": 0.35277268,
+            "entry_fill": 2108.968715,
+            "entry_mid": 2105.81,
+            "entry_open_ms": 1741092300000,
+            "exit_bar_close_ms": 1741094100000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1741094100000,
+            "exit_fee_usdt": 0.3482753,
+            "exit_fill": 2082.082185,
+            "exit_mid": 2085.21,
+            "exit_reason": "STRUCTURAL_STOP",
+            "gross_price_pnl_usdt": -1.37832622,
+            "pnl_usdt": -2.49999989,
+            "qty": 0.06690904,
+            "slippage_usdt": 0.42062569,
+            "stop": 2085.21,
+            "symbol": "ETHUSDT",
+            "target": 2156.486145,
+            "total_friction_usdt": 1.12167367
+          },
+          {
+            "entry_fee_usdt": 0.37043608,
+            "entry_fill": 80837.11406,
+            "entry_mid": 80716.04,
+            "entry_open_ms": 1741889700000,
+            "exit_bar_close_ms": 1741909500000,
+            "exit_clock": "bounded_to_completed_15m_bar",
+            "exit_event_ms": 1741909500000,
+            "exit_fee_usdt": 0.37096263,
+            "exit_fill": 80952.019555,
+            "exit_mid": 81073.63,
+            "exit_reason": "PARTITION_LAST_COMPLETED_CLOSE",
+            "gross_price_pnl_usdt": 0.65546247,
+            "pnl_usdt": -0.53077693,
+            "qty": 0.001833,
+            "slippage_usdt": 0.4448407,
+            "stop": 79995.01,
+            "symbol": "BTCUSDT",
+            "target": 82521.32218,
+            "total_friction_usdt": 1.1862394
+          }
+        ],
+        "live_enabled": false,
+        "max_drawdown_pct": 0.80808213,
+        "max_gross_usdt": 250.0,
+        "max_nominal_gapless_risk_usdt": 2.5,
+        "mean_pnl_usdt": -1.51538841,
+        "monthly": [
+          {
+            "mean_pnl_usdt": -1.51538841,
+            "month": "2025-03",
+            "net_pnl_usdt": -3.03077682,
+            "round_trips": 2
+          }
+        ],
+        "net_pnl_usdt": -3.03077682,
+        "not_pristine_out_of_sample": true,
+        "orders": 0,
+        "paper_eligible": false,
+        "positive_trades": 0,
+        "qualified": false,
+        "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+        "scope": "CALLER_SOURCE_NOT_AUTHENTICATED",
+        "signals_due_at_next_open": 3,
+        "slippage_usdt": 0.86546639,
+        "source_market_authenticity_attested_here": false,
+        "start_closed_at_utc": "2025-02-24T00:00:00+00:00",
+        "stop_policy": "signal_bar_low_v1",
+        "total_friction_usdt": 2.30791307,
+        "trades": 2
+      }
+    }
+  },
+  "qualified": false,
+  "raw_closed_bar_signals": {
+    "BTCUSDT": 7,
+    "ETHUSDT": 8
+  },
+  "readiness": {
+    "automatic_dispatch": false,
+    "candidate_id": "factory_prior_day_sweep_peer_resilience",
+    "candidate_path": "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+    "candidate_sha256": "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d",
+    "complete_system": {
+      "execution_contract_digest": "9d50dbae4150ba8c2686325968366a3ec1fa2ce5e997b2a49c662a9b6f89122a",
+      "execution_source_sha256": {
+        "nexus_composite_strategy_research.py": "63854147e0b7ff00bd93383e165912d210ca2e489011b64fe062c4665db8fb80",
+        "nexus_mechanism_factory.py": "fefd72d50f363f34213c2a5968e9aacdadb6701c2d3286b5ed7bef1421f41516",
+        "nexus_multitimeframe_verified_archive_discovery.py": "cdd2a182f6f5f34248fb9ab4d0224bf1f692a6e77503af9c971a16744c397e22",
+        "research/strategy_finder_shared_cash_physical.py": "d7509c58feac819ab7a7abbb94be928563b3cf7d582f2444767ea9217f56a0b7",
+        "scripts/nexus_strategy_finder_executable_intake.py": "160ec6efdefb0656e1d5fbcc3efdb2f014afb2e5aa3d87c25e5d70e205e7c35c",
+        "scripts/nexus_strategy_finder_shared_cash_eval.py": "8848a9afaf034338923ce51de1fedb51912a02f32eefccdaef8e5b88891e09cb"
+      },
+      "live_enabled": false,
+      "paper_eligible": false,
+      "provider_authentication_verified": false,
+      "rule_bindings": {
+        "context": {
+          "implementation": "factory_context",
+          "origin": "research_extension",
+          "source_ids": [
+            "nexus_prior_day_proposal"
+          ],
+          "summary": "Use the unchanged four conjunctive factory gates: completed h4_range and h1_vol_ok, positive lagged_peer_beta_residual, and lagged_downside_variance_share_64 above 0.5. These remain an unapproved internal hypothesis, not Elliott counting."
+        },
+        "entry": {
+          "implementation": "factory_entry",
+          "origin": "research_extension",
+          "source_ids": [
+            "nexus_prior_day_proposal",
+            "grimes_failure_test"
+          ],
+          "summary": "Retain the unchanged nine candidate conditions and completed-close failure-test recovery. The previous UTC-day support anchor, bullish-body/location/volume gates and delayed next-open fill are explicit research extensions to the source concept."
+        },
+        "exit": {
+          "implementation": "shared_cash_stop_target_timeout",
+          "origin": "research_extension",
+          "source_ids": [
+            "grimes_failure_test"
+          ],
+          "summary": "Place the long stop at the completed signal candle low, the source failure-extreme invalidation, with no tunable buffer. The fixed 2R target, 64-bar timeout and partition-close exit are research extensions. Execute adverse gaps at the worse observable open and give intrabar stop precedence over target."
+        },
+        "no_trade": {
+          "implementation": "shared_cash_denial_rules",
+          "origin": "research_extension",
+          "source_ids": [
+            "nexus_prior_day_proposal"
+          ],
+          "summary": "Reject absent reviewed signals, occupied shared position capacity, a next open at or below the completed signal low, invalid stop geometry and unavailable shared cash or nominal risk capacity. No ATR/range value determines the structural stop. This research-only permit cannot authorize Paper, Demo, Live or exchange orders."
+        },
+        "sizing": {
+          "implementation": "shared_cash_cost_aware_size",
+          "origin": "research_extension",
+          "source_ids": [
+            "nexus_prior_day_proposal"
+          ],
+          "summary": "Use one BTC/ETH shared 500-USDT book, one position, BTC priority on collision, gross at most 250 USDT, nominal gapless stop-risk at most 2.5 USDT with fee/slippage-aware sizing and quantity floored to eight decimals. Retain conservative and stress cost profiles; no portfolio drawdown kill is implemented."
+        }
+      },
+      "schema": "nexus.complete-strategy-system.v1",
+      "source_interpretation_independently_attested_here": false,
+      "source_notes": [
+        {
+          "id": "nexus_prior_day_proposal",
+          "path": "research/source_notes/nexus_prior_day_proposal_20261018.json",
+          "sha256": "80c873ff10c8fd5457e85f058e4d8e886380dbe920dc652ebc5eb6395ae715a5",
+          "url": "https://github.com/saladinayoubi1/lbank-research-automation/blob/89408c704520eb38d84488c4fadf2d404cdd4fd5/research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json"
+        },
+        {
+          "id": "grimes_failure_test",
+          "path": "research/source_notes/grimes_failure_test_20261018.json",
+          "sha256": "2f44118a28bcb8fd1cd23d6922c9d2e375b0ca723661159bf130408832a6ce48",
+          "url": "https://www.adamhgrimes.com/failure-test-2/"
+        }
+      ],
+      "study_window": {
+        "end_exclusive_utc": "2025-04-01T00:00:00Z",
+        "start_utc": "2025-01-01T00:00:00Z",
+        "warmup_utc": "2024-12-01T00:00:00Z"
+      },
+      "system_digest": "ab0b7ea343610fdca28ef3ddaa0e9cb491de0de22ce9b6ecf2deb44a02cf787b",
+      "system_specification_path": "research/complete_systems/failure_test_structural_v1.json",
+      "system_specification_sha256": "4301bb8bd33db3c4f706c7d5ee2c610c3c40da5ef0ed254ccce2845ee30f9550"
+    },
+    "global_economic_semantic_novelty_proven": false,
+    "live_enabled": false,
+    "matching_existing_executable_ids": [],
+    "orders": 0,
+    "original_factory_contract_digest": "d17c0277801481acbc995f6467a0105e20d6e523d6859467041cf0b06b945295",
+    "paper_eligible": false,
+    "qualitative_signature": "e83d180e07abb446a1ad8ab4452e3e8375e6479d3fe1e14783689d5109a42fa3",
+    "review_pr_url": "https://github.com/saladinayoubi1/lbank-research-automation/pull/2733",
+    "schema": "nexus.strategy-finder-reviewed-executable-intake.v1",
+    "status": "APPROVED_FOR_RESEARCH_SIMULATION_ONLY",
+    "strategy_proven_profitable": false
+  },
+  "real_exchange_orders": 0,
+  "result_digest": "9bcae5e9fd401a8dd08c74e89b37af219325e03a824d3d1a56e8bf9a29c5f45a",
+  "schema": "nexus.strategy-finder-shared-cash-physical-diagnostic.v1",
+  "scope": "RESEARCH_SIDECAR_UNVERIFIED_CALLER_SOURCE",
+  "source_authentication_and_candidate_semantic_novelty_required": true,
+  "source_canonical_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "source_scope": "SIX_PHYSICAL_SHA_ATTESTED_ORIGINAL_BYBIT_SPOT",
+  "training_validation_historical_test_not_pristine": true,
+  "warmup_utc": "2024-12-01T00:00:00+00:00"
+}
