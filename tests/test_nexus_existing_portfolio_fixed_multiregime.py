@@ -120,6 +120,21 @@ def test_continuous_fixed_strategy_underperforms_passive_btc_and_half_half():
     assert strategies["cash_100_percent"]["conservative"]["net_usdt"]==0
 
 
+def test_passive_return_difference_must_show_higher_passive_max_drawdown():
+    strategies=report()["periods"]["2023_09_to_2026_08_CONTINUOUS"]["strategies"]
+    rotation=strategies["original_v3_dual_rotation_fixed"]["conservative"]
+    btc=strategies["passive_BTC_Spot_100_percent"]["conservative"]
+    half=strategies["passive_50_BTC_50_ETH_Spot"]["conservative"]
+    eth=strategies["passive_ETH_Spot_100_percent"]["conservative"]
+    assert btc["max_drawdown_pct"]==53.44397804
+    assert half["max_drawdown_pct"]==58.44468459
+    assert eth["max_drawdown_pct"]==68.02878299
+    assert rotation["max_drawdown_pct"]==34.43365449
+    assert rotation["max_drawdown_pct"]<btc["max_drawdown_pct"]
+    assert rotation["max_drawdown_pct"]<half["max_drawdown_pct"]
+    # More passive absolute USDT P/L does NOT imply more risk-adjusted alpha.
+
+
 def test_cost_stress_deterioration_reproducibly_non_improving_in_six_eras():
     r=report()
     for name in REGIMES:
