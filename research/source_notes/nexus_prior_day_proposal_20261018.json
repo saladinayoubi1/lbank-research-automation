@@ -1,0 +1,26 @@
+{
+  "schema": "nexus.strategy-source-note.v1",
+  "source_url": "https://github.com/saladinayoubi1/lbank-research-automation/blob/89408c704520eb38d84488c4fadf2d404cdd4fd5/research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+  "publisher": "NEXUS internal research",
+  "title": "Existing unapproved prior-day sweep and lagged peer-resilience proposal",
+  "retrieved_utc_date": "2026-10-18",
+  "content_kind": "research_paraphrase_not_provider_raw_bytes",
+  "provider_authentication_verified": false,
+  "findings": [
+    "This is the project's existing internal proposal, not an externally authored or independently established strategy.",
+    "The prior fully completed UTC day low is swept and reclaimed under completed higher-timeframe context and previously lagged BTC/ETH peer features.",
+    "Every operational mapping in this implementation request is a research extension. Neither this proposal nor the implementation claims Elliott wave counting, independent novelty or economic edge.",
+    "The 2025 historical window is already inspected research context; it is not a pristine prospective test. No market replay is authorized by compilation."
+  ],
+  "coverage": {
+    "context": "Internal proposal: completed four-hour range and one-hour volatility with lagged peer-beta residual and downside-variance context.",
+    "entry": "Internal proposal: a completed 15-minute low crosses the previous UTC day low, then closes above it with positive body, close location and volume gates.",
+    "exit": null,
+    "sizing": null,
+    "no_trade": null
+  },
+  "status": "INTERNAL_RESEARCH_HYPOTHESIS_NOT_EXTERNAL_STRATEGY_ATTESTATION",
+  "automatic_implementation": false,
+  "paper_eligible": false,
+  "live_enabled": false
+}

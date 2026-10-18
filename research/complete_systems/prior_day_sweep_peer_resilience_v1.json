@@ -1,0 +1,132 @@
+{
+  "automatic_strategy_promotion": false,
+  "candidate": {
+    "candidate_id": "factory_prior_day_sweep_peer_resilience",
+    "candidate_path": "research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json",
+    "candidate_sha256": "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d",
+    "original_factory_contract_digest": "d17c0277801481acbc995f6467a0105e20d6e523d6859467041cf0b06b945295"
+  },
+  "execution_contract": {
+    "cost_profiles_bps": {
+      "conservative": {
+        "fee": 10.0,
+        "slippage": 5.0
+      },
+      "stress": {
+        "fee": 25.0,
+        "slippage": 15.0
+      }
+    },
+    "decision_timeframe": "15m_with_completed_1h_4h_context",
+    "entry": "next_observable_open_after_signal_close",
+    "exit_precedence": [
+      "gap_stop_at_worse_open",
+      "timeout_at_open",
+      "intrabar_stop_before_target",
+      "target",
+      "partition_final_close"
+    ],
+    "historical_holdout": "already_inspected_not_pristine",
+    "initial_shared_cash_usdt": 500.0,
+    "live_enabled": false,
+    "market": "bybit_spot_long_only",
+    "max_concurrent_portfolio_positions": 1,
+    "max_gross_usdt": 250.0,
+    "max_nominal_gapless_stop_loss_usdt": 2.5,
+    "minimum_trade_count": null,
+    "no_trade": [
+      "no_reviewed_signal",
+      "unavailable_positive_prior_range",
+      "shared_cash_position_occupied",
+      "invalid_stop_geometry",
+      "no_shared_cash_or_risk_capacity"
+    ],
+    "orders": 0,
+    "paper_eligible": false,
+    "partitions": "chronological_60_20_20_cash_reset_per_partition",
+    "portfolio_drawdown_kill": "not_implemented_in_this_research_diagnostic",
+    "quantity_rounding": "floor_to_8_decimal_places",
+    "range_proxy": "shifted_14_bar_mean_high_minus_low_not_wilder_atr",
+    "schema": "nexus.shared-cash-execution-contract.v1",
+    "signal": "reviewed_factory_context_and_entry_at_completed_close",
+    "simultaneous_signal_priority": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "stop_range_multiple": 1.5,
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "target_r": 2.0,
+    "timeout_bars": 64
+  },
+  "execution_source_sha256": {
+    "nexus_composite_strategy_research.py": "63854147e0b7ff00bd93383e165912d210ca2e489011b64fe062c4665db8fb80",
+    "nexus_mechanism_factory.py": "fefd72d50f363f34213c2a5968e9aacdadb6701c2d3286b5ed7bef1421f41516",
+    "nexus_multitimeframe_verified_archive_discovery.py": "cdd2a182f6f5f34248fb9ab4d0224bf1f692a6e77503af9c971a16744c397e22",
+    "research/strategy_finder_shared_cash_physical.py": "b77e527df5ac2310f23ff19d2afb8caffecdaca533ee40887fdb4dd9df54fd33",
+    "scripts/nexus_strategy_finder_executable_intake.py": "784c78f807e3a4cab1108b0f73c467aea914bcb1535c3bee41259133ffa2085b",
+    "scripts/nexus_strategy_finder_shared_cash_eval.py": "8848a9afaf034338923ce51de1fedb51912a02f32eefccdaef8e5b88891e09cb"
+  },
+  "live_enabled": false,
+  "paper_eligible": false,
+  "research_only": true,
+  "rule_bindings": {
+    "context": {
+      "implementation": "factory_context",
+      "origin": "research_extension",
+      "source_ids": [
+        "nexus_prior_day_proposal"
+      ],
+      "summary": "Use the unchanged four conjunctive factory gates: completed h4_range and h1_vol_ok, positive lagged_peer_beta_residual, and lagged_downside_variance_share_64 above 0.5. These remain an unapproved internal hypothesis, not Elliott counting."
+    },
+    "entry": {
+      "implementation": "factory_entry",
+      "origin": "research_extension",
+      "source_ids": [
+        "nexus_prior_day_proposal"
+      ],
+      "summary": "Use the existing five completed-close conjunctions without changing thresholds: low below the previous completed UTC day low, close above that low and open, close_location at least 0.6, rel_vol at least 1.0. Enter only at the next observable open."
+    },
+    "exit": {
+      "implementation": "shared_cash_stop_target_timeout",
+      "origin": "research_extension",
+      "source_ids": [
+        "nexus_prior_day_proposal"
+      ],
+      "summary": "Use the explicitly chosen existing research model: stop 1.5 times the previous 14-bar mean high-low range, target 2R, timeout 64 decision bars. Apply worse-open gap stop, timeout open, intrabar stop before target, target, then partition close. This is not a structural sweep-low or Elliott invalidation stop."
+    },
+    "no_trade": {
+      "implementation": "shared_cash_denial_rules",
+      "origin": "research_extension",
+      "source_ids": [
+        "nexus_prior_day_proposal"
+      ],
+      "summary": "Do not trade without the reviewed completed-close signal, positive prior range, valid stop geometry, free shared-cash position capacity and available cash/risk. Compilation never changes the empty executable allowlist or authorizes market replay, Paper, Demo or Live."
+    },
+    "sizing": {
+      "implementation": "shared_cash_cost_aware_size",
+      "origin": "research_extension",
+      "source_ids": [
+        "nexus_prior_day_proposal"
+      ],
+      "summary": "Use one BTC/ETH shared 500-USDT book, one position, BTC priority on collision, gross at most 250 USDT, nominal gapless stop-risk at most 2.5 USDT with fee/slippage-aware sizing and quantity floored to eight decimals. Retain conservative and stress cost profiles; no portfolio drawdown kill is implemented."
+    }
+  },
+  "schema": "nexus.complete-strategy-system.v1",
+  "selection_basis": "one_frozen_hypothesis_no_posthoc_tournament",
+  "source_notes": [
+    {
+      "id": "nexus_prior_day_proposal",
+      "path": "research/source_notes/nexus_prior_day_proposal_20261018.json",
+      "sha256": "80c873ff10c8fd5457e85f058e4d8e886380dbe920dc652ebc5eb6395ae715a5",
+      "url": "https://github.com/saladinayoubi1/lbank-research-automation/blob/89408c704520eb38d84488c4fadf2d404cdd4fd5/research/intake_candidates/factory_prior_day_sweep_peer_resilience_v1.json"
+    }
+  ],
+  "study_window": {
+    "end_exclusive_utc": "2025-04-01T00:00:00Z",
+    "start_utc": "2025-01-01T00:00:00Z",
+    "warmup_utc": "2024-12-01T00:00:00Z"
+  }
+}

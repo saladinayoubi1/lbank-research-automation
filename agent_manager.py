@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
+from nexus_source_system_development import is_development, validate_binding, verify_receipt as verify_development_receipt
 
 QUEUE_PATH = Path("config/nexus-agent-manager.json")
 STATE_PATH = Path("data/agent_coordination/manager_state.json")
@@ -136,6 +137,14 @@ def validate_config(config: dict[str, Any]) -> None:
             _bounded_metric(task["max_cost_units"], "max_cost_units")
         if "min_health_score" in task:
             _bounded_metric(task["min_health_score"], "min_health_score", maximum=1.0)
+        if is_development(task):
+            binding = task.get("source_system_development_task")
+            validate_binding(binding)
+            if (binding["id"] != task["id"] or task.get("phase") != 7
+                or task.get("gate") != 17 or task.get("authority") != 2
+                or task.get("required_resources") != ["github-cloud"]
+                or task.get("qa_verifier_only") is True):
+                raise ValueError("invalid complete-system Developer task route")
         if task.get("qa_verifier_only") is True:
             required_verifier = task.get("required_verifier")
             if required_verifier not in worker_ids:
@@ -424,6 +433,8 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             task, workers, verifier_only=qa_verifier_only, active_load=active_load
         )
         eligible_rows = [row for row in routing_rows if row["eligible"]]
+        if is_development(task):
+            eligible_rows = [row for row in eligible_rows if row["worker_id"] == "developer-agent"]
         if task.get("id") in TASKS:
             # Actual numerical Research leases are not generic cloud pytest
             # work: only the dedicated Research Agent can be their producer.
@@ -578,6 +589,8 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         verifier_only=True,
         active_load=active_worker_load(config, exclude_task=task),
     )
+    if is_development(task):
+        candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
     if task.get("id") in TASKS:
         # Reject a generic verifier even if its dynamic routing score is
         # higher: independent numerical replay requires the designated QA.
@@ -604,6 +617,23 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     if task.get("assigned_worker") != worker_id:
         raise ValueError("worker does not own current lease")
     evidence = evidence or {}
+    if is_development(task):
+        if outcome == "success":
+            original = task.get("result_evidence") if task.get("status") == "VERIFYING" else None
+            role = "independent-qa" if original is not None else "producer"
+            if (worker_id != ("qa-verifier-agent" if role == "independent-qa" else "developer-agent")
+                or (role == "independent-qa" and task.get("producer") != "developer-agent")):
+                raise ValueError("complete-system Developer/QA separation is invalid")
+            verify_development_receipt(evidence, task["source_system_development_task"],
+                                       lease_id=task["lease_id"], role=role, original=original)
+        elif outcome == "failure":
+            # A deterministic specification failure cannot be repaired by repeatedly
+            # assigning a generic RCA worker that has no implementation route.
+            task.update(status="BLOCKED", failure_class=evidence.get("failure_class", "system_development_failed"),
+                        failure_evidence=evidence, blocked_reason="source-system implementation requires reviewed correction",
+                        assigned_worker=None, heartbeat_at=None, lease_expires_at=None)
+            emit("source_system_development_failed_closed", task_id=task_id, worker=worker_id)
+            return
     if outcome == "success":
         if task.get("status") == "VERIFYING":
             if task.get("qa_verifier_only") is True:

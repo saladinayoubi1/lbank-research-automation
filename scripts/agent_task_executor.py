@@ -135,17 +135,30 @@ def decode_payload(value: str) -> dict[str, Any]:
         and data.get("task_id", "").startswith("COMPOSITE-QA-")
         and data.get("worker_id") == "qa-verifier-agent"
     )
+    is_development = isinstance(data.get("task_id"), str) and data["task_id"].startswith("SYSTEM-DEV-")
+    development_keys = ({"source_system_development_task"} | (
+        {"source_system_development_producer"} if data.get("worker_id") == "qa-verifier-agent" else set()
+    )) if is_development else set()
     expected = (
         DISPATCH_KEYS
         | (qa_keys if is_research_qa else set())
         | (strategy_qa_keys if is_strategy_qa else set())
         | (composite_qa_keys if is_composite_qa else set())
         | (followon_keys if is_followon else set())
+        | development_keys
     )
     if is_research_qa and not qa_keys.issubset(keys):
         raise ValueError("Research independent QA producer binding absent")
     if keys != expected:
         raise ValueError("dispatch payload schema mismatch")
+    if is_development:
+        from nexus_source_system_development import validate_binding
+        binding = data["source_system_development_task"]
+        validate_binding(binding)
+        if (binding["id"] != data["task_id"] or data.get("phase") != 7 or data.get("gate") != 17
+            or data.get("authority") != 2 or data.get("transport") != "github-cloud"
+            or data.get("worker_id") not in {"developer-agent", "qa-verifier-agent"}):
+            raise ValueError("invalid complete-system implementation dispatch route")
     if is_followon:
         # Bound repo-root import, never a dispatch-selected Python module.
         repo_root = str(Path(__file__).resolve().parents[1])
@@ -263,6 +276,17 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
 
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if isinstance(task_id, str) and task_id.startswith("SYSTEM-DEV-"):
+        try:
+            from nexus_source_system_development import run_development
+            if transport != "github-cloud":
+                raise ValueError("source-system implementation requires cloud transport")
+            return "success", run_development(payload, source_sha=os.environ.get("GITHUB_SHA", ""))
+        except (KeyError, OSError, ValueError, RuntimeError, TypeError) as exc:
+            return "failure", {"executor": "nexus-source-system-development",
+                               "failure_class": "source_system_development_failed",
+                               "reason": str(exc)[:600], "paper_eligible": False,
+                               "live_enabled": False, "automatic_strategy_promotion": False}
     if isinstance(task_id, str) and task_id.startswith("COMPOSITE-QA-"):
         if (
             payload.get("phase") != 7
@@ -548,3 +572,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
