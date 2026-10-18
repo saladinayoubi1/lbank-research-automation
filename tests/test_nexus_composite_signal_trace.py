@@ -159,18 +159,29 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     import product_research_runtime as product
     f = frame(3072)
     f.loc[1, "high"] = 110
+    f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
+    f["volume"] = 1.
     info = datasets(f)
+    raw_frames = {}
+    for tf, step in rq.TIMEFRAME_STEP_MS.items():
+        raw = f.copy()
+        raw["timestamp"] = pd.to_datetime(
+            [info[tf]["first_open_time_ms"] + i * step for i in range(len(f))], unit="ms", utc=True)
+        raw_frames[tf] = raw
+    contexts = producer.build_features(raw_frames)
+    for field in ("h1_compression", "h1_vol_ok", "h4_up", "h4_range"):
+        f[field] = contexts[field]
     def artifact(symbol, tf):
         d = info[tf]
         step = rq.TIMEFRAME_STEP_MS[tf]
-        return {**d, "rows": [{"open_time_ms": d["first_open_time_ms"] + i * step}
+        return {**d, "tf": tf, "rows": [{"open_time_ms": d["first_open_time_ms"] + i * step}
                                for i in range(len(f))]}
     class Runtime:
         def __init__(self, *args, **kwargs): pass
         def fetch_dataset(self, *, symbol, timeframe, limit): return artifact(symbol, timeframe)
     monkeypatch.setattr(product, "ProductResearchRuntime", Runtime)
     monkeypatch.setattr(history, "fetch_verified_15m_window", lambda runtime, *, symbol, limit: artifact(symbol, "minute15"))
-    monkeypatch.setattr(canonical, "canonical_ohlcv_frame", lambda a: (a, f))
+    monkeypatch.setattr(canonical, "canonical_ohlcv_frame", lambda a: (a, raw_frames[a["tf"]]))
     monkeypatch.setattr(producer, "build_features", lambda *a, **kw: f)
     mask = np.zeros(len(f), dtype=bool)
     mask[[0, -1]] = True
@@ -192,7 +203,7 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
                            symbol=row["symbol"], datasets=row["datasets"], peer_binding=None,
                            profiles=row["profiles"])
     # The exact existing producer -> verifier -> QA-task/receipt path consumes
-    # v2. Candidate validation itself is covered by its separate contract suite.
+    # v3. Candidate validation itself is covered by its separate contract suite.
     import nexus_composite_runtime_independent_qa as qa
     candidate = {**CANDIDATE, "source_sha": "c" * 40, "archive_sha256": "d" * 64,
                  "timeframe": "minute15_with_completed_1h_4h", "config_fingerprint": "e" * 64}
@@ -200,7 +211,7 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     now = int(f.decision_at.iloc[-1].value // 1_000_000) + 60_000
     result = rq.build_requalification(candidate, {}, source_sha=SOURCE, now_ms=now,
                                       state_root=tmp_path, evaluator=lambda *args: rows)
-    assert result["schema_version"] == rq.TRACE_SCHEMA
+    assert result["schema_version"] == rq.ASOF_SCHEMA
     assert rq.verify_requalification(result)["decision"] == "pass"
     task = qa.build_task(result, rq.verify_requalification(result), producer_workflow_run_id=123)
     receipt = qa.run_independent_qa(task, lease_id="separate-qa-lease", execution_source_sha=SOURCE,
@@ -212,20 +223,57 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
     assert rq.verify_requalification(broken)["decision"] == "reject"
     broken = deepcopy(result)
+    for row in broken["evaluations"]:
+        row.pop("higher_timeframe_feature_audit")
+    broken["schema_version"] = rq.TRACE_SCHEMA
+    broken["evaluations_digest"] = rq.digest(broken["evaluations"])
+    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
+    assert rq.verify_requalification(broken)["decision"] == "pass"  # historical v2 remains readable
+    broken = deepcopy(result)
+    broken["evaluations"][0].pop("higher_timeframe_feature_audit")
+    broken["evaluations_digest"] = rq.digest(broken["evaluations"])
+    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
+    assert rq.verify_requalification(broken)["decision"] == "reject"
+    broken = deepcopy(result)
     broken["schema_version"] = rq.SCHEMA
     broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
     assert rq.verify_requalification(broken)["decision"] == "reject"
+    # A detected context discrepancy must stop before signal/fill generation.
+    import nexus_composite_higher_timeframe_audit as higher
+    def failed_audit(*args, **kwargs):
+        raise higher.HigherTimeframeAuditError("synthetic early-source mutation")
+    monkeypatch.setattr(higher, "audit_features", failed_audit)
+    order.clear()
+    with pytest.raises(rq.CompositeRuntimeRequalificationError, match="higher-timeframe"):
+        rq._default_evaluator(CANDIDATE, SOURCE, now, tmp_path)
+    assert order == []
 
 
 def test_full_3072_bar_high_activity_trace_fits_bounded_transport(tmp_path):
     import nexus_composite_runtime_qa_transport as transport
     f = frame(3072)
     f["high"] = 110
+    f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
+    f["volume"] = 1.
+    data = datasets(f)
+    raw_frames = {}
+    for tf, step in rq.TIMEFRAME_STEP_MS.items():
+        raw = f.copy()
+        raw["timestamp"] = pd.to_datetime(
+            [data[tf]["first_open_time_ms"] + i * step for i in range(len(f))], unit="ms", utc=True)
+        raw_frames[tf] = raw
+    features = producer.build_features(raw_frames)
+    for field in ("h1_compression", "h1_vol_ok", "h4_up", "h4_range"):
+        f[field] = features[field]
+    import nexus_composite_higher_timeframe_audit as higher
+    htf = higher.audit_features(raw_frames, f, candidate_digest=CANDIDATE["candidate_digest"],
+                                source_sha=SOURCE, symbol="BTCUSDT", datasets=data)
     value, _, _ = evidence(f, np.ones(len(f), dtype=bool))
-    producer = {"schema_version": rq.TRACE_SCHEMA,
-                "evaluations": [{"emitted_signal_trace": value}, {"emitted_signal_trace": value}]}
+    producer_result = {"schema_version": rq.ASOF_SCHEMA,
+                "evaluations": [{"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf},
+                                {"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf}]}
     path = tmp_path / "producer.json"
-    rq._atomic_json(path, producer)
+    rq._atomic_json(path, producer_result)
     raw = path.read_bytes()
     assert len(raw) < transport.MAX_JSON_BYTES
     verification = {"decision": "pass"}
@@ -246,4 +294,4 @@ def test_full_3072_bar_high_activity_trace_fits_bounded_transport(tmp_path):
     recovered = transport.parse_job_log_evidence(log.encode())
     assert recovered == blob
     parsed, _ = transport.parse_artifact(recovered, verifier=lambda p: verification)
-    assert parsed == producer
+    assert parsed == producer_result

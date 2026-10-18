@@ -68,7 +68,7 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     text = _text()
     assert "tests/test_nexus_composite_runtime_requalification.py" in text
     assert "tests/test_nexus_composite_signal_trace.py" in text
-    assert 'result.get("schema_version") != TRACE_SCHEMA' in text
+    assert 'result.get("schema_version") != ASOF_SCHEMA' in text
     assert "tests/test_nexus_composite_runtime_requalification_workflow.py" in text
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text

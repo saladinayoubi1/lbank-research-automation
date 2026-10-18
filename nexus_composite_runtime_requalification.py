@@ -24,6 +24,7 @@ from nexus_composite_validation_candidate import verify_candidate
 
 SCHEMA = "nexus.composite-runtime-requalification.v1"
 TRACE_SCHEMA = "nexus.composite-runtime-requalification.v2"
+ASOF_SCHEMA = "nexus.composite-runtime-requalification.v3"
 VERIFY_SCHEMA = "nexus.composite-runtime-requalification-verification.v1"
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
 TIMEFRAMES = ("minute15", "hour1", "hour4")
@@ -93,7 +94,7 @@ def _atomic_json(path: str | Path, value: Mapping[str, Any]) -> None:
     with temporary.open("w", encoding="utf-8", newline="\n") as handle:
         # Per-event v2 evidence is bounded by the existing transport. Avoid
         # nested indentation multiplying its uncompressed artifact size.
-        formatting = ({"separators": (",", ":")} if value.get("schema_version") == TRACE_SCHEMA
+        formatting = ({"separators": (",", ":")} if value.get("schema_version") in {TRACE_SCHEMA, ASOF_SCHEMA}
                       else {"indent": 2})
         handle.write(
             json.dumps(dict(value), sort_keys=True, ensure_ascii=False, **formatting)
@@ -272,6 +273,14 @@ def _validate_evaluation(
                          peer_binding=value.get("peer_minute15_binding_sha256"), profiles=clean_profiles)
         except (SignalTraceError, KeyError, TypeError, ValueError) as exc:
             raise CompositeRuntimeRequalificationError("emitted signal trace rejected") from exc
+    if "higher_timeframe_feature_audit" in value:
+        from nexus_composite_higher_timeframe_audit import HigherTimeframeAuditError, verify_audit
+        try:
+            verify_audit(value["higher_timeframe_feature_audit"],
+                         candidate_digest=candidate["candidate_digest"], source_sha=source_sha,
+                         symbol=value["symbol"], datasets=clean_datasets)
+        except (HigherTimeframeAuditError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError("independent higher-timeframe audit rejected") from exc
     result = dict(value)
     result["datasets"] = clean_datasets
     result["profiles"] = clean_profiles
@@ -292,6 +301,7 @@ def _default_evaluator(
     from nexus_canonical_paged_history import fetch_verified_15m_window
     from nexus_composite_fill_oracle import CompositeFillOracleError, verify_fills
     from nexus_composite_signal_trace import capture_signals, bind_fill_audits
+    from nexus_composite_higher_timeframe_audit import HigherTimeframeAuditError, audit_features
 
     runtime = ProductResearchRuntime(
         None,  # type: ignore[arg-type]
@@ -357,6 +367,17 @@ def _default_evaluator(
                 "last_open_time_ms": rows[-1].get("open_time_ms"),
             }
 
+        # Reconstruct the four context equations and as-of join from raw inputs
+        # with a separate stdlib reference, before generating signals or fills.
+        try:
+            feature_audit = audit_features(
+                frames[symbol], feature_frame, candidate_digest=candidate["candidate_digest"],
+                source_sha=source_sha, symbol=symbol, datasets=dataset_rows,
+            )
+        except (HigherTimeframeAuditError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError(
+                f"independent higher-timeframe reconstruction disagrees for {symbol}"
+            ) from exc
         signals = composite.signal_for(feature_frame, config)
         capture = capture_signals(
             feature_frame, signals, candidate=candidate, source_sha=source_sha,
@@ -429,6 +450,7 @@ def _default_evaluator(
             ),
             "profiles": profile_rows,
             "emitted_signal_trace": bind_fill_audits(capture, fill_audits),
+            "higher_timeframe_feature_audit": feature_audit,
             "deterministic_replay_verified": True,
             "data_origin": "canonical_public_bybit_runtime",
             "closed_candle_finality_verified": True,
@@ -479,6 +501,9 @@ def build_requalification(
     traced = ["emitted_signal_trace" in row for row in evaluations]
     if any(traced) and not all(traced):
         raise CompositeRuntimeRequalificationError("both symbols require emitted signal traces")
+    audited = ["higher_timeframe_feature_audit" in row for row in evaluations]
+    if any(audited) and (not all(audited) or not all(traced)):
+        raise CompositeRuntimeRequalificationError("both traced symbols require higher-timeframe audits")
 
     for timeframe in TIMEFRAMES:
         last_opens = {
@@ -541,7 +566,7 @@ def build_requalification(
         reasons = ["FRESH_CANONICAL_RUNTIME_REPLAY_PASSED"]
 
     core = {
-        "schema_version": TRACE_SCHEMA if all(traced) else SCHEMA,
+        "schema_version": ASOF_SCHEMA if all(audited) else TRACE_SCHEMA if all(traced) else SCHEMA,
         "system_map_node": "VAL-40",
         "candidate_digest": verified_candidate["candidate_digest"],
         "candidate_source_sha": verified_candidate["source_sha"],
@@ -599,7 +624,7 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         core = dict(value)
         claimed = core.pop("requalification_digest", None)
         checks["schema"] = bool(
-            core.get("schema_version") in {SCHEMA, TRACE_SCHEMA}
+            core.get("schema_version") in {SCHEMA, TRACE_SCHEMA, ASOF_SCHEMA}
             and core.get("system_map_node") == "VAL-40"
         )
         checks["digest"] = isinstance(claimed, str) and claimed == digest(core)
@@ -672,7 +697,9 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
             len(clean_rows) == len(SYMBOLS)
             and {row["symbol"] for row in clean_rows} == set(SYMBOLS)
             and aligned
-            and all(("emitted_signal_trace" in row) == (core.get("schema_version") == TRACE_SCHEMA)
+            and all(("emitted_signal_trace" in row) == (core.get("schema_version") in {TRACE_SCHEMA, ASOF_SCHEMA})
+                    for row in clean_rows)
+            and all(("higher_timeframe_feature_audit" in row) == (core.get("schema_version") == ASOF_SCHEMA)
                     for row in clean_rows)
             and core.get("evaluations_digest") == digest(clean_rows)
             and (
