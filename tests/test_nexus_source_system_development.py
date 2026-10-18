@@ -176,6 +176,18 @@ def test_resealed_alternate_executor_cannot_impersonate_imported_code(isolated):
         dev.compile_system(binding, isolated)
 
 
+def test_candidate_artifact_preserves_exact_reviewed_bytes_including_crlf(isolated):
+    request, _ = dev.load_request(isolated, REQUEST)
+    path = isolated / request["candidate_path"]
+    raw = path.read_bytes().replace(b"\n", b"\r\n")
+    path.write_bytes(raw)
+    request["candidate_sha256"] = hashlib.sha256(raw).hexdigest()
+    write(isolated / REQUEST, request)
+    bundle = dev.compile_system(dev.task_binding(isolated, REQUEST), isolated)
+    assert bundle["files"][request["candidate_path"]].encode("utf-8") == raw
+    assert bundle["file_sha256"][request["candidate_path"]] == request["candidate_sha256"]
+
+
 def test_producer_success_requires_an_actual_artifact_not_a_test_count(isolated):
     cfg = config_for(); am.cycle(cfg)
     with pytest.raises(ValueError, match="receipt"):

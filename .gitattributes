@@ -13,3 +13,22 @@ data/market/** export-ignore
 
 # Pinned SIWC provenance hashes are byte-exact and must survive Windows checkout.
 desktop/nexus-product/vendor/siwc-local/** text eol=lf
+
+# Complete-system review and Developer input identities bind exact committed bytes.
+# Keep these bounded code/data/lock inputs stable on Windows checkouts too.
+nexus_source_system_development.py text eol=lf
+nexus_complete_strategy_system.py text eol=lf
+nexus_mechanism_factory.py text eol=lf
+nexus_composite_strategy_research.py text eol=lf
+research/strategy_finder_shared_cash_physical.py text eol=lf
+scripts/nexus_strategy_finder_executable_intake.py text eol=lf
+scripts/nexus_strategy_finder_shared_cash_eval.py text eol=lf
+nexus_multitimeframe_verified_archive_discovery.py text eol=lf
+research/mechanism_factory_v1.json text eol=lf
+research/intake_candidates/*.json text eol=lf
+research/source_notes/*.json text eol=lf
+research/system_development_requests/*.json text eol=lf
+research/complete_systems/*.json text eol=lf
+requirements.lock text eol=lf
+requirements-dev.lock text eol=lf
+

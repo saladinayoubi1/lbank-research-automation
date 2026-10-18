@@ -28,6 +28,11 @@ request becomes its own BLOCKED task while other work continues. Deterministic
 implementation failures stop instead of looping through an unsupported generic
 RCA/reasoning-provider route.
 
+Candidate artifacts preserve the reviewed raw bytes, including CRLF. Targeted
+Git attributes keep these code/data/lock inputs LF on Windows checkouts so exact
+committed input identities remain portable. A temporary Git checkout with
+`core.autocrlf=true` preserves the candidate bytes exactly.
+
 ## Concrete output and its limits
 
 The seed request completes the **existing internal** prior-day sweep / lagged
@@ -61,7 +66,7 @@ those claims false. Paper/Live authority remains false.
 
 ## Validation
 
-The final native Laptop2 run passed **147 tests** in 14.20 seconds across the
+The final native Laptop2 run passed **148 tests** in 14.14 seconds across the
 new real task/compiler/CLI lifecycle plus existing manager, durable runner,
 transport, complete-system intake and physical shared-cash contracts, including
 isolation of malformed requests to their own blocked task. Exact-head hosted CI

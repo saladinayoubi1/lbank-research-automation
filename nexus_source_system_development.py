@@ -246,7 +246,7 @@ def compile_system(binding: dict[str, Any], root: Path = ROOT) -> dict[str, Any]
                                      "selection_basis", *BOUNDARIES)},
               "execution_source_sha256": implementation_hashes(ROOT)}
     relative = ROOTS["system"] + "/" + obj["id"] + ".json"
-    files = {obj["candidate_path"]: (root / obj["candidate_path"]).read_text(encoding="utf-8"),
+    files = {obj["candidate_path"]: (root / obj["candidate_path"]).read_bytes().decode("utf-8"),
              relative: json.dumps(system, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + "\n"}
     # Validate the emitted bytes through the actual existing complete-system gate.
     # This ephemeral binding is not a review registry entry and is never published as approval.
