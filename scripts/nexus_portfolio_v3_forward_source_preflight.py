@@ -90,7 +90,7 @@ def verified_freeze(path:Path=FREEZE_FILE)->tuple[dict,str]:
         raise ForwardSourceError("future source freeze altered or missing exact risk/cash/date contract")
     fixed_digest=sha256(path.read_bytes().replace(b"\r\n",b"\n")).hexdigest()
     if fixed_digest!=EXPECTED_FREEZE_SHA256:
-        raise ForwardSourceError("pre-committed future research freeze byte identity changed")
+        raise ForwardSourceError("future source freeze altered: precommitted SHA256 identity changed")
     return o,fixed_digest
 
 
