@@ -94,6 +94,8 @@ def test_fully_completed_synthetic_grid_only_proves_bytes_not_exchange_origin(tm
     files,receipt,_=fixture(tmp_path)
     o=module.audit_future_extension(receipt,files["BTCUSDT"],files["ETHUSDT"],
                                    observed_at_utc=AFTER)
+    assert o["extension_start_matches_previously_verified_original_archive_tail"] is True
+    assert o["original_historical_archive_six_sha_rechecked_in_this_preflight"] is False
     assert o["source_provider_claim_not_independently_authenticated"] is True
     assert o["market_data_real_exchange_provenance_independently_verified"] is False
     assert o["ready_for_strategy_result_or_paper"] is False
