@@ -41,6 +41,40 @@ class SharedCashDiagnosticError(ValueError):
     pass
 
 
+def execution_contract()->dict[str,Any]:
+    """Expose the actual fixed diagnostic semantics for complete-system review."""
+    return {
+        "schema":"nexus.shared-cash-execution-contract.v1",
+        "market":"bybit_spot_long_only",
+        "symbols":list(SYMBOLS),
+        "decision_timeframe":"15m_with_completed_1h_4h_context",
+        "signal":"reviewed_factory_context_and_entry_at_completed_close",
+        "entry":"next_observable_open_after_signal_close",
+        "initial_shared_cash_usdt":INITIAL_USDT,
+        "max_concurrent_portfolio_positions":1,
+        "simultaneous_signal_priority":list(SYMBOLS),
+        "max_gross_usdt":MAX_GROSS_USDT,
+        "max_nominal_gapless_stop_loss_usdt":MAX_GAPLESS_STOP_LOSS_USDT,
+        "quantity_rounding":"floor_to_8_decimal_places",
+        "range_proxy":"shifted_14_bar_mean_high_minus_low_not_wilder_atr",
+        "stop_range_multiple":STOP_ATR_MULT,
+        "target_r":TARGET_R,
+        "timeout_bars":MAX_HOLD_BARS,
+        "exit_precedence":["gap_stop_at_worse_open","timeout_at_open",
+                           "intrabar_stop_before_target","target","partition_final_close"],
+        "no_trade":["no_reviewed_signal","unavailable_positive_prior_range",
+                    "shared_cash_position_occupied","invalid_stop_geometry",
+                    "no_shared_cash_or_risk_capacity"],
+        "cost_profiles_bps":{name:{"fee":cost[0],"slippage":cost[1]}
+                             for name,cost in COSTS.items()},
+        "partitions":"chronological_60_20_20_cash_reset_per_partition",
+        "portfolio_drawdown_kill":"not_implemented_in_this_research_diagnostic",
+        "historical_holdout":"already_inspected_not_pristine",
+        "minimum_trade_count":None,
+        "paper_eligible":False,"live_enabled":False,"orders":0,
+    }
+
+
 def _digest(obj:dict[str,Any])->str:
     return sha256(json.dumps(obj,sort_keys=True,separators=(",",":"),
                              allow_nan=False).encode("utf-8")).hexdigest()
