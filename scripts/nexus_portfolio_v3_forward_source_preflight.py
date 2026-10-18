@@ -95,6 +95,21 @@ def validate_physical_4h(frame:pd.DataFrame,symbol:str)->dict:
         raise ForwardSourceError("unapproved physical Bybit Spot symbol or OHLCV schema")
     if len(frame)!=len(pd.date_range(SOURCE_START,SCORE_END-STEP,freq="4h")):
         raise ForwardSourceError("missing/extra 4h source history: no implicit gap filling")
+    dtype=frame["timestamp"].dtype
+    # Never silently assign UTC to naive local date/time or epoch integers.
+    # Explicit UTC-aware pandas datetimes or RFC3339-style explicit-UTC
+    # strings are the only representations accepted by this source gateway.
+    if isinstance(dtype,pd.DatetimeTZDtype):
+        if str(dtype.tz)!="UTC":
+            raise ForwardSourceError("source timestamps must use explicit UTC timezone")
+    elif pd.api.types.is_datetime64_any_dtype(dtype):
+        raise ForwardSourceError("source timestamps lack explicit UTC timezone")
+    elif pd.api.types.is_object_dtype(dtype):
+        if not all(isinstance(x,str) and (x.endswith("Z") or x.endswith("+00:00"))
+                   for x in frame["timestamp"]):
+            raise ForwardSourceError("source timestamps lack explicit UTC")
+    else:
+        raise ForwardSourceError("4h source timestamps must have explicit UTC")
     try:
         parsed=pd.to_datetime(frame["timestamp"],utc=True,errors="raise")
     except (ValueError,TypeError) as exc:
@@ -104,11 +119,6 @@ def validate_physical_4h(frame:pd.DataFrame,symbol:str)->dict:
     expected=pd.date_range(SOURCE_START,SCORE_END-STEP,freq="4h")
     if not pd.DatetimeIndex(parsed).equals(expected):
         raise ForwardSourceError("physical source timestamps not strictly contiguous or not original period")
-    if pd.api.types.is_object_dtype(frame["timestamp"]):
-        # Avoid silent interpretation of naive local timestamps as UTC.
-        if not all(isinstance(x,str) and (x.endswith("Z") or x.endswith("+00:00"))
-                   for x in frame["timestamp"]):
-            raise ForwardSourceError("source timestamps lack explicit UTC")
     matrix=frame[["open","high","low","close","volume"]].to_numpy(dtype=float)
     if (not np.isfinite(matrix).all()
         or (matrix[:,:4]<=0).any() or (matrix[:,4]<0).any()):
