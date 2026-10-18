@@ -133,6 +133,21 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
     if int(task.get("authority", 0)) >= 4:
         raise ValueError("L4 tasks may not be dispatched")
     optional = {}
+    if task["id"].startswith("ECON-REVIEW-"):
+        from nexus_source_system_economic_review import validate_binding, verify_receipt
+        binding = task.get("source_system_economic_review_task")
+        validate_binding(binding)
+        qa_role = task.get("status") == "VERIFYING"
+        if (binding["id"] != task["id"] or worker != ("qa-verifier-agent" if qa_role else "research-agent")
+            or task.get("phase") != 7 or task.get("gate") != 17 or task.get("authority") != 2):
+            raise ValueError("invalid completed-study review dispatch route")
+        optional["source_system_economic_review_task"] = binding
+        if qa_role:
+            original = task.get("result_evidence")
+            if not isinstance(original, dict) or task.get("producer") != "research-agent":
+                raise ValueError("economic evidence QA requires the exact Research import")
+            verify_receipt(original, binding, lease_id=original.get("lease_id"), role="producer")
+            optional["source_system_economic_review_producer"] = original
     if task["id"].startswith("SYSTEM-DEV-"):
         from nexus_source_system_development import validate_binding, verify_receipt
         binding = task.get("source_system_development_task")
