@@ -50,4 +50,5 @@ product_ui/research-reports/elliott-v119-entry-witness-qa.json text eol=lf
 nexus_composite_signal_trace.py text eol=lf
 nexus_composite_fill_oracle.py text eol=lf
 nexus_composite_runtime_requalification.py text eol=lf
+nexus_composite_higher_timeframe_audit.py text eol=lf
 
