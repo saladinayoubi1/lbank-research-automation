@@ -128,13 +128,42 @@ def test_fresh_strict_4h_market_time_grid_required_only_for_opt_in_risk():
 def test_multiple_assets_force_exit_sell_all_before_any_more_buys():
     m,w,p,c=synthetic()
     w[:,:]=0.5
+    # Both assets visibly lose more than 20% at the SAME completed 4h
+    # close, then gap worse at the first available next open.
+    m["close"][5,:]=79.
+    m["open"][6,:]=60.
+    m["close"][6,:]=60.
     trace={}
     x=old.exact_backtest(m,w,p,c,risk_policy=POLICY,fill_trace=trace)
     a=x["causal_risk_audit"]
-    assert a["halted_for_rest_of_period"] is False or a["forced_sell_fill_count"] in (0,2)
+    assert a["halted_for_rest_of_period"] is True
+    assert a["forced_sell_fill_count"]==2
+    exit_at=a["first_actual_next_open_exit_utc"]
+    exits=[f for f in trace["fills"] if f["side"]=="sell"]
+    assert len(exits)==2
+    assert all(f["executed_at_utc"]==exit_at and
+               f["price_usdt"]==pytest.approx(60.*(1-.0005)) for f in exits)
+    assert all(f["side"]=="sell" for f in trace["fills"]
+               if f["executed_at_utc"]>=exit_at)
     assert len(trace["fills"])==x["fill_count"]
     assert fifo_journal(trace,x)["terminal_cash_usdt"]==pytest.approx(
         500*(1+x["total_return"]),abs=2e-6)
+
+
+def test_terminal_bar_trigger_does_not_invent_nonexistent_next_open():
+    m,w,p,c=synthetic(trigger_close=100.,gap_open=100.)
+    # This study ends at row47 close. Trigger only at that final close.
+    m["close"][47,0]=79.
+    tape={}
+    result=old.exact_backtest(m,w,p,c,risk_policy=POLICY,fill_trace=tape)
+    audit=result["causal_risk_audit"]
+    assert audit["trigger_on_last_bar_no_next_open"] is True
+    assert audit["first_actual_next_open_exit_utc"] is None
+    assert audit["forced_sell_fill_count"]==0
+    assert audit["halted_for_rest_of_period"] is False
+    assert any(f["fill_kind"]=="terminal_bar_close" for f in tape["fills"])
+    assert fifo_journal(tape,result)["net_profit_usdt"]==pytest.approx(
+        500.*result["total_return"],abs=2e-6)
 
 
 def test_no_risk_approval_or_order_authority_in_optional_result():
