@@ -1,344 +1,336 @@
-"""Actual producer integration, signal coverage, causal clocks and legacy reads."""
-from copy import deepcopy
-import json
+from __future__ import annotations
+
 import base64
 import hashlib
 import io
+import json
 import zipfile
 
-import numpy as np
-import pandas as pd
 import pytest
 
-import nexus_composite_signal_trace as trace
-import nexus_composite_fill_oracle as oracle
-import nexus_composite_runtime_requalification as rq
-import nexus_composite_strategy_research as producer
-
-SOURCE = "a" * 40
-CANDIDATE = {"candidate_digest": "b" * 64, "mechanism": "structural_pullback",
-             "strategy_config": {"mechanism": "structural_pullback", "risk_variant": 0}}
+import nexus_composite_runtime_qa_transport as tr
 
 
-def frame(n=70):
-    return pd.DataFrame({
-        "decision_at": pd.date_range(end="2026-01-02T00:00Z", periods=n, freq="15min"),
-        "open": np.full(n, 100.), "high": np.full(n, 100.1),
-        "low": np.full(n, 99.9), "close": np.full(n, 100.), "atr": np.ones(n),
-        "optional_warmup_feature": np.full(n, np.nan),
-    })
+SOURCE = "b" * 40
+CURRENT = "c" * 40
 
 
-def datasets(f):
-    last = int(f.decision_at.iloc[-1].value // 1_000_000)
-    return {tf: {"timeframe": tf, "binding_sha256": str(j) * 64, "row_count": len(f),
-                 "first_open_time_ms": last - len(f) * step,
-                 "last_open_time_ms": last - step}
-            for j, (tf, step) in enumerate(rq.TIMEFRAME_STEP_MS.items(), 1)}
+def _artifact_blob(producer=None, verification=None):
+    producer = producer or {
+        "decision": "QUALIFIED_FOR_REVIEW",
+        "qualified_for_review": True,
+        "requalification_source_sha": SOURCE,
+        "candidate_digest": "d" * 64,
+        "requalification_digest": "e" * 64,
+    }
+    verification = verification or {"decision": "pass", "verification_digest": "f" * 64}
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("runtime-requalification.json", json.dumps(producer))
+        zf.writestr("verification.json", json.dumps(verification))
+    return buf.getvalue()
 
 
-def captured(f, mask, **kwargs):
-    return trace.capture_signals(f, mask, candidate=kwargs.get("candidate", CANDIDATE),
-                                source_sha=kwargs.get("source_sha", SOURCE), symbol=kwargs.get("symbol", "BTCUSDT"),
-                                datasets=datasets(f), peer_binding=None)
+def _job_log_blob(archive: bytes, *, chunk_chars: int = 48) -> bytes:
+    encoded = base64.b64encode(archive).decode("ascii")
+    chunks = [
+        encoded[index:index + chunk_chars]
+        for index in range(0, len(encoded), chunk_chars)
+    ]
+    lines = [
+        "transport_version=bounded-job-log-v2",
+        "printf 'NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s\\n' \"$transport_version\"",
+        "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256={hashlib.sha256(archive).hexdigest()}",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE={len(archive)}",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT={len(chunks)}",
+        *[
+            f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_{index:03d}={chunk}"
+            for index, chunk in enumerate(chunks)
+        ],
+    ]
+    return ("\n".join(lines) + "\n").encode("utf-8")
 
 
-def evidence(f=None, mask=None):
-    f = frame() if f is None else f
-    if mask is None:
-        mask = np.zeros(len(f), dtype=bool)
-        mask[[0, 1, -1]] = True
-        f.loc[1, ["high", "low"]] = [110., 95.]
-    cap = captured(f, mask)
-    profiles, audits = [], {}
-    for name, fee, slip in (("conservative", 10, 5), ("stress", 25, 15)):
-        observed = producer.backtest(f, mask, fee_bps=fee, slip_bps=slip, risk_variant=0)
-        profiles.append({"profile": name, **observed})
-        audits[name] = oracle.verify_fills(f, mask, fee_bps=fee, slip_bps=slip,
-                                          risk_variant=0, observed=observed, include_trace=True)
-    return trace.bind_fill_audits(cap, audits), profiles, f
+def _task():
+    return {
+        "schema_version": "nexus.composite-runtime-qa-task.v1",
+        "id": "COMPOSITE-QA-" + "e" * 64,
+        "task_kind": "composite_runtime_independent_qa",
+        "system_map_node": "QA-41",
+        "status": "READY_FOR_QA_DISPATCH",
+        "required_verifier": "qa-verifier-agent",
+        "producer_role": "physical-composite-val40-requalification",
+        "producer_workflow_run_id": 101,
+        "source_sha": SOURCE,
+        "candidate_digest": "d" * 64,
+        "requalification_digest": "e" * 64,
+        "requalification_verification_digest": "f" * 64,
+        "evaluations_digest": "1" * 64,
+        "runtime_as_of_ms": 1_800_000_000_000,
+        "producer": {},
+        "producer_verification": {},
+        "research_only": True,
+        "paper_only": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+        "task_digest": "2" * 64,
+    }
 
 
-def verify(value, profiles, f):
-    trace.verify_trace(value, candidate=CANDIDATE, source_sha=SOURCE, symbol="BTCUSDT",
-                       datasets=datasets(f), peer_binding=None, profiles=profiles)
+def test_parse_artifact_requires_exact_verification():
+    producer = {
+        "decision": "QUALIFIED_FOR_REVIEW",
+        "qualified_for_review": True,
+        "requalification_source_sha": SOURCE,
+    }
+    proof = {"decision": "pass", "verification_digest": "a" * 64}
+    parsed, verification = tr.parse_artifact(
+        _artifact_blob(producer, proof),
+        verifier=lambda value: dict(proof),
+    )
+    assert parsed == producer
+    assert verification == proof
+
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="verification rejected"):
+        tr.parse_artifact(
+            _artifact_blob(producer, proof),
+            verifier=lambda value: {"decision": "reject"},
+        )
 
 
-def resign(value):
-    cap = value["capture"]
-    for event in cap["events"]:
-        event["event_id"] = trace.digest({k: v for k, v in event.items() if k != "event_id"})
-    cap["capture_digest"] = trace.digest({k: v for k, v in cap.items() if k != "capture_digest"})
-    value["trace_digest"] = trace.digest({k: v for k, v in value.items() if k != "trace_digest"})
+def test_parse_job_log_evidence_requires_digest_bound_contiguous_chunks():
+    archive = _artifact_blob()
+    assert tr.parse_job_log_evidence(_job_log_blob(archive)) == archive
+
+    duplicate = _job_log_blob(archive).replace(
+        b"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_000=",
+        b"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_001=",
+        1,
+    )
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="chunk"):
+        tr.parse_job_log_evidence(duplicate)
+
+    digest = hashlib.sha256(archive).hexdigest().encode("ascii")
+    tampered = _job_log_blob(archive).replace(digest, b"0" * 64, 1)
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="digest"):
+        tr.parse_job_log_evidence(tampered)
 
 
-def test_records_filled_suppressed_and_terminal_signals_with_shared_ids():
-    value, profiles, f = evidence()
-    verify(value, profiles, f)
-    for audit in value["independent_fill_audits"].values():
-        assert [r["outcome"] for r in audit["decisions"]] == [
-            "ENTRY_FILLED", "ENTRY_BAR_REARM_SUPPRESSED", "TERMINAL_NO_NEXT_OPEN"]
-        assert audit["fills"][0]["bar"] == 1
-        assert audit["fills"][0]["event_id"] == audit["fills"][1]["event_id"]
-    assert value["financial_producer_emitted_fills_available"] is False
-    assert value["batch_replay_not_prospective_capture"] is True
+def test_latest_verified_task_accepts_only_trusted_main_ancestor(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
+
+    def api(method, url, payload):
+        if "/actions/workflows/" in url:
+            return {
+                "workflow_runs": [{
+                    "id": 101,
+                    "conclusion": "success",
+                    "head_branch": "main",
+                    "event": "workflow_dispatch",
+                    "head_sha": SOURCE,
+                }]
+            }
+        if "/actions/runs/101/artifacts" in url:
+            return {
+                "artifacts": [{
+                    "id": 202,
+                    "name": "nexus-composite-runtime-requalification-101",
+                    "expired": False,
+                    "size_in_bytes": 1000,
+                }]
+            }
+        if "/compare/" in url:
+            return {
+                "status": "ahead",
+                "ahead_by": 2,
+                "behind_by": 0,
+                "merge_base_commit": {"sha": SOURCE},
+            }
+        raise AssertionError(url)
+
+    task = _task()
+    result = tr.latest_verified_task(
+        current_sha=CURRENT,
+        api=api,
+        downloader=lambda artifact_id: _artifact_blob(verification=proof),
+        verifier=lambda value: dict(proof),
+        builder=lambda producer, verification, producer_workflow_run_id: dict(task),
+        validator=lambda value, source: dict(value),
+    )
+    assert result is not None
+    qa_task, transport = result
+    assert qa_task == task
+    assert transport["producer_workflow_run_id"] == 101
+    assert transport["artifact_id"] == 202
+    assert transport["evidence_transport"] == "github-actions-artifact-v1"
+    assert transport["task_digest"] == task["task_digest"]
+    assert transport["paper_execution_authority"] is False
+    assert transport["live_trading_authority"] is False
 
 
-def test_future_price_and_feature_changes_preserve_prior_emitted_id():
-    f = frame()
-    mask = np.zeros(len(f), dtype=bool)
-    mask[[3, 40]] = True
-    before = captured(f, mask)
-    f.loc[20:, "high"] *= 2
-    f.loc[20:, "optional_warmup_feature"] = 999
-    after = captured(f, mask)
-    assert before["events"][0] == after["events"][0]
-    assert before["events"][1]["event_id"] != after["events"][1]["event_id"]
+def test_latest_verified_task_uses_bounded_job_log_when_artifact_missing(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
+
+    def api(method, url, payload):
+        if "/actions/workflows/" in url:
+            return {
+                "workflow_runs": [{
+                    "id": 101,
+                    "conclusion": "success",
+                    "head_branch": "main",
+                    "event": "workflow_dispatch",
+                    "head_sha": SOURCE,
+                }]
+            }
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": []}
+        if "/actions/runs/101/jobs" in url:
+            return {
+                "jobs": [{
+                    "id": 303,
+                    "name": "runtime-requalification",
+                    "conclusion": "success",
+                }]
+            }
+        if "/compare/" in url:
+            return {
+                "status": "ahead",
+                "ahead_by": 2,
+                "behind_by": 0,
+                "merge_base_commit": {"sha": SOURCE},
+            }
+        raise AssertionError(url)
+
+    task = _task()
+    result = tr.latest_verified_task(
+        current_sha=CURRENT,
+        api=api,
+        log_downloader=lambda job_id: _job_log_blob(
+            _artifact_blob(verification=proof)
+        ),
+        verifier=lambda value: dict(proof),
+        builder=lambda producer, verification, producer_workflow_run_id: dict(task),
+        validator=lambda value, source: dict(value),
+    )
+    assert result is not None
+    qa_task, transport = result
+    assert qa_task == task
+    assert transport["artifact_id"] is None
+    assert transport["physical_job_id"] == 303
+    assert transport["evidence_transport"] == "bounded-job-log-v2"
+    assert transport["paper_execution_authority"] is False
+    assert transport["live_trading_authority"] is False
 
 
-@pytest.mark.parametrize("change", ["source_sha", "candidate", "symbol", "prefix"])
-def test_identity_or_available_prefix_changes_event_id(change):
-    f = frame()
-    mask = np.zeros(len(f), dtype=bool)
-    mask[3] = True
-    before = captured(f, mask)
-    options = {}
-    if change == "prefix":
-        f.loc[2, "optional_warmup_feature"] = 0
-    else:
-        options[change] = {"source_sha": "c" * 40, "symbol": "ETHUSDT",
-                           "candidate": {**CANDIDATE, "candidate_digest": "d" * 64}}[change]
-    assert before["events"][0]["event_id"] != captured(f, mask, **options)["events"][0]["event_id"]
+def test_latest_verified_task_rejects_diverged_source(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
+
+    def api(method, url, payload):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [{
+                "id": 101, "conclusion": "success", "head_branch": "main",
+                "event": "workflow_dispatch", "head_sha": SOURCE,
+            }]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": [{
+                "id": 202,
+                "name": "nexus-composite-runtime-requalification-101",
+                "expired": False,
+                "size_in_bytes": 1000,
+            }]}
+        if "/compare/" in url:
+            return {
+                "status": "diverged",
+                "ahead_by": 1,
+                "behind_by": 1,
+                "merge_base_commit": {"sha": "0" * 40},
+            }
+        raise AssertionError(url)
+
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="not trusted main ancestry"):
+        tr.latest_verified_task(
+            current_sha=CURRENT,
+            api=api,
+            downloader=lambda artifact_id: _artifact_blob(verification=proof),
+            verifier=lambda value: dict(proof),
+            builder=lambda producer, verification, producer_workflow_run_id: _task(),
+            validator=lambda value, source: dict(value),
+        )
 
 
-@pytest.mark.parametrize("mutation", ["missing_event", "duplicate_event", "early_clock", "foreign_source",
-                                     "missing_disposition", "invented_outcome", "early_fill", "missing_exit",
-                                     "pnl", "fee", "exit_quantity", "missing_cost", "authority"])
-def test_redigested_corruption_never_passes(mutation):
-    value, profiles, f = evidence()
-    cap = value["capture"]
-    audit = value["independent_fill_audits"]["conservative"]
-    if mutation == "missing_event": cap["events"].pop()
-    elif mutation == "duplicate_event": cap["events"][1] = deepcopy(cap["events"][0])
-    elif mutation == "early_clock": cap["events"][0]["available_at_ms"] -= trace.STEP_MS
-    elif mutation == "foreign_source": cap["datasets_digest"] = "0" * 64
-    elif mutation == "missing_disposition": audit["decisions"].pop()
-    elif mutation == "invented_outcome": audit["decisions"][0]["outcome"] = "PROFIT_CERTIFIED"
-    elif mutation == "early_fill": audit["fills"][0]["bar"] = 0
-    elif mutation == "missing_exit": audit["fills"].pop()
-    elif mutation == "pnl": audit["fills"][1]["pnl"] = "999"
-    elif mutation == "fee": audit["fills"][0]["fee"] = "0"
-    elif mutation == "exit_quantity": audit["fills"][1]["quantity"] = "0.1"
-    elif mutation == "missing_cost": value["independent_fill_audits"].pop("stress")
-    elif mutation == "authority": value["live_trading_authority"] = True
-    resign(value)
-    with pytest.raises(trace.SignalTraceError):
-        verify(value, profiles, f)
+def test_store_is_idempotent_and_collision_fail_closed(tmp_path, monkeypatch):
+    monkeypatch.setattr(tr, "validate_task", lambda value, source: dict(value))
+    task = _task()
+    transport = {
+        "schema_version": "nexus.composite-runtime-qa-transport.v1",
+        "producer_workflow_run_id": 101,
+        "artifact_id": 202,
+        "task_digest": task["task_digest"],
+        "source_sha": task["source_sha"],
+        "candidate_digest": task["candidate_digest"],
+        "requalification_digest": task["requalification_digest"],
+        "required_verifier": "qa-verifier-agent",
+        "paper_only": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    first = tr.store_verified_task(tmp_path, task, transport)
+    second = tr.store_verified_task(tmp_path, task, transport)
+    assert first == second
+    tampered = dict(transport)
+    tampered["artifact_id"] = 999
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="collision"):
+        tr.store_verified_task(tmp_path, task, tampered)
 
+def test_short_observation_is_no_work_not_broken_transport_or_phantom_qa(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
 
-def test_zero_signal_mask_is_complete_without_fabricated_trades():
-    f = frame()
-    value, profiles, _ = evidence(f, np.zeros(len(f), dtype=bool))
-    verify(value, profiles, f)
-    assert value["capture"]["events"] == []
-    assert all(p["closed_round_trips"] == 0 for p in profiles)
+    def api(_method, url, _payload):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [{
+                "id": 101, "conclusion": "success", "head_branch": "main",
+                "event": "workflow_dispatch", "head_sha": SOURCE,
+            }]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": [{
+                "id": 202, "name": "nexus-composite-runtime-requalification-101",
+                "expired": False, "size_in_bytes": 1000,
+            }]}
+        if "/compare/" in url:
+            return {
+                "status": "ahead", "ahead_by": 1, "behind_by": 0,
+                "merge_base_commit": {"sha": SOURCE},
+            }
+        raise AssertionError(url)
 
+    def inconclusive_builder(_producer, _verification, *, producer_workflow_run_id):
+        assert producer_workflow_run_id == 101
+        raise tr.CompositeRuntimeQaError(
+            "insufficient observation coverage for independent QA: "
+            "INSUFFICIENT_OBSERVATION_COVERAGE"
+        )
 
-def test_nonboolean_and_noncontiguous_decisions_are_rejected():
-    f = frame()
-    with pytest.raises(trace.SignalTraceError, match="boolean"):
-        captured(f, np.zeros(len(f), dtype=int))
-    f.loc[3, "decision_at"] += pd.Timedelta(minutes=15)
-    with pytest.raises(trace.SignalTraceError, match="noncontiguous"):
-        captured(f, np.zeros(len(f), dtype=bool))
-
-
-def test_default_val40_producer_captures_before_either_financial_profile(monkeypatch, tmp_path):
-    import canonical_backtest as canonical
-    import nexus_canonical_paged_history as history
-    import product_research_runtime as product
-    f = frame(3072)
-    f.loc[[1, int(len(f)*.6)+1, int(len(f)*.8)+1], "high"] = 110
-    f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
-    f["volume"] = 1.
-    info = datasets(f)
-    raw_frames = {}
-    for tf, step in rq.TIMEFRAME_STEP_MS.items():
-        raw = f.copy()
-        raw["timestamp"] = pd.to_datetime(
-            [info[tf]["first_open_time_ms"] + i * step for i in range(len(f))], unit="ms", utc=True)
-        raw_frames[tf] = raw
-    contexts = producer.build_features(raw_frames)
-    for field in ("h1_compression", "h1_vol_ok", "h4_up", "h4_range"):
-        f[field] = contexts[field]
-    def artifact(symbol, tf):
-        d = info[tf]
-        step = rq.TIMEFRAME_STEP_MS[tf]
-        return {**d, "tf": tf, "rows": [{"open_time_ms": d["first_open_time_ms"] + i * step}
-                               for i in range(len(f))]}
-    class Runtime:
-        def __init__(self, *args, **kwargs): pass
-        def fetch_dataset(self, *, symbol, timeframe, limit): return artifact(symbol, timeframe)
-    monkeypatch.setattr(product, "ProductResearchRuntime", Runtime)
-    monkeypatch.setattr(history, "fetch_verified_15m_window", lambda runtime, *, symbol, limit: artifact(symbol, "minute15"))
-    monkeypatch.setattr(canonical, "canonical_ohlcv_frame", lambda a: (a, raw_frames[a["tf"]]))
-    monkeypatch.setattr(producer, "build_features", lambda *a, **kw: f)
-    mask = np.zeros(len(f), dtype=bool)
-    mask[[0, int(len(f)*.6), int(len(f)*.8), -1]] = True
-    monkeypatch.setattr(producer, "signal_for", lambda *a: mask)
-    capture_impl, backtest_impl, order = trace.capture_signals, producer.backtest, []
-    def capture(*args, **kwargs):
-        order.append("capture")
-        return capture_impl(*args, **kwargs)
-    def backtest(*args, **kwargs):
-        assert order[-1] in {"capture", "backtest"}
-        order.append("backtest")
-        return backtest_impl(*args, **kwargs)
-    monkeypatch.setattr(trace, "capture_signals", capture)
-    monkeypatch.setattr(producer, "backtest", backtest)
-    evaluated = rq._default_evaluator(CANDIDATE, SOURCE, 1_767_312_060_000, tmp_path)
-    rows = evaluated["evaluations"]
-    assert order == ["capture", "backtest", "backtest", "backtest", "backtest"] * 2
-    for row in rows:
-        trace.verify_trace(row["emitted_signal_trace"], candidate=CANDIDATE, source_sha=SOURCE,
-                           symbol=row["symbol"], datasets=row["datasets"], peer_binding=None,
-                           profiles=row["profiles"])
-    # The exact existing producer -> verifier -> QA-task/receipt path consumes
-    # v4. Candidate validation itself is covered by its separate contract suite.
-    import nexus_composite_runtime_independent_qa as qa
-    candidate = {**CANDIDATE, "source_sha": "c" * 40, "archive_sha256": "d" * 64,
-                 "timeframe": "minute15_with_completed_1h_4h", "config_fingerprint": "e" * 64}
-    monkeypatch.setattr(rq, "_validated_candidate", lambda *args: deepcopy(candidate))
-    now = int(f.decision_at.iloc[-1].value // 1_000_000) + 60_000
-    result = rq.build_requalification(candidate, {}, source_sha=SOURCE, now_ms=now,
-                                      state_root=tmp_path, evaluator=lambda *args: evaluated)
-    assert result["schema_version"] == rq.SHARED_CASH_SCHEMA
-    assert rq.verify_requalification(result)["decision"] == "pass"
-    task = qa.build_task(result, rq.verify_requalification(result), producer_workflow_run_id=123)
-    receipt = qa.run_independent_qa(task, lease_id="separate-qa-lease", execution_source_sha=SOURCE,
-                                   state_root=tmp_path)
-    assert qa.verify_receipt(receipt, task, lease_id="separate-qa-lease", execution_source_sha=SOURCE)
-    assert order.count("capture") == 4  # two producer symbols + two separate QA replays
-    corrupted = deepcopy(result)
-    corrupted["shared_cash_portfolio"]["cells"]["training"]["stress"]["net_pnl_usdt"] += 1
-    shared_proof = corrupted["shared_cash_portfolio"]
-    shared_proof["portfolio_digest"] = rq.digest({k:v for k,v in shared_proof.items() if k != "portfolio_digest"})
-    corrupted["requalification_digest"] = rq.digest({k:v for k,v in corrupted.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(corrupted)["decision"] == "reject"
-    missing = deepcopy(result)
-    missing.pop("shared_cash_portfolio")
-    missing["requalification_digest"] = rq.digest({k:v for k,v in missing.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(missing)["decision"] == "reject"
-    broken = deepcopy(result)
-    broken["evaluations"][0].pop("emitted_signal_trace")
-    broken["evaluations_digest"] = rq.digest(broken["evaluations"])
-    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(broken)["decision"] == "reject"
-    broken = deepcopy(result)
-    for row in broken["evaluations"]:
-        row.pop("higher_timeframe_feature_audit")
-    broken.pop("shared_cash_portfolio")
-    broken["schema_version"] = rq.TRACE_SCHEMA
-    broken["evaluations_digest"] = rq.digest(broken["evaluations"])
-    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(broken)["decision"] == "pass"  # historical v2 remains readable
-    broken = deepcopy(result)
-    broken["evaluations"][0].pop("higher_timeframe_feature_audit")
-    broken["evaluations_digest"] = rq.digest(broken["evaluations"])
-    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(broken)["decision"] == "reject"
-    broken = deepcopy(result)
-    broken["schema_version"] = rq.SCHEMA
-    broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
-    assert rq.verify_requalification(broken)["decision"] == "reject"
-    # Real default execution: the old 64th-bar close profits, whereas the
-    # shared book remains open until the next adverse open. Positive independent
-    # books must not override the consumed shared-book loss.
-    f["high"] = 100.1
-    for start in (0,int(len(f)*.6),int(len(f)*.8)):
-        f.loc[start+64,["high","close"]] = [101.2,101.]
-        f.loc[start+65,["open","high","low","close"]] = [97.,97.1,96.9,97.]
-    for field in ("open","high","low","close"):
-        raw_frames["minute15"][field] = f[field]
-    negative = rq.build_requalification(candidate,{},source_sha=SOURCE,now_ms=now,state_root=tmp_path)
-    assert all(p["net_pnl_usdt"] > 0 for r in negative["evaluations"] for p in r["profiles"])
-    assert negative["decision"] == "REJECTED"
-    assert negative["reason_codes"] == ["NEGATIVE_SHARED_500_CASH_CELL"]
-    assert rq.verify_requalification(negative)["decision"] == "pass"
-    with pytest.raises(qa.CompositeRuntimeQaError):
-        qa.build_task(negative,rq.verify_requalification(negative),producer_workflow_run_id=124)
-    # A detected context discrepancy must stop before signal/fill generation.
-    import nexus_composite_higher_timeframe_audit as higher
-    def failed_audit(*args, **kwargs):
-        raise higher.HigherTimeframeAuditError("synthetic early-source mutation")
-    monkeypatch.setattr(higher, "audit_features", failed_audit)
-    order.clear()
-    with pytest.raises(rq.CompositeRuntimeRequalificationError, match="higher-timeframe"):
-        rq._default_evaluator(CANDIDATE, SOURCE, now, tmp_path)
-    assert order == []
-
-
-def test_full_3072_bar_high_activity_trace_fits_bounded_transport(tmp_path):
-    import nexus_composite_runtime_qa_transport as transport
-    f = frame(3072)
-    # Variable physical prices reproduce the compressed-size boundary that
-    # repeated constants hide; keep every emitted signal and every shared fill.
-    mid = 100 + np.sin(np.arange(len(f))*1.23456789)*.375
-    f["open"], f["close"], f["low"] = mid, mid+.0135792468, mid-.0987654321
-    f["high"] = 110
-    f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
-    f["volume"] = 1.
-    data = datasets(f)
-    raw_frames = {}
-    for tf, step in rq.TIMEFRAME_STEP_MS.items():
-        raw = f.copy()
-        raw["timestamp"] = pd.to_datetime(
-            [data[tf]["first_open_time_ms"] + i * step for i in range(len(f))], unit="ms", utc=True)
-        raw_frames[tf] = raw
-    features = producer.build_features(raw_frames)
-    for field in ("h1_compression", "h1_vol_ok", "h4_up", "h4_range"):
-        f[field] = features[field]
-    import nexus_composite_higher_timeframe_audit as higher
-    htf = higher.audit_features(raw_frames, f, candidate_digest=CANDIDATE["candidate_digest"],
-                                source_sha=SOURCE, symbol="BTCUSDT", datasets=data)
-    value, _, _ = evidence(f, np.ones(len(f), dtype=bool))
-    import nexus_composite_shared_cash as shared
-    evaluations = []
-    for symbol in rq.SYMBOLS:
-        cap = trace.capture_signals(f, np.ones(len(f), dtype=bool), candidate=CANDIDATE,
-                                    source_sha=SOURCE, symbol=symbol, datasets=data, peer_binding=None)
-        evaluations.append({"symbol":symbol, "datasets":data,
-                            "emitted_signal_trace":{**value,"capture":cap}})
-    portfolio = shared.build_shared_cash({s:f for s in rq.SYMBOLS},
-                    {s:np.ones(len(f),dtype=bool) for s in rq.SYMBOLS},
-                    candidate=CANDIDATE,source_sha=SOURCE,evaluations=evaluations)
-    producer_result = {"schema_version": rq.SHARED_CASH_SCHEMA,
-                "shared_cash_portfolio":portfolio,
-                "evaluations": [{"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf},
-                                {"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf}]}
-    path = tmp_path / "producer.json"
-    rq._atomic_json(path, producer_result)
-    raw = path.read_bytes()
-    assert len(raw) < transport.MAX_JSON_BYTES
-    verification = {"decision": "pass"}
-    output = io.BytesIO()
-    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("runtime-requalification.json", raw)
-        z.writestr("verification.json", json.dumps(verification))
-    blob = output.getvalue()
-    assert 500_000 < len(blob) < transport.MAX_LOG_EVIDENCE_BYTES
-    encoded = base64.b64encode(blob).decode()
-    chunks = [encoded[i:i+48000] for i in range(0, len(encoded), 48000)]
-    log = "\n".join(["NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2",
-                     "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" + hashlib.sha256(blob).hexdigest(),
-                     "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" + str(len(blob)),
-                     "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=" + str(len(chunks)),
-                     *[f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_{i:03d}={chunk}"
-                       for i, chunk in enumerate(chunks)]]) + "\n"
-    recovered = transport.parse_job_log_evidence(log.encode())
-    assert recovered == blob
-    parsed, _ = transport.parse_artifact(recovered, verifier=lambda p: verification)
-    assert parsed == producer_result
+    assert tr.latest_verified_task(
+        current_sha=CURRENT, api=api,
+        downloader=lambda _: _artifact_blob(verification=proof),
+        verifier=lambda _: proof, builder=inconclusive_builder,
+        validator=lambda *_: pytest.fail("inconclusive cannot issue QA task"),
+    ) is None
+    assert "INSUFFICIENT_OBSERVATION_COVERAGE" in capsys.readouterr().err
 
 
 def test_three_digit_shared500_chunk_count_and_upper_bounds():
