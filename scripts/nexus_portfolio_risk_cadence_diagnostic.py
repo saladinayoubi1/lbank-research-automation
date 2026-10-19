@@ -106,48 +106,104 @@ def target_ratchet(timestamps: pd.Series, baseline: np.ndarray, vol: np.ndarray,
 def verify_trace(market: dict[str, Any], trace: dict[str, Any], metrics: dict[str, Any],
                  profile: dict[str, float], period: dict[str, str],
                  daily_reductions: np.ndarray) -> dict[str, Any]:
-    """Independent cash/quantity and physical-price replay of observed fills."""
+    """Replay every fill and bind receipts/metrics to the exact period grid."""
     ts = market["timestamps"]
     idx = engine.period_indices(ts, period)
+    if (not len(idx) or daily_reductions.shape != (len(ts),)
+            or daily_reductions.dtype != np.bool_
+            or trace["schema"] != "nexus.portfolio-v3-original-fill-trace.v1"
+            or trace["symbols"] != SYMBOLS or trace["period"] != period
+            or trace["initial_cash_usdt"] != profile["initial_cash"]
+            or len(trace["equity_marks"]) != len(idx)):
+        raise CadenceError("Trace header, period or mark coverage mismatch")
     row_by_open = {t: i for i, t in enumerate(ts)}
+    allowed_rows = set(idx.tolist())
     fill_groups: dict[int, list[dict[str, Any]]] = {}
-    for fill in trace["fills"]:
-        k = row_by_open[pd.Timestamp(fill["source_bar_open_utc"])]
+    previous_order = (-1, False)
+    for sequence, fill in enumerate(trace["fills"]):
+        k = row_by_open.get(pd.Timestamp(fill["source_bar_open_utc"]))
+        terminal = fill["fill_kind"] == "terminal_bar_close"
+        if (k not in allowed_rows or type(fill["sequence"]) is not int
+                or fill["sequence"] != sequence or fill["symbol"] not in SYMBOLS
+                or fill["side"] not in ("buy", "sell")
+                or fill["fill_kind"] not in ("next_bar_open", "terminal_bar_close")
+                or (terminal and (k != idx[-1] or fill["side"] != "sell"))
+                or (not terminal and k == idx[0])
+                or (k, terminal) < previous_order):
+            raise CadenceError("Unaccounted, reordered or invalid fill")
+        previous_order = (k, terminal)
         fill_groups.setdefault(k, []).append(fill)
     cash, quantity = float(profile["initial_cash"]), np.zeros(2)
     daily_buys = 0
     max_error = 0.0
     actual_exposure = []
+    equity_rows = []
+    total_fees = total_notional = 0.0
+    asset_fills = np.zeros(2, dtype=int)
     for k, mark in zip(idx, trace["equity_marks"], strict=True):
+        marked_quantity = np.asarray(mark["asset_quantities"], dtype=float)
+        if (pd.Timestamp(mark["bar_closed_at_utc"]) != ts.iloc[k] + pd.Timedelta(hours=4)
+                or marked_quantity.shape != (2,) or not np.isfinite(marked_quantity).all()
+                or not np.isfinite([mark["equity_usdt"], mark["cash_usdt"]]).all()
+                or mark["equity_usdt"] <= 0):
+            raise CadenceError("Invalid or misdated equity mark")
         for fill in fill_groups.get(int(k), []):
             j = SYMBOLS.index(fill["symbol"])
             q, price, fee = (float(fill[x]) for x in ("quantity", "price_usdt", "fee_usdt"))
+            if (not np.isfinite([q, price, fee, fill["cash_after_usdt"],
+                                   fill["asset_quantity_after"]]).all()
+                    or q <= 0 or price <= 0 or fee < 0):
+                raise CadenceError("Invalid fill quantity, price, fee or account receipt")
             side = 1 if fill["side"] == "buy" else -1
             terminal = fill["fill_kind"] == "terminal_bar_close"
             expected_time = ts.iloc[k] + pd.Timedelta(hours=4) if terminal else ts.iloc[k]
             raw = market["close" if terminal else "open"][k, j]
             expected_price = raw * (1 + side * profile["slippage_bps"] / 10000)
             if (pd.Timestamp(fill["executed_at_utc"]) != expected_time
-                    or not np.isclose(price, expected_price, rtol=1e-12)
-                    or not np.isclose(fee, q * price * profile["fee_bps"] / 10000, atol=1e-9)):
+                    or not np.isclose(price, expected_price, rtol=1e-12, atol=1e-12)
+                    or not np.isclose(fee, q * price * profile["fee_bps"] / 10000,
+                                      rtol=1e-12, atol=1e-9)):
                 raise CadenceError("Fill time, slippage or fee mismatch")
             cash -= side * q * price + fee
             quantity[j] += side * q
             if cash < -1e-7 or (quantity < -1e-10).any():
                 raise CadenceError("Independent replay borrowed cash or inventory")
+            if (abs(cash - fill["cash_after_usdt"]) > 1e-7
+                    or abs(quantity[j] - fill["asset_quantity_after"]) > 1e-10):
+                raise CadenceError("Per-fill account receipt mismatch")
+            total_fees += fee
+            total_notional += q * price
+            asset_fills[j] += 1
             if side == 1 and not terminal and k > 0 and daily_reductions[k - 1]:
                 daily_buys += 1
         reconstructed = cash + float(quantity @ market["close"][k])
         error = max(abs(reconstructed - mark["equity_usdt"]),
                     abs(cash - mark["cash_usdt"]),
-                    float(np.max(np.abs(quantity - mark["asset_quantities"]))))
+                    float(np.max(np.abs(quantity - marked_quantity))))
         max_error = max(max_error, error)
         if error > 1e-7:
             raise CadenceError("Ledger and marked equity mismatch")
         actual_exposure.append(float(1 - cash / reconstructed))
+        equity_rows.append(reconstructed)
+    terminal_quantity = np.asarray(trace["terminal_quantities"], dtype=float)
     if (not np.allclose(quantity, 0, atol=1e-10)
+            or terminal_quantity.shape != (2,) or not np.isfinite(terminal_quantity).all()
+            or not np.allclose(terminal_quantity, quantity, rtol=0, atol=1e-10)
+            or not np.isfinite(trace["terminal_cash_usdt"])
+            or abs(trace["terminal_cash_usdt"] - cash) > 1e-7
             or abs(cash / profile["initial_cash"] - 1 - metrics["total_return"]) > 1e-9):
         raise CadenceError("Terminal account mismatch")
+    equity = np.asarray(equity_rows)
+    maximum_dd = float(-(equity / np.maximum.accumulate(equity) - 1).min())
+    summary = [metrics[x] for x in ("total_return", "max_drawdown", "total_fees", "turnover")]
+    if (not np.isfinite(summary).all()
+            or type(metrics["fill_count"]) is not int
+            or metrics["fill_count"] != len(trace["fills"])
+            or not np.array_equal(metrics["asset_fill_counts"], asset_fills)
+            or abs(metrics["max_drawdown"] - maximum_dd) > 1e-10
+            or abs(metrics["total_fees"] - total_fees) > 1e-7
+            or abs(metrics["turnover"] - total_notional / profile["initial_cash"]) > 1e-9):
+        raise CadenceError("Aggregate fills, costs or drawdown mismatch")
     return {"ledger_replay_passed": True, "maximum_reconciliation_error_usdt": max_error,
             "actual_mean_marked_gross_exposure": float(np.mean(actual_exposure)),
             "target_mean_exposure_engine_field": metrics["average_exposure"],

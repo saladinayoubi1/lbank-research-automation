@@ -1,0 +1,77 @@
+{
+  "device": "Laptop2 / DESKTOP-F4SA4VL",
+  "formal_independent_paper_qa_complete": false,
+  "live_enabled": false,
+  "new_corruption_subtests_passed": 29,
+  "new_economic_backtest_runs": 0,
+  "orders": 0,
+  "original_observer_false_acceptances_reproduced": 19,
+  "original_result_digest": "1ad241bf96ee678ee67d7ff1a0311820df98ac6a7fffd5e11f1b1f66204dfe37",
+  "paper_eligible": false,
+  "retained_trace_checks": {
+    "baseline": {
+      "all_recorded_qa_fields_unchanged": true,
+      "equity_mark_count": 6390,
+      "fill_count": 106,
+      "qa": {
+        "actual_mean_marked_gross_exposure": 0.38039484384932715,
+        "buys_after_daily_target_reductions": 0,
+        "equity_marks_sha256": "191df7c85df59f688859b8c32bb399e81d9cb6e5a1b3fbad7379610c98052515",
+        "fills_sha256": "2387f3ef253038d84d3b9338e82a768e64bad4627c9310e46c89ff76df6e07b3",
+        "ledger_replay_passed": true,
+        "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+        "target_mean_exposure_engine_field": 0.3803412114571921
+      }
+    },
+    "baseline_times_075": {
+      "all_recorded_qa_fields_unchanged": true,
+      "equity_mark_count": 6390,
+      "fill_count": 108,
+      "qa": {
+        "actual_mean_marked_gross_exposure": 0.28534842109003294,
+        "buys_after_daily_target_reductions": 0,
+        "equity_marks_sha256": "f7cda34af5c5df6134c0e1dc7fa1f89bb1be3a95325ae2ccc20d540c8b75bdef",
+        "fills_sha256": "bede7f901abe36dde0c77c5219ee9ec5ed5df82b50fe7ad231298f362461e0d0",
+        "ledger_replay_passed": true,
+        "maximum_reconciliation_error_usdt": 0,
+        "target_mean_exposure_engine_field": 0.285255908592894
+      }
+    },
+    "daily_target_ratchet": {
+      "all_recorded_qa_fields_unchanged": true,
+      "equity_mark_count": 6390,
+      "fill_count": 119,
+      "qa": {
+        "actual_mean_marked_gross_exposure": 0.3690612491116566,
+        "buys_after_daily_target_reductions": 0,
+        "equity_marks_sha256": "a9121423fea72611b677f39b764e105b22b4d3305e7da5c306e643936675ce1b",
+        "fills_sha256": "26f091ec8bdc7186d39369b50f58d6aed20c0a96d8b75938636970d8c606ac30",
+        "ledger_replay_passed": true,
+        "maximum_reconciliation_error_usdt": 4.547473508864641e-13,
+        "target_mean_exposure_engine_field": 0.3687979339489748
+      }
+    },
+    "passive_BTC": {
+      "all_recorded_qa_fields_unchanged": true,
+      "equity_mark_count": 6390,
+      "fill_count": 2,
+      "qa": {
+        "actual_mean_marked_gross_exposure": 0.9996870109546165,
+        "buys_after_daily_target_reductions": 0,
+        "equity_marks_sha256": "3cfbbe88836de25606f319643502afce219f38a0bdea9f9309828b3366a8e545",
+        "fills_sha256": "93f818cf59901f76ce7b62c565ec435899af3f9e0ab0de0aceb69bc67cd5a134",
+        "ledger_replay_passed": true,
+        "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+        "target_mean_exposure_engine_field": 1
+      }
+    }
+  },
+  "reviewed_parent_commit": "2e39143f011cb8b87f033b8477fa6bdd8adc87c2",
+  "schema": "nexus.risk-cadence-retained-trace-review.v1",
+  "source_hashes_lf": {
+    "scripts/nexus_portfolio_risk_cadence_diagnostic.py": "aa6a2f0f21ca85580b252570fe17f1f36d466fbe8a2856626080b9f5c1fbf32b",
+    "tests/test_nexus_portfolio_risk_cadence_diagnostic.py": "b081017849ab300f256c68e95711f06a380d88bb467677898e0deeb66a9bd561"
+  },
+  "unit_test_methods_passed": 15,
+  "verdict_unchanged": "REJECT_FIXED_HYPOTHESIS_NO_RETUNE"
+}

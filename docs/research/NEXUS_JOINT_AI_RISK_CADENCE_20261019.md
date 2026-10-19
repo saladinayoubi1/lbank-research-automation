@@ -174,3 +174,35 @@ rejected claims that every losing regime worsened or that extra fill count
 explains the entire loss. Actual fees rose by only 0.54999 USDT; the full
 26.25081-USDT P/L difference cannot all be attributed to that fee difference.
 No new parameter values or substitute candidate was selected after rejection.
+
+## Code-review correction: complete retained-trace accounting
+
+Review of PR2753 at `2e39143f011cb8b87f033b8477fa6bdd8adc87c2`
+reproduced false acceptance of a fill outside the requested period, a
+misdated equity mark, a changed terminal receipt and changed aggregate fill
+counts. The original observer reconstructed cash and inventory but did not
+bind every input receipt or independently check reported drawdown and costs.
+These are observer defects; no corrupt original historical trace was found.
+
+Only `verify_trace` changed in the diagnostic. It now binds the trace header,
+complete mark timestamps, every fill's period/order/identity, finite positive
+amounts, per-fill cash/inventory receipts and terminal receipts. It independently
+reconstructs fill counts, fees, notional turnover and maximum drawdown.
+The original observer falsely accepted 19 corruption subcases. The corrected
+observer passes 29 new corruption subcases in four additional test methods;
+all 15 unit-test methods pass locally and on physical Laptop2, native exit0.
+
+The corrected observer checked the four retained continuous conservative
+traces, after verifying their recorded fill/mark digests and all six original
+source hashes: 335 fills and 25,560 equity marks. Every original recorded QA
+field agrees exactly, including maximum reconciliation error4.55e-13 USDT.
+No historical economic backtest was rerun. Other cost/reset cells retain their
+original receipts; this review does not claim a new84-cell verification.
+
+The engine, target generator, execution, falsification rules, contract/lock,
+original result, AI review and original physical receipt remain unchanged.
+`verification.json` attests the original frozen implementation at `e8ef58e`,
+not the later corrected observer. The separate `review-verification.json`
+binds the corrected script/test hashes and retained-trace checks; its exact
+physical harness is `review_existing_traces.py` in the same evidence folder.
+The historical rejection and all Paper/Live qualification boundaries stand.

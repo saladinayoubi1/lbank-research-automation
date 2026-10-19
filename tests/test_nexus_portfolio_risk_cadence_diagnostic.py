@@ -1,4 +1,5 @@
 """Causal target timing and independent wallet tests; no market optimization."""
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -25,7 +26,91 @@ def market_from_close(ts, close):
             "high": close * 1.01, "low": close * .99}
 
 
+def accounting_sample():
+    ts, base, _, _ = sample(18)
+    prices = np.column_stack([100 + 5 * np.sin(np.arange(18)), np.full(18, 80.)])
+    market = market_from_close(ts, prices)
+    profile = {"initial_cash": 500, "fee_bps": 10, "slippage_bps": 5}
+    period = {"start": "2022-12-02", "end": "2022-12-04"}
+    trace = {}
+    metrics = engine.exact_backtest(market, base, period, profile, fill_trace=trace)
+    return market, trace, metrics, profile, period, np.zeros(18, dtype=bool)
+
+
 class RiskCadenceTests(unittest.TestCase):
+    def test_observer_binds_header_and_every_mark_to_period(self):
+        market, trace, metrics, profile, period, reductions = accounting_sample()
+        self.assertTrue(study.verify_trace(market, trace, metrics, profile, period,
+                                          reductions)["ledger_replay_passed"])
+        mutations = [
+            lambda t: t.update(schema="unknown"),
+            lambda t: t.update(symbols=list(reversed(study.SYMBOLS))),
+            lambda t: t.update(period={"start": "2022-12-01", "end": period["end"]}),
+            lambda t: t.update(initial_cash_usdt=501),
+            lambda t: t["equity_marks"].pop(),
+            lambda t: t["equity_marks"][0].update(bar_closed_at_utc="2022-12-01T04:00:00Z"),
+            lambda t: t["equity_marks"][0].update(asset_quantities=[0]),
+            lambda t: t["equity_marks"][0].update(equity_usdt=float("nan")),
+        ]
+        for case, mutate in enumerate(mutations):
+            with self.subTest(case=case):
+                changed = copy.deepcopy(trace)
+                mutate(changed)
+                with self.assertRaises(study.CadenceError):
+                    study.verify_trace(market, changed, metrics, profile, period, reductions)
+
+    def test_observer_rejects_out_of_period_and_invalid_fill_identity(self):
+        market, trace, metrics, profile, period, reductions = accounting_sample()
+        for field, value in [
+            ("source_bar_open_utc", market["timestamps"].iloc[0].isoformat()),
+            ("sequence", 99), ("symbol", "unknown"), ("side", "unknown"),
+            ("fill_kind", "unknown"), ("fill_kind", "terminal_bar_close"),
+            ("executed_at_utc", "2022-12-02T08:00:00Z"),
+        ]:
+            with self.subTest(field=field, value=value):
+                changed = copy.deepcopy(trace)
+                changed["fills"][0][field] = value
+                with self.assertRaises(study.CadenceError):
+                    study.verify_trace(market, changed, metrics, profile, period, reductions)
+        changed = copy.deepcopy(trace)
+        changed["fills"].reverse()
+        for i, fill in enumerate(changed["fills"]):
+            fill["sequence"] = i
+        with self.assertRaises(study.CadenceError):
+            study.verify_trace(market, changed, metrics, profile, period, reductions)
+
+    def test_observer_rejects_invalid_amounts_and_account_receipts(self):
+        market, trace, metrics, profile, period, reductions = accounting_sample()
+        mutations = [
+            lambda t: t["fills"][0].update(quantity=-1),
+            lambda t: t["fills"][0].update(price_usdt=float("inf")),
+            lambda t: t["fills"][0].update(fee_usdt=-1),
+            lambda t: t["fills"][0].update(cash_after_usdt=999),
+            lambda t: t["fills"][0].update(asset_quantity_after=999),
+            lambda t: t.update(terminal_cash_usdt=999),
+            lambda t: t.update(terminal_quantities=[1, 0]),
+        ]
+        for case, mutate in enumerate(mutations):
+            with self.subTest(case=case):
+                changed = copy.deepcopy(trace)
+                mutate(changed)
+                with self.assertRaises(study.CadenceError):
+                    study.verify_trace(market, changed, metrics, profile, period, reductions)
+
+    def test_observer_reconstructs_aggregate_costs_counts_and_drawdown(self):
+        market, trace, metrics, profile, period, reductions = accounting_sample()
+        for field, value in [
+            ("fill_count", metrics["fill_count"] + 1), ("asset_fill_counts", [0, 0]),
+            ("max_drawdown", metrics["max_drawdown"] + .1),
+            ("total_fees", metrics["total_fees"] + 1),
+            ("turnover", metrics["turnover"] + 1), ("total_return", float("nan")),
+        ]:
+            with self.subTest(field=field):
+                changed = copy.deepcopy(metrics)
+                changed[field] = value
+                with self.assertRaises(study.CadenceError):
+                    study.verify_trace(market, trace, changed, profile, period, reductions)
+
     def test_no_risk_change_reproduces_original_targets(self):
         ts, base, vol, weekly = sample()
         out, reduced = study.target_ratchet(ts, base, vol, weekly)
