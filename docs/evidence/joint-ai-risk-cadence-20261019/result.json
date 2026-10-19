@@ -1,0 +1,2317 @@
+{
+  "candidate_count": 1,
+  "continuous_period_reduction_events": 13,
+  "contract": {
+    "baseline_candidate_id": "b4e4a2c33304aec1",
+    "candidate_count": 1,
+    "daily_observation": "completed_UTC_day_last_4h_bar_open_20_00_close_next_00_00",
+    "daily_target": "min(previous_held_target, original_0.25_rounded_30pct_divided_by_current_winner_30day_vol)",
+    "execution": "unchanged_exact_backtest_prior_close_target_at_next_open_sell_before_buy",
+    "falsification": {
+      "apply_to_all_three_existing_cost_profiles": true,
+      "continuous_net_pnl_at_least_fraction_of_baseline": 0.9,
+      "minimum_dd_reduction_each_previously_negative_regime_percentage_points": 3.0,
+      "must_exceed_fixed075_control_return_over_drawdown_continuous": true,
+      "no_retuning_after_result": true,
+      "statistical_significance_claim": false
+    },
+    "fixed_deleveraging_control": 0.75,
+    "future_prices_authorized": false,
+    "history": {
+      "already_inspected": true,
+      "end": "2026-08-01",
+      "start": "2023-09-01"
+    },
+    "hypothesis": "Daily downward target ratchet reduces stale weekly volatility sizing; this is a risk-timing overlay, not independent alpha.",
+    "live_enabled": false,
+    "missing_volatility": "zero_target",
+    "new_entry_signal": false,
+    "orders": 0,
+    "paper_eligible": false,
+    "qualification": "historical_diagnostic_only",
+    "reject_if_daily_target_reduction_causes_a_buy": true,
+    "rounding": "original_numpy_round_bankers_to_0.25",
+    "same_day_weekly_collision": "weekly_reset_has_priority",
+    "schema": "nexus.portfolio-risk-cadence-diagnostic.v1",
+    "source_commit": "7383788754e1f7bef8e70e7df0c765b40e49e6ff",
+    "target_is_not_inventory": true,
+    "volatility": "closed_4h_returns_30_days_ddof0_sqrt_2191.5",
+    "warmup_start": "2022-12-01",
+    "weekly_reset": "original_global_42_bar_review_including_original_winner_and_target"
+  },
+  "contract_sha256": "f909e7dc8beb34bac0efe13cbb9c8dc128996d42b305089ecae25d7cd39604bf",
+  "daily_target_reduction_events_full_source": 17,
+  "engine_sha256_lf": "1f086b5958a59c19657dea5b642a888d9039d6db2fd088893f7870dd7f549688",
+  "exposure_note": "engine average_exposure is target mean; QA field is actual marked inventory/equity mean, final flat mark included",
+  "falsification": {
+    "by_cost_profile": {
+      "conservative": {
+        "checks": {
+          "continuous_pnl_retained_at_least_90pct": true,
+          "each_negative_regime_dd_improved_at_least_3pp": false,
+          "no_buys_at_any_daily_reduction": true,
+          "return_over_dd_exceeds_fixed075": false
+        },
+        "negative_regime_dd_reduction_percentage_points": {
+          "2024_03_to_2024_09": 5.275237541804412,
+          "2025_10_to_2026_04": -0.8513055384484436,
+          "2026_04_to_2026_08": 0.0
+        },
+        "passes_all": false
+      },
+      "severe": {
+        "checks": {
+          "continuous_pnl_retained_at_least_90pct": true,
+          "each_negative_regime_dd_improved_at_least_3pp": false,
+          "no_buys_at_any_daily_reduction": true,
+          "return_over_dd_exceeds_fixed075": false
+        },
+        "negative_regime_dd_reduction_percentage_points": {
+          "2024_03_to_2024_09": 5.161116257575626,
+          "2025_10_to_2026_04": -0.8494130125678012,
+          "2026_04_to_2026_08": 0.0
+        },
+        "passes_all": false
+      },
+      "stress": {
+        "checks": {
+          "continuous_pnl_retained_at_least_90pct": true,
+          "each_negative_regime_dd_improved_at_least_3pp": false,
+          "no_buys_at_any_daily_reduction": true,
+          "return_over_dd_exceeds_fixed075": false
+        },
+        "negative_regime_dd_reduction_percentage_points": {
+          "2024_03_to_2024_09": 5.229398096562832,
+          "2025_10_to_2026_04": -0.850522381229879,
+          "2026_04_to_2026_08": 0.0
+        },
+        "passes_all": false
+      }
+    },
+    "independent_edge_established": false,
+    "live_enabled": false,
+    "paper_eligible": false,
+    "verdict": "REJECT_FIXED_HYPOTHESIS_NO_RETUNE"
+  },
+  "live_enabled": false,
+  "orders": 0,
+  "paper_eligible": false,
+  "parameter_search": false,
+  "periods": {
+    "2023_09_to_2024_03": {
+      "end": "2024-03-01",
+      "start": "2023-09-01"
+    },
+    "2024_03_to_2024_09": {
+      "end": "2024-09-01",
+      "start": "2024-03-01"
+    },
+    "2024_09_to_2025_03": {
+      "end": "2025-03-01",
+      "start": "2024-09-01"
+    },
+    "2025_03_to_2025_10": {
+      "end": "2025-10-01",
+      "start": "2025-03-01"
+    },
+    "2025_10_to_2026_04": {
+      "end": "2026-04-01",
+      "start": "2025-10-01"
+    },
+    "2026_04_to_2026_08": {
+      "end": "2026-08-01",
+      "start": "2026-04-01"
+    },
+    "continuous": {
+      "end": "2026-08-01",
+      "start": "2023-09-01"
+    }
+  },
+  "reset_periods_are_not_additive_or_independent": true,
+  "result_digest": "1ad241bf96ee678ee67d7ff1a0311820df98ac6a7fffd5e11f1b1f66204dfe37",
+  "results": {
+    "2023_09_to_2024_03": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.5850137488542622,
+          "fill_count": 26,
+          "max_drawdown": 0.14100726756938808,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 230.86441467294915,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.584525326419748,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "7952e98ff3da566048e415607942103d47543897fa98cf1651a87e0047132b37",
+            "fills_sha256": "befab6fac7d82c7146f220f966c88d22b753ee59059165e6b5a6c1a91e7a938a",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.5850137488542622
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.924631420911319,
+          "total_fees": 4.507254727074604,
+          "total_return": 0.4617288293458983,
+          "turnover": 9.01450945414921
+        },
+        "severe": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.5850137488542622,
+          "fill_count": 26,
+          "max_drawdown": 0.147550571861906,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 216.0650745027658,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.5848630262479503,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "f568dad5ef69a2eafb9921d3836d79cb04cb6be8c09648181010d6be1329a1bc",
+            "fills_sha256": "bc62ec0697aef30125a70045224c70c575ba10e149c2c68060f842f524133ff4",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.5850137488542622
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.7629468543403055,
+          "total_fees": 11.169630540503718,
+          "total_return": 0.4321301490055316,
+          "turnover": 8.935704432402973
+        },
+        "stress": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.5850137488542622,
+          "fill_count": 26,
+          "max_drawdown": 0.14362478180097993,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": 224.91566085276582,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.5846600264122144,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "be63500dd1f5e57419989dd6ba74c7454cdbfe4fd3671dd2aba8762684eeac3d",
+            "fills_sha256": "de3d31033c4f157100b744a1da098909c66183a5a323e892880405d5dda55654",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.5850137488542622
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.860299148164805,
+          "total_fees": 6.737140603906506,
+          "total_return": 0.44983132170553164,
+          "turnover": 8.982854138542006
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.4387603116406966,
+          "fill_count": 26,
+          "max_drawdown": 0.10637843896285037,
+          "minimum_cash_usdt": 124.43731250000008,
+          "net_pnl_usdt": 168.57512541190522,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4386969720971515,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "4d9672f7925ba713909ca6be19691d90bff71f5a1b1c05c9517de997f9f55846",
+            "fills_sha256": "9b869371451e3747b57b3b3b5cae5fa99f4eace71518e9011792d2b67c54f890",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4387603116406966
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.942173311423282,
+          "total_fees": 3.3547659787242425,
+          "total_return": 0.33715025082381045,
+          "turnover": 6.709531957448485
+        },
+        "severe": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.4387603116406966,
+          "fill_count": 26,
+          "max_drawdown": 0.11150434272656362,
+          "minimum_cash_usdt": 123.49859374999994,
+          "net_pnl_usdt": 158.22568006313188,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4389374577699215,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ee7500df129ac59a25bb3c79fcdf117158e4fcfc31610eecad57ec325a894941",
+            "fills_sha256": "a87dc6fc0e76181029b4790cb5c7a19816a0c5609657b0c401277ae057a59490",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4387603116406966
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.778271150249575,
+          "total_fees": 8.33465957948143,
+          "total_return": 0.31645136012626374,
+          "turnover": 6.667727663585144
+        },
+        "stress": {
+          "asset_fill_counts": [
+            24,
+            2
+          ],
+          "average_exposure": 0.4387603116406966,
+          "fill_count": 26,
+          "max_drawdown": 0.10842898482906793,
+          "minimum_cash_usdt": 124.06193750000006,
+          "net_pnl_usdt": 164.42084703756132,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4387929796910967,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ffcf3ef78a2f90e58668f2ae36e5863b9ef0383924694e0cdf2b2df3c00038be",
+            "fills_sha256": "100b7b5c9329e2e63bcb3d784ae321e13bcb54015545bcdc1f1d7514d92adcab",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4387603116406966
+          },
+          "rebalance_event_count": 23,
+          "sharpe": 2.87696769462639,
+          "total_fees": 5.019560986479725,
+          "total_return": 0.32884169407512265,
+          "turnover": 6.692747981972966
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            25,
+            3
+          ],
+          "average_exposure": 0.562557286892759,
+          "fill_count": 28,
+          "max_drawdown": 0.13472412740677975,
+          "minimum_cash_usdt": 123.31038870723302,
+          "net_pnl_usdt": 237.0371604349486,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.5620895286916519,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0567f59a0a78f64dfdca8724699e46d7e40c1e666b55e678a445bc2742976c68",
+            "fills_sha256": "131d4330ff81aa9b26df81c7be7dcf73bef5af9f2216538c3fa593706b0da2dd",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.562557286892759
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 3.046364480571922,
+          "total_fees": 4.556627557257445,
+          "total_return": 0.4740743208698972,
+          "turnover": 9.113255114514892
+        },
+        "severe": {
+          "asset_fill_counts": [
+            25,
+            3
+          ],
+          "average_exposure": 0.562557286892759,
+          "fill_count": 28,
+          "max_drawdown": 0.141269696488452,
+          "minimum_cash_usdt": 121.91915321148934,
+          "net_pnl_usdt": 222.15605834551255,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.5624084243547971,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "f3831a29ce5df833a269aaf2f10fcc31c63ecfec489f12db730d47ff161c4a34",
+            "fills_sha256": "bbfe73b4970470fbf88e0b0238f3bca81eff25bd5172dc77e74c29742374c096",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.562557286892759
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 2.882469528836087,
+          "total_fees": 11.294757494179649,
+          "total_return": 0.4443121166910251,
+          "turnover": 9.03580599534372
+        },
+        "stress": {
+          "asset_fill_counts": [
+            25,
+            3
+          ],
+          "average_exposure": 0.562557286892759,
+          "fill_count": 28,
+          "max_drawdown": 0.13734291356185957,
+          "minimum_cash_usdt": 122.75316506316068,
+          "net_pnl_usdt": 231.0566385047904,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.5622168046272551,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0588d16cf9db2a3fa27cb4d594790ec2b5d81071824d0f24e4416e3b7a3d0a87",
+            "fills_sha256": "2cf32b076522406f474ed951a7e40bd646b561b64335e79748e30c79d82f0ed5",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.562557286892759
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 2.9811428589425772,
+          "total_fees": 6.811616364266284,
+          "total_return": 0.4621132770095808,
+          "turnover": 9.082155152355043
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.17458639707835477,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 668.5880583902242,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684982,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ac4c54f0514c6103532ae492d26dded7860ecd9b52b6c7bc6fc8c780daa543a9",
+            "fills_sha256": "fb2527f2af806897c68bbb1520b7600ceb7765921fc09dd28a5ea71183cb998b",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 4.45756403331544,
+          "total_fees": 1.66925831570693,
+          "total_return": 1.3371761167804483,
+          "turnover": 3.33851663141386
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.17458639707835488,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 662.7596872775514,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684982,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "862897ea56d3ed4d33059d997448f9673b1aff8abd71745aebbd99c643686d09",
+            "fills_sha256": "548b67fbdee19014771f3be9831e6dc6b87cca06e34b25b54b55f5609c1e9385",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 4.430207014583118,
+          "total_fees": 4.1610674729110695,
+          "total_return": 1.3255193745551028,
+          "turnover": 3.3288539783288553
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.17458639707835488,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": 666.253215365336,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684982,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "3593008ea1535502e930e320b79a5968e09027ac345a4924d6dda8e1ecb3ce38",
+            "fills_sha256": "2d9b7aeff8925e71798ed3ca588eadb1d9e0dea1239cf90fbd34d054a568028c",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 4.446691195935533,
+          "total_fees": 2.5008845197727454,
+          "total_return": 1.332506430730672,
+          "turnover": 3.334512693030327
+        }
+      }
+    },
+    "2024_03_to_2024_09": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.386219401631913,
+          "fill_count": 27,
+          "max_drawdown": 0.2695903200496228,
+          "minimum_cash_usdt": 119.03216068037153,
+          "net_pnl_usdt": -60.31238593342292,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.38609540030145195,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "b71cb35d3f8ce073092fecaab3f7a7546416b9e0f9ca09da50f8559f880e7ed5",
+            "fills_sha256": "cf3ce5ec11ef147d922b270e5bd7e1e16542c92c5e557c73b70ebb8b8799dde0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.386219401631913
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.7466149196684881,
+          "total_fees": 4.912655250701317,
+          "total_return": -0.12062477186684584,
+          "turnover": 9.825310501402635
+        },
+        "severe": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.386219401631913,
+          "fill_count": 27,
+          "max_drawdown": 0.2845053014916116,
+          "minimum_cash_usdt": 115.27871936915022,
+          "net_pnl_usdt": -70.99861698199894,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3865372751511532,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "f5c236799e544610f454bf5f8a0e207dff45de578abe8d3a6b0bd602d8eb4327",
+            "fills_sha256": "c2bb4bc29d7fd53a19de0f6e53b837a7c62a04337eba16233f22ff90b2903b55",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.386219401631913
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.9143709180756909,
+          "total_fees": 12.160988298563103,
+          "total_return": -0.14199723396399788,
+          "turnover": 9.728790638850482
+        },
+        "stress": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.386219401631913,
+          "fill_count": 27,
+          "max_drawdown": 0.27558682945787605,
+          "minimum_cash_usdt": 117.51964459881162,
+          "net_pnl_usdt": -64.61337420406093,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.38627183346481436,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "875e75667b2fd2fa5c11ab20de002ede411fae8bee3f33437973e279b42de7d3",
+            "fills_sha256": "c65c08cf04c15d136b1b1bbb85374693f0916aa14b136aecb516b625b14cc27f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.386219401631913
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.8138983306497551,
+          "total_fees": 7.339940316931956,
+          "total_return": -0.12922674840812187,
+          "turnover": 9.786587089242607
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.2896645512239347,
+          "fill_count": 27,
+          "max_drawdown": 0.20651462926903197,
+          "minimum_cash_usdt": 211.87333461086638,
+          "net_pnl_usdt": -44.56922942154723,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2893969672787806,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "531b6423a134aad51918580daa6863a3bcbb00bdf5593c7bd540f7ebf5fe2d06",
+            "fills_sha256": "237aa1d77681259e33348774f400ceabc6df932885a762e6ac3e90da7e3f96db",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.2896645512239347
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.758822890696273,
+          "total_fees": 3.683915706325732,
+          "total_return": -0.08913845884309446,
+          "turnover": 7.367831412651462
+        },
+        "severe": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.2896645512239347,
+          "fill_count": 27,
+          "max_drawdown": 0.21860664367322213,
+          "minimum_cash_usdt": 207.68767270536722,
+          "net_pnl_usdt": -52.875199291560925,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.28964478718524217,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "37afc713ea1c095ad68fcc560f4a069f030caf3bc2019cb40aeaa03b28b234df",
+            "fills_sha256": "71a86674f48a3a33576836897cabcc878fc2b4a029362b0274f92cab2ee314d1",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.2896645512239347
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.9275215954393657,
+          "total_fees": 9.141118334176074,
+          "total_return": -0.10575039858312185,
+          "turnover": 7.312894667340859
+        },
+        "stress": {
+          "asset_fill_counts": [
+            18,
+            9
+          ],
+          "average_exposure": 0.2896645512239347,
+          "fill_count": 27,
+          "max_drawdown": 0.21136986661510848,
+          "minimum_cash_usdt": 210.19081300955088,
+          "net_pnl_usdt": -47.90704784625582,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2894959613691721,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "fa3405f1090567815542f5c9f401bd38b1f197927feb09765bc18cbda2efe1e9",
+            "fills_sha256": "f96b5a2db17a5faea8775ce26d0fb62e16e07cd9a9db67f224b293fc71e81f40",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.2896645512239347
+          },
+          "rebalance_event_count": 22,
+          "sharpe": -0.8264771011914207,
+          "total_fees": 5.509357797236105,
+          "total_return": -0.09581409569251165,
+          "turnover": 7.345810396314805
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            20,
+            10
+          ],
+          "average_exposure": 0.3733000906618314,
+          "fill_count": 30,
+          "max_drawdown": 0.21683794463157868,
+          "minimum_cash_usdt": 118.83080932392602,
+          "net_pnl_usdt": -45.31549029658605,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.37266224712491064,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "a02644f25602d5003519d0352d91291e52c3985b45f1c66b25b0553d7b8444b3",
+            "fills_sha256": "210fa58e15c1a69708e851eff9a15010a52267f4aa48667f2aa0796e809ae16a",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3733000906618314
+          },
+          "rebalance_event_count": 25,
+          "sharpe": -0.5873446113225087,
+          "total_fees": 4.9169082088062765,
+          "total_return": -0.0906309805931721,
+          "turnover": 9.833816417612551
+        },
+        "severe": {
+          "asset_fill_counts": [
+            20,
+            10
+          ],
+          "average_exposure": 0.3733000906618314,
+          "fill_count": 30,
+          "max_drawdown": 0.2328941389158553,
+          "minimum_cash_usdt": 115.07995933500939,
+          "net_pnl_usdt": -56.245574242413056,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3729884367836444,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "8f54a94f519fe570c4a4fb5785a411a465f9c8be231cc8d483edf7e17984377d",
+            "fills_sha256": "594948b19177c4e7ed8951d4f709adca0d43ecd05aecf46a284a77fea877afb0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3733000906618314
+          },
+          "rebalance_event_count": 25,
+          "sharpe": -0.7695207414677289,
+          "total_fees": 12.170792370091863,
+          "total_return": -0.11249114848482611,
+          "turnover": 9.736633896073492
+        },
+        "stress": {
+          "asset_fill_counts": [
+            20,
+            10
+          ],
+          "average_exposure": 0.3733000906618314,
+          "fill_count": 30,
+          "max_drawdown": 0.22329284849224773,
+          "minimum_cash_usdt": 117.31931896017585,
+          "net_pnl_usdt": -49.71432744010418,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3727924959998066,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "29a41f5cd8721597eed4cd6bb24db6391b7e45babaf551bd9eace85676ff9a7d",
+            "fills_sha256": "1cb37d9f4ab99b530cd4c03a9c6030c101aa977758fc6110d47915aaf55ecfac",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3733000906618314
+          },
+          "rebalance_event_count": 25,
+          "sharpe": -0.6603724848440408,
+          "total_fees": 7.346117897036976,
+          "total_return": -0.09942865488020836,
+          "turnover": 9.794823862715969
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.3001329071325556,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -18.833697559905605,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981884057971014,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "b72a7839bc4f8b864713805922e3580ca46bc7cfc20f9d2ef9687de66773c48b",
+            "fills_sha256": "5f89c3a7700b2a79507bbd55ca05c7b4a04abca21a4ff5dc61a08b1c6eab7492",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.14014972214046595,
+          "total_fees": 0.9811484498909844,
+          "total_return": -0.03766739511981121,
+          "turnover": 1.9622968997819688
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.3001329071325557,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -21.23353021042612,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981884057971014,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "903f0ed26f91d79265db3748d8c0a8de9d0bf8f7ea15cf936214f7dfa5cc2718",
+            "fills_sha256": "0f1d7193058e744e6c3c4c8fa4c733a89c6dda5aa2a015756cedcff8a704380b",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.12219377952962404,
+          "total_fees": 2.4467987574023535,
+          "total_return": -0.04246706042085224,
+          "turnover": 1.9574390059218827
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.3001329071325556,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": -19.79506951386084,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981884057971012,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "be7d4f9ed4f7d5586f30f008c20f65a9720e2ea1c073d05db989b3f8749bb060",
+            "fills_sha256": "be9a4a354157808e13d5d1fbe9948b4efcecc1fd2e6498728b306d9da9bc7c50",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.13296338845101524,
+          "total_fees": 1.4702661649216735,
+          "total_return": -0.03959013902772168,
+          "turnover": 1.9603548865622316
+        }
+      }
+    },
+    "2024_09_to_2025_03": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.4838709677419355,
+          "fill_count": 22,
+          "max_drawdown": 0.08872296358744014,
+          "minimum_cash_usdt": 2.842170943040401e-14,
+          "net_pnl_usdt": 184.7212477770742,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.48439558013501816,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "12fb7d3084ee872d4217d5c98cca510364d154582e0f782d3ce81da7408b6006",
+            "fills_sha256": "30e6a82632fd5592deaa9e0f7b68b113c3bc549c228c4cf10efe06c8d5c9129f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4838709677419355
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.399294532916444,
+          "total_fees": 1.6081471888043195,
+          "total_return": 0.36944249555414843,
+          "turnover": 3.2162943776086386
+        },
+        "severe": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.4838709677419355,
+          "fill_count": 22,
+          "max_drawdown": 0.08933111840056318,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 180.2459418039094,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.48450635820890897,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "5ab8a957f572790f70a48fa6e58959a70cb45e00ee37d755d8deb45d22a087aa",
+            "fills_sha256": "dfcb1e95272ba4e95e0157fe136366f9b25342ac30e084efe14fa5e41a041ae9",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.4838709677419355
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.351151662897214,
+          "total_fees": 4.006807857815727,
+          "total_return": 0.3604918836078188,
+          "turnover": 3.2054462862525814
+        },
+        "stress": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.4838709677419355,
+          "fill_count": 22,
+          "max_drawdown": 0.08896615640386407,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 182.9277304734087,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4844398788535037,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "07d5181d6d223b210ef59ae00fde9456ae23289a89cc000c2c68931e5acba15c",
+            "fills_sha256": "2d9e7d34173dbb796acc4c3fb20f1bcc2937b4c0c631bd1a96e62eb2bd41c403",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4838709677419355
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.380068477837406,
+          "total_fees": 2.408934383478581,
+          "total_return": 0.3658554609468174,
+          "turnover": 3.211912511304775
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.3629032258064516,
+          "fill_count": 22,
+          "max_drawdown": 0.06700346384044742,
+          "minimum_cash_usdt": 135.37311487512545,
+          "net_pnl_usdt": 135.04335415849,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.36361779000547295,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0d643624a558dd48719b331e26c3ade3246449c59073d7be77b90a67e710ef31",
+            "fills_sha256": "270e0b863b69d40c9dfe81f663c16bc2da8f4a5c30a21d2b7a6da9b1f44bda3f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3629032258064516
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.3943423977123,
+          "total_fees": 1.1784325715087254,
+          "total_return": 0.27008670831698,
+          "turnover": 2.3568651430174508
+        },
+        "severe": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.3629032258064516,
+          "fill_count": 22,
+          "max_drawdown": 0.06746256129168138,
+          "minimum_cash_usdt": 134.9390793782598,
+          "net_pnl_usdt": 131.8515447707087,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.363695240888925,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "d0c99e9fa75f2cfe71a4391d49f3bd22425a2ad756cb5b58152da1d2b8784677",
+            "fills_sha256": "21b1e7ea74c0da8a162d8ae4ca23ee64819c3978f14e1fabee3abcb756eac4b1",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3629032258064516
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.344997894881621,
+          "total_fees": 2.9393531842609395,
+          "total_return": 0.2637030895414174,
+          "turnover": 2.351482547408751
+        },
+        "stress": {
+          "asset_fill_counts": [
+            22,
+            0
+          ],
+          "average_exposure": 0.3629032258064516,
+          "fill_count": 22,
+          "max_drawdown": 0.06718705041315531,
+          "minimum_cash_usdt": 135.199396071641,
+          "net_pnl_usdt": 133.76500301249283,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.36364875778064937,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "39c63f92052e9fcaaa461cfa8363375e186f8738a41f77e7fc7056d8c8436f9d",
+            "fills_sha256": "e76fa01bbd3599d462f401d06c20cc9062a1ac9f320d34cd2176de34089408ea",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.3629032258064516
+          },
+          "rebalance_event_count": 22,
+          "sharpe": 2.3746403449243085,
+          "total_fees": 1.7660125159678515,
+          "total_return": 0.26753000602498567,
+          "turnover": 2.3546833546238015
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            25,
+            0
+          ],
+          "average_exposure": 0.47626728110599076,
+          "fill_count": 25,
+          "max_drawdown": 0.08872296358744025,
+          "minimum_cash_usdt": 2.842170943040401e-14,
+          "net_pnl_usdt": 184.8622394100541,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4769028671029321,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0b1fa68be1961f0b3ff9faca3e6f20d819b77ab8f279a293d8c187051f2a50da",
+            "fills_sha256": "3c11053339eaa0639b5ad8ab8e2ed23242c210f8891e493cf131d5116de6a966",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.47626728110599076
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 2.437897700505612,
+          "total_fees": 1.6122407102575096,
+          "total_return": 0.36972447882010817,
+          "turnover": 3.2244814205150187
+        },
+        "severe": {
+          "asset_fill_counts": [
+            25,
+            0
+          ],
+          "average_exposure": 0.47626728110599076,
+          "fill_count": 25,
+          "max_drawdown": 0.08933111840056285,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 180.31607240697267,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4769666367848767,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ca791e588035404aa8d8895d66c7440004f8c256009999bb8a18e9856d040874",
+            "fills_sha256": "8dfce3daf1919d4211bb0b07126ba5c2ab7049f3c318ebf2e979554a74a6074d",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.47626728110599076
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 2.3882233515154385,
+          "total_fees": 4.015236595550064,
+          "total_return": 0.36063214481394534,
+          "turnover": 3.21218927644005
+        },
+        "stress": {
+          "asset_fill_counts": [
+            25,
+            0
+          ],
+          "average_exposure": 0.47626728110599076,
+          "fill_count": 25,
+          "max_drawdown": 0.08896615640386396,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 183.0398952343685,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4769283824798257,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "3f1f59d9b4eb9ffc84ffbb8c72dc73012d0ec08491ae8d1eb61a34fc43235a18",
+            "fills_sha256": "782e3c686791601c6fcf2783d542865e07842eff24e4a4f6c726ffa900dd67bc",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.47626728110599076
+          },
+          "rebalance_event_count": 25,
+          "sharpe": 2.418057119720372,
+          "total_fees": 2.4146401078610182,
+          "total_return": 0.36607979046873695,
+          "turnover": 3.21952014381469
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.2681621136434016,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 218.36493534749778,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.998158379373849,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "8d8dbc805c5b7f7bded6773b1ec8ffe63be60627decc47327cc37a95891761a8",
+            "fills_sha256": "1fd9cc4069822473ae6c2d7447264d98d277066d3822e6e3c18e9dc19d39f78b",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.708460325928532,
+          "total_fees": 1.218584518867364,
+          "total_return": 0.4367298706949956,
+          "turnover": 2.437169037734728
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.2681621136434016,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 214.7820667673551,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.998158379373849,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0133a621b8e98358f5de4cb022933ae013d03eff4d1fc8c256c96205fe557005",
+            "fills_sha256": "3f62d5b34df1d6520391a9a5257bcef37d062c7258ec62107857b4854fb49e9d",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.6881470458908352,
+          "total_fees": 3.038316544314086,
+          "total_return": 0.42956413353471024,
+          "turnover": 2.430653235451268
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.2681621136434016,
+          "minimum_cash_usdt": 1.1368683772161603e-13,
+          "net_pnl_usdt": 216.92963969598244,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981583793738488,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "9324bfa89236658e322b3c4fb04a48e920a1145a6f7899cf47940bbe0e90e604",
+            "fills_sha256": "95247f1c384b8484f79692a587ead98d39e9cdeed19afed770082cd641dc0243",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.700348380455207,
+          "total_fees": 1.8258866594782734,
+          "total_return": 0.4338592793919649,
+          "turnover": 2.434515545971031
+        }
+      }
+    },
+    "2025_03_to_2025_10": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            8,
+            16
+          ],
+          "average_exposure": 0.43784099766173035,
+          "fill_count": 24,
+          "max_drawdown": 0.12545287622448165,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 158.98838602171438,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4366644591914478,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "78ee0c2b506b514f0baacad3219adc6ef9cf5ab9d32e93a9f553b7b64803cf64",
+            "fills_sha256": "c40787d2c479681fca9f0382817e846dda0cf4f466214953b559344ffa3855d7",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.5579538487363607e-13,
+            "target_mean_exposure_engine_field": 0.43784099766173035
+          },
+          "rebalance_event_count": 20,
+          "sharpe": 1.9520250702710813,
+          "total_fees": 4.032512993014333,
+          "total_return": 0.3179767720434288,
+          "turnover": 8.065025986028663
+        },
+        "severe": {
+          "asset_fill_counts": [
+            8,
+            16
+          ],
+          "average_exposure": 0.43784099766173035,
+          "fill_count": 24,
+          "max_drawdown": 0.1320647808092028,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 147.30106193439352,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4368758816201377,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "4c622ed9083dcc3adc13fe281eb06ed818fa7f51131acbd0a36842eff0d0def3",
+            "fills_sha256": "c36221e688ceab22d48560c04d031465568ba22898dd6ccf2b3dd406dbe07778",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.43784099766173035
+          },
+          "rebalance_event_count": 20,
+          "sharpe": 1.8317592551886743,
+          "total_fees": 9.99310238424334,
+          "total_return": 0.29460212386878704,
+          "turnover": 7.994481907394666
+        },
+        "stress": {
+          "asset_fill_counts": [
+            8,
+            16
+          ],
+          "average_exposure": 0.43784099766173035,
+          "fill_count": 24,
+          "max_drawdown": 0.12810357760898627,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 154.28978827184903,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4367489014237754,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ed5313f2c4b1c88f94909fd5d389d4269d18270337992ee075679fc48f2e2fe9",
+            "fills_sha256": "c5f7578332cd24a599b19813de3d96aa0dcf595fcb60f62f7e5f5c408b55c19d",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.43784099766173035
+          },
+          "rebalance_event_count": 20,
+          "sharpe": 1.9041249791769024,
+          "total_fees": 6.027510281469254,
+          "total_return": 0.30857957654369805,
+          "turnover": 8.03668037529234
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            9,
+            16
+          ],
+          "average_exposure": 0.32838074824629776,
+          "fill_count": 25,
+          "max_drawdown": 0.09507448214834602,
+          "minimum_cash_usdt": 127.30292756596481,
+          "net_pnl_usdt": 117.78617452607776,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.327966496417133,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "27e3060ad99a4fbd1cd34e773ae22450ddaa642ea94fb837f357679621c0058d",
+            "fills_sha256": "01261c34ba7a3fd97236736a0b8c62b225b63c6b31f8ce61b72978b62b0194e3",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.32838074824629776
+          },
+          "rebalance_event_count": 21,
+          "sharpe": 1.9559536635974277,
+          "total_fees": 2.9867606893150285,
+          "total_return": 0.23557234905215552,
+          "turnover": 5.973521378630057
+        },
+        "severe": {
+          "asset_fill_counts": [
+            9,
+            16
+          ],
+          "average_exposure": 0.32838074824629776,
+          "fill_count": 25,
+          "max_drawdown": 0.10035100654597584,
+          "minimum_cash_usdt": 125.93860567225767,
+          "net_pnl_usdt": 109.46542130329884,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3281796078784649,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "b46703db7ef1b096c3ddbe0ef2b30df35cd90ef3d784d2db382cdff748082ed1",
+            "fills_sha256": "4562ae149013425372d44d705e3712ae88408179f61b55e9fdd4c1eba28b1c1a",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.32838074824629776
+          },
+          "rebalance_event_count": 21,
+          "sharpe": 1.8341773271293114,
+          "total_fees": 7.424915056697094,
+          "total_return": 0.21893084260659768,
+          "turnover": 5.939932045357675
+        },
+        "stress": {
+          "asset_fill_counts": [
+            9,
+            16
+          ],
+          "average_exposure": 0.32838074824629776,
+          "fill_count": 25,
+          "max_drawdown": 0.09718735439207538,
+          "minimum_cash_usdt": 127.14209337425565,
+          "net_pnl_usdt": 114.44712838098636,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3280516165699448,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "af79c59a1a019fbeebb447a8e48dbc4bfb73a4905efd214f2a01f15b28c892ad",
+            "fills_sha256": "d72164101b53c50916282a9c57c5cbd0a52ee1dd127752795be2b115beaee832",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.32838074824629776
+          },
+          "rebalance_event_count": 21,
+          "sharpe": 1.9074799183755147,
+          "total_fees": 4.470030270923348,
+          "total_return": 0.22889425676197273,
+          "turnover": 5.96004036123113
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            11,
+            17
+          ],
+          "average_exposure": 0.4230319563522993,
+          "fill_count": 28,
+          "max_drawdown": 0.15291001297450113,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 118.67990941920148,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.42248309376390725,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "6b5f7f30a3d3b1430a134a290dd3a0b5e66b951c7cfcfedfb7b59462f61b2a23",
+            "fills_sha256": "fd0cccc0404ec1b26f96355345141ac715fbd02801e0d6fddea7f038cbfeca51",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.2737367544323206e-13,
+            "target_mean_exposure_engine_field": 0.4230319563522993
+          },
+          "rebalance_event_count": 24,
+          "sharpe": 1.5748851340934937,
+          "total_fees": 4.092102892561395,
+          "total_return": 0.23735981883840296,
+          "turnover": 8.184205785122789
+        },
+        "severe": {
+          "asset_fill_counts": [
+            11,
+            17
+          ],
+          "average_exposure": 0.4230319563522993,
+          "fill_count": 28,
+          "max_drawdown": 0.15972837590459243,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 107.02497489119078,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.42268142174499607,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "19daa1c5b346020a809386b513ac4d4ee82bf52b31bdea5671cb89128e22bb6f",
+            "fills_sha256": "bbd5dbf7226f7fd1e44e70bd874ef8d9d056cd897303b3e14c70c5132649b8c5",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.2737367544323206e-13,
+            "target_mean_exposure_engine_field": 0.4230319563522993
+          },
+          "rebalance_event_count": 24,
+          "sharpe": 1.4436444566617395,
+          "total_fees": 10.136493586821365,
+          "total_return": 0.21404994978238157,
+          "turnover": 8.109194869457088
+        },
+        "stress": {
+          "asset_fill_counts": [
+            11,
+            17
+          ],
+          "average_exposure": 0.4230319563522993,
+          "fill_count": 28,
+          "max_drawdown": 0.1556438011167537,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 113.99283684116834,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.4225622890526358,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "1603fc10342b5aa9fd74fde9d3addef3438803fd1f4dfbff0ce2929f9255e802",
+            "fills_sha256": "14e37c442ad9f7032f8062a02c5c32056b9b9e0125219f9e9b473b16e2904b6a",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.4230319563522993
+          },
+          "rebalance_event_count": 24,
+          "sharpe": 1.5225333351029693,
+          "total_fees": 6.115553344093263,
+          "total_return": 0.2279856736823367,
+          "turnover": 8.154071125457683
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.20403561404898685,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 166.1003585736599,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9984423676012463,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "41315e061328b209ef81bd030ae2a26c21d30afb8da61b27f24711040708009d",
+            "fills_sha256": "c9690d61d05d4e93c40d3367ab2eda4198ba1ff245b0fac32d17003ee12f6126",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.4053380618965745,
+          "total_fees": 1.166267625199859,
+          "total_return": 0.3322007171473198,
+          "turnover": 2.332535250399718
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.20403561404898685,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 162.77816127737788,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9984423676012462,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "10bfd8b80dbd86ba5d523e023761b6cb4af3e9310847b4c5da0b5da685599646",
+            "fills_sha256": "e71eea2633631ad234802205f4baec9bd172a252dda358193104f0536979e804",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.383983287035395,
+          "total_fees": 2.9079809415823137,
+          "total_return": 0.32555632255475575,
+          "turnover": 2.3263847532658506
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.20403561404898696,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": 164.76948772920397,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9984423676012459,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "1bc1c52cf548f837265517e07569fb4d4fcfb5068d1e2cc9a1352bf5ab10637e",
+            "fills_sha256": "eb11ff1914edb30e6d4249c1b9d16a3aa210dea668ef0e92d63312f7e0a98aeb",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 1.3968087816449606,
+          "total_fees": 1.74752889488121,
+          "total_return": 0.32953897545840793,
+          "turnover": 2.33003852650828
+        }
+      }
+    },
+    "2025_10_to_2026_04": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.11961503208065995,
+          "fill_count": 7,
+          "max_drawdown": 0.2014991178633493,
+          "minimum_cash_usdt": 124.43731250000002,
+          "net_pnl_usdt": -46.45442647349002,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.1186560490892076,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "3c45807b288799b0a9a2ad2ae5d04fad3350e1d52cb813025be7d75483156dbf",
+            "fills_sha256": "2e51d5948fe7ae75a30f23f49e287b619e34d89e259f5f44e2dc65579f841ce0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11961503208065995
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.8893709047018686,
+          "total_fees": 0.715912094742343,
+          "total_return": -0.09290885294698004,
+          "turnover": 1.4318241894846857
+        },
+        "severe": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.11961503208065995,
+          "fill_count": 7,
+          "max_drawdown": 0.20201474793838348,
+          "minimum_cash_usdt": 123.49859375,
+          "net_pnl_usdt": -48.10367457944287,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.1186768118208157,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "1585961c6de3120c658008f077efc97994009b4c34ae9f032aab91a411a7c98b",
+            "fills_sha256": "2d782f3b0c29154dc14380dc0fbb25202ceaecb166dbc4c5b4e2daf6d6238025",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11961503208065995
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.9261266564073862,
+          "total_fees": 1.7894889574299084,
+          "total_return": -0.09620734915888574,
+          "turnover": 1.4315911659439269
+        },
+        "stress": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.11961503208065995,
+          "fill_count": 7,
+          "max_drawdown": 0.20170551558177174,
+          "minimum_cash_usdt": 124.06193750000006,
+          "net_pnl_usdt": -47.11426946390712,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.11866432900514137,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "855bc171b36778d95084ec2b732fa568dbbc486a3921e1cee01a8b349b70dfe4",
+            "fills_sha256": "ef8b1972afc1dc2e644ac2dfe994d0f95cb9a537418fcb86dfc2396e66c78af0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11961503208065995
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.9040972091847497,
+          "total_fees": 1.0738047758162024,
+          "total_return": -0.09422853892781424,
+          "turnover": 1.43173970108827
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.08971127406049496,
+          "fill_count": 7,
+          "max_drawdown": 0.1542984793727492,
+          "minimum_cash_usdt": 218.32798437500009,
+          "net_pnl_usdt": -34.68936843309517,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.0887129390868782,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "d2726c19c61b9be81c47f0733cc9b87652e67604b6b0bc38c511843987234d5a",
+            "fills_sha256": "aa7db7e61134b7f6ae582dbef7086faa8926013146e73e755411117d03affd25",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.08971127406049496
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.9063936207608772,
+          "total_fees": 0.5393347631141696,
+          "total_return": -0.06937873686619034,
+          "turnover": 1.0786695262283392
+        },
+        "severe": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.08971127406049496,
+          "fill_count": 7,
+          "max_drawdown": 0.15469458725030816,
+          "minimum_cash_usdt": 217.62394531250004,
+          "net_pnl_usdt": -35.95761509650386,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.08872479175832455,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "adeca949e9aa2d9827144d248d63cfbcd63409dcf5d0cda3ca8051de9931e6c9",
+            "fills_sha256": "b72be0a5e00246ca9e6ff4478d189e18da6f5a760ca72d612270cb733f022cc0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.08971127406049496
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.9434715803643706,
+          "total_fees": 1.3482100078166095,
+          "total_return": -0.07191523019300772,
+          "turnover": 1.0785680062532876
+        },
+        "stress": {
+          "asset_fill_counts": [
+            0,
+            7
+          ],
+          "average_exposure": 0.08971127406049496,
+          "fill_count": 7,
+          "max_drawdown": 0.15445701049311578,
+          "minimum_cash_usdt": 218.04645312500008,
+          "net_pnl_usdt": -35.196735473509655,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.08871766909785772,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "0916bfd3fad1b9b853f984cc09242e5e0d5bdfd65ae2fb889a5c9575755e2f00",
+            "fills_sha256": "656748b5317e6a26380b8f29ba7aae635fd4ad6ae6f2d89cff9cb27b17715ddf",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.08971127406049496
+          },
+          "rebalance_event_count": 7,
+          "sharpe": -0.9212500117925578,
+          "total_fees": 0.8089766617234397,
+          "total_return": -0.07039347094701931,
+          "turnover": 1.0786355489645862
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            0,
+            8
+          ],
+          "average_exposure": 0.11251145737855178,
+          "fill_count": 8,
+          "max_drawdown": 0.21001217324783372,
+          "minimum_cash_usdt": 124.43731250000002,
+          "net_pnl_usdt": -51.2898107182258,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.11246498780040014,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "af1a003263631c016509339fd3d9f83bf9749b8549bb035117babbff96860dc9",
+            "fills_sha256": "71d9d8a7439127d7da17deff05562977290d07135fe1403f6d7a1ad8c3cb23c9",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11251145737855178
+          },
+          "rebalance_event_count": 8,
+          "sharpe": -1.097677517829706,
+          "total_fees": 0.7111061930402807,
+          "total_return": -0.1025796214364516,
+          "turnover": 1.4222123860805613
+        },
+        "severe": {
+          "asset_fill_counts": [
+            0,
+            8
+          ],
+          "average_exposure": 0.11251145737855178,
+          "fill_count": 8,
+          "max_drawdown": 0.2105088780640615,
+          "minimum_cash_usdt": 123.49859375,
+          "net_pnl_usdt": -52.91387144299148,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.11248296883845936,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "a04681c1057151f2f82ab5e2ea33aecfd6e21e52729a6d91a278db4b6cbba822",
+            "fills_sha256": "f235e0f91764a8243ed70339d38926c4db6a4aeb96da9b0d1c1ad09bfd454a31",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11251145737855178
+          },
+          "rebalance_event_count": 8,
+          "sharpe": -1.137134435469485,
+          "total_fees": 1.7781701778613925,
+          "total_return": -0.10582774288598296,
+          "turnover": 1.4225361422891138
+        },
+        "stress": {
+          "asset_fill_counts": [
+            0,
+            8
+          ],
+          "average_exposure": 0.11251145737855178,
+          "fill_count": 8,
+          "max_drawdown": 0.21021073939407053,
+          "minimum_cash_usdt": 124.06193750000006,
+          "net_pnl_usdt": -51.93942429841558,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.11247214931009634,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "790810f5b8a2449e86097af2da6b1b1b8ead01e03145fa39a28e1ec1b14fa8a3",
+            "fills_sha256": "b5ee5f6b56edee066378e6a7414d13709e3a90a2c0c942d82eaa39ab656d7d9b",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.11251145737855178
+          },
+          "rebalance_event_count": 8,
+          "sharpe": -1.1134942250271294,
+          "total_fees": 1.0667640053220568,
+          "total_return": -0.10387884859683116,
+          "turnover": 1.4223520070960756
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.4984306770735316,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -201.8862299771157,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684984,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "5ee3bd57cccceae2673f0240dd143dd8bd3e679afc38d07179bd607f9fd8b791",
+            "fills_sha256": "82ccb26cc7c7e4d45e5ae301142d46cdd42fd2c1a1740515fcc011b2aec585f0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -1.9470868579907494,
+          "total_fees": 0.7979126817055889,
+          "total_return": -0.4037724599542314,
+          "turnover": 1.5958253634111779
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.4984306770735316,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -203.37308214286938,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684982,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "1ea83fb2dafe74005fbf702290452913f40189f26fbe68ad4d9b7f0c1072818a",
+            "fills_sha256": "11377496205f2d70d7bbb2122287dac4c701bbc7a0d363fd2c4108dcc3c837be",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -1.9684861251130736,
+          "total_fees": 1.990308652308511,
+          "total_return": -0.40674616428573873,
+          "turnover": 1.5922469218468087
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.4984306770735315,
+          "minimum_cash_usdt": 1.7053025658242404e-13,
+          "net_pnl_usdt": -202.48186233153126,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9981684981684977,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "9f252701fdb57efb78f9b545c074f9bbb5dd1ac2ae43d8c6907ecafab5397296",
+            "fills_sha256": "b4e970d6260199e2f644c9728eecb2ad53afc9b3e1132172c048aa7ec66f5431",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -1.9556785288474283,
+          "total_fees": 1.1958243129171608,
+          "total_return": -0.4049637246630625,
+          "turnover": 1.594432417222881
+        }
+      }
+    },
+    "2026_04_to_2026_08": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.20994645878856755,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -99.58193911686425,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2007207669443823,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ec1650e02abbcd08f88b6fe7443f6f8e705c981533da92d29e74da0a1b6a948d",
+            "fills_sha256": "3fbb9eda093117d8a4d5d9e6bc7d3ddc5765f222f50268154caf5526750e5142",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.4210854715202004e-14,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.431125589281996,
+          "total_fees": 0.9003193792633981,
+          "total_return": -0.1991638782337285,
+          "turnover": 1.8006387585267962
+        },
+        "severe": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.21086014550634669,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -101.5982732515307,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.20080214284580555,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "d2aa809522007c39a121fff12eec98cbf9b0ef838e99066d2e23f3fa97c046c1",
+            "fills_sha256": "d3e55262c00eadf983d0b9eae57e32fc2fb4e973699aae3a043bba934ce8708f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.532694128860863,
+          "total_fees": 2.2453833613093592,
+          "total_return": -0.2031965465030614,
+          "turnover": 1.7963066890474875
+        },
+        "stress": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.21016439928175779,
+          "minimum_cash_usdt": 1.4210854715202004e-14,
+          "net_pnl_usdt": -100.3896952487861,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2007533080093081,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "89a59a138900e52b5a93f17bbb9e1e2993b7b3d20da9a19b6e25e0eb527c3cab",
+            "fills_sha256": "f7d291aaceba232f15c13f7c50e525db65c08edb5d80c9d4ab433d6f8a66fb2d",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.472530022613389,
+          "total_fees": 1.3491926159958971,
+          "total_return": -0.2007793904975722,
+          "turnover": 1.7989234879945295
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            5,
+            0
+          ],
+          "average_exposure": 0.15082079343365254,
+          "fill_count": 5,
+          "max_drawdown": 0.16027386327812043,
+          "minimum_cash_usdt": 116.76709933471608,
+          "net_pnl_usdt": -75.86326347047195,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.1499408454637873,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "a9516c5775d83aad2ef46927f8158cd5ba4440e1d488ca5a70de84435d6c4bf9",
+            "fills_sha256": "1d38a6917281225f6746835f3f61a14301d837a6c0c5451038a861912512df8f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.15082079343365254
+          },
+          "rebalance_event_count": 5,
+          "sharpe": -4.434983532276793,
+          "total_fees": 0.6905273651239905,
+          "total_return": -0.1517265269409439,
+          "turnover": 1.381054730247981
+        },
+        "severe": {
+          "asset_fill_counts": [
+            5,
+            0
+          ],
+          "average_exposure": 0.15082079343365254,
+          "fill_count": 5,
+          "max_drawdown": 0.1610401138690829,
+          "minimum_cash_usdt": 116.52780412153355,
+          "net_pnl_usdt": -77.46477523580126,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.15000875148016596,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "c3a4c073f46a4e9dd12e8fa2d3abf8b05949a9137d4f797556873b4f13d4a290",
+            "fills_sha256": "a7c94edef1cdad8bef1b54e5637c9968d8a97cbd1b88597ce9428da2b2135b5c",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.15082079343365254
+          },
+          "rebalance_event_count": 5,
+          "sharpe": -4.537457345125444,
+          "total_fees": 1.7232256566179591,
+          "total_return": -0.1549295504716025,
+          "turnover": 1.3785805252943673
+        },
+        "stress": {
+          "asset_fill_counts": [
+            5,
+            0
+          ],
+          "average_exposure": 0.15082079343365254,
+          "fill_count": 5,
+          "max_drawdown": 0.16046662811122436,
+          "minimum_cash_usdt": 116.67122302264696,
+          "net_pnl_usdt": -76.50460742714982,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.1499680071257009,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "66fc62794fdda90bd0c96abc7a3a935d39abbf63eb193e166403d03cea9857c2",
+            "fills_sha256": "4a6024fe189936d93dd68a3cde1cc3a25ee768ea40d001690178a9b1c4a9050f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.15082079343365254
+          },
+          "rebalance_event_count": 5,
+          "sharpe": -4.4767279567425895,
+          "total_fees": 1.0350596133087533,
+          "total_return": -0.15300921485429964,
+          "turnover": 1.380079484411671
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.20994645878856755,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -99.58193911686425,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2007207669443823,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ec1650e02abbcd08f88b6fe7443f6f8e705c981533da92d29e74da0a1b6a948d",
+            "fills_sha256": "3fbb9eda093117d8a4d5d9e6bc7d3ddc5765f222f50268154caf5526750e5142",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.4210854715202004e-14,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.431125589281996,
+          "total_fees": 0.9003193792633981,
+          "total_return": -0.1991638782337285,
+          "turnover": 1.8006387585267962
+        },
+        "severe": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.21086014550634669,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -101.5982732515307,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.20080214284580555,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "d2aa809522007c39a121fff12eec98cbf9b0ef838e99066d2e23f3fa97c046c1",
+            "fills_sha256": "d3e55262c00eadf983d0b9eae57e32fc2fb4e973699aae3a043bba934ce8708f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.532694128860863,
+          "total_fees": 2.2453833613093592,
+          "total_return": -0.2031965465030614,
+          "turnover": 1.7963066890474875
+        },
+        "stress": {
+          "asset_fill_counts": [
+            4,
+            0
+          ],
+          "average_exposure": 0.20109439124487005,
+          "fill_count": 4,
+          "max_drawdown": 0.21016439928175779,
+          "minimum_cash_usdt": 1.4210854715202004e-14,
+          "net_pnl_usdt": -100.3896952487861,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2007533080093081,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "89a59a138900e52b5a93f17bbb9e1e2993b7b3d20da9a19b6e25e0eb527c3cab",
+            "fills_sha256": "f7d291aaceba232f15c13f7c50e525db65c08edb5d80c9d4ab433d6f8a66fb2d",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.20109439124487005
+          },
+          "rebalance_event_count": 4,
+          "sharpe": -4.472530022613389,
+          "total_fees": 1.3491926159958971,
+          "total_return": -0.2007793904975722,
+          "turnover": 1.7989234879945295
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.29256802195605147,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -40.13107714744185,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9972677595628415,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "90b27a6d9d0b5df8497b0def549051185e8561b3b99e66fa94c22603c759d437",
+            "fills_sha256": "62444f337a272893ddb148d0629648071bb64b7ca49092cfb0d8efe9a41de928",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -0.464503826382332,
+          "total_fees": 0.9598297516051624,
+          "total_return": -0.0802621542948837,
+          "turnover": 1.9196595032103245
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.29256802195605147,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": -42.42468842159946,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9972677595628415,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "4ce1886752550ef81bbbdc1d31ff84b6c2c1c214b3606b0037d4646a0c9e1ecf",
+            "fills_sha256": "ea0933f42c7f0f5c1dbbd9ffa5f8eca2c10da9c5cd245066c052989cefabadb4",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -0.5037300023285544,
+          "total_fees": 2.393688085193899,
+          "total_return": -0.08484937684319893,
+          "turnover": 1.9149504681551193
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.29256802195605136,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": -41.04989686254673,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9972677595628414,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "3d2075a80ec26fdd381dbf70caed3d86e9936608d9fbdd88b2ec6288388ad56e",
+            "fills_sha256": "f7af8c7d97a82ee953d2d0738c8d574ee785551de320dc1018da84325e5986ef",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": -0.48022037558791036,
+          "total_fees": 1.4383360286943034,
+          "total_return": -0.08209979372509346,
+          "turnover": 1.9177813715924048
+        }
+      }
+    },
+    "continuous": {
+      "baseline": {
+        "conservative": {
+          "asset_fill_counts": [
+            74,
+            32
+          ],
+          "average_exposure": 0.3803412114571921,
+          "fill_count": 106,
+          "max_drawdown": 0.3443365449097202,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 343.661150048411,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.38039484384932715,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "191df7c85df59f688859b8c32bb399e81d9cb6e5a1b3fbad7379610c98052515",
+            "fills_sha256": "2387f3ef253038d84d3b9338e82a768e64bad4627c9310e46c89ff76df6e07b3",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.3803412114571921
+          },
+          "rebalance_event_count": 96,
+          "sharpe": 0.8397836863724286,
+          "total_fees": 21.596967553108126,
+          "total_return": 0.687322300096822,
+          "turnover": 43.19393510621626
+        },
+        "severe": {
+          "asset_fill_counts": [
+            74,
+            32
+          ],
+          "average_exposure": 0.3803412114571921,
+          "fill_count": 106,
+          "max_drawdown": 0.3474926622128838,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 285.9759633653738,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3805949691221442,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "b06911a2b81fa0d24091d108fcf08c53b14e4ace727fb388c3338924c31bc93f",
+            "fills_sha256": "6a0be06bc97199984d3074bd35917d1937cc7fd77dcddc5d876beec46bac525c",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 0.3803412114571921
+          },
+          "rebalance_event_count": 96,
+          "sharpe": 0.7422744758712475,
+          "total_fees": 51.95824695679028,
+          "total_return": 0.5719519267307476,
+          "turnover": 41.5665975654322
+        },
+        "stress": {
+          "asset_fill_counts": [
+            74,
+            32
+          ],
+          "average_exposure": 0.3803412114571921,
+          "fill_count": 106,
+          "max_drawdown": 0.345478122057443,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 320.11394615497215,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.38047475134885794,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "658631160757306d10cd42380384dbfe067bb9d27c123cc0beca1aaf75c05198",
+            "fills_sha256": "dc6e7a45987c5655804a95bb66e551277c3bd169e7beb080da3707aff8238e69",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.2737367544323206e-13,
+            "target_mean_exposure_engine_field": 0.3803412114571921
+          },
+          "rebalance_event_count": 96,
+          "sharpe": 0.800828603488117,
+          "total_fees": 31.900410319556162,
+          "total_return": 0.6402278923099443,
+          "turnover": 42.5338804260749
+        }
+      },
+      "baseline_times_075": {
+        "conservative": {
+          "asset_fill_counts": [
+            76,
+            32
+          ],
+          "average_exposure": 0.285255908592894,
+          "fill_count": 108,
+          "max_drawdown": 0.2692952290422984,
+          "minimum_cash_usdt": 124.43731250000008,
+          "net_pnl_usdt": 255.12463027094913,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.28534842109003294,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "f7cda34af5c5df6134c0e1dc7fa1f89bb1be3a95325ae2ccc20d540c8b75bdef",
+            "fills_sha256": "bede7f901abe36dde0c77c5219ee9ec5ed5df82b50fe7ad231298f362461e0d0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.285255908592894
+          },
+          "rebalance_event_count": 98,
+          "sharpe": 0.8454950805609492,
+          "total_fees": 14.779263471721196,
+          "total_return": 0.5102492605418982,
+          "turnover": 29.558526943442374
+        },
+        "severe": {
+          "asset_fill_counts": [
+            76,
+            32
+          ],
+          "average_exposure": 0.285255908592894,
+          "fill_count": 108,
+          "max_drawdown": 0.27194795366494084,
+          "minimum_cash_usdt": 123.49859374999994,
+          "net_pnl_usdt": 215.7457830282813,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2854936778815294,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "23b39e00be56dcf8dce6ff7f15660b019cd74b92a956814003eb73a1f1cbd5ef",
+            "fills_sha256": "7ec8acb8c9b3694bc9631010bf33fa796937855f6eed00a31c1d2ff2135b36fc",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.285255908592894
+          },
+          "rebalance_event_count": 98,
+          "sharpe": 0.7469777600414512,
+          "total_fees": 35.92918669659678,
+          "total_return": 0.4314915660565626,
+          "turnover": 28.743349357277417
+        },
+        "stress": {
+          "asset_fill_counts": [
+            76,
+            32
+          ],
+          "average_exposure": 0.285255908592894,
+          "fill_count": 108,
+          "max_drawdown": 0.27025831980692416,
+          "minimum_cash_usdt": 124.06193750000006,
+          "net_pnl_usdt": 239.13268145426514,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.2854064440973416,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "7e4180b5afbef6c4ec28d22d302f77c149fa26b793a1b60964f38b72e8f3ca99",
+            "fills_sha256": "49ba69b0756dbdb1d140964997df98c73052335bc2d7c802c34c9bc8317d80d0",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 0.285255908592894
+          },
+          "rebalance_event_count": 98,
+          "sharpe": 0.8061469656298383,
+          "total_fees": 21.921846498133153,
+          "total_return": 0.4782653629085303,
+          "turnover": 29.229128664177527
+        }
+      },
+      "daily_target_ratchet": {
+        "conservative": {
+          "asset_fill_counts": [
+            83,
+            36
+          ],
+          "average_exposure": 0.3687979339489748,
+          "fill_count": 119,
+          "max_drawdown": 0.35132676810304075,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 317.41033732994816,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3690612491116566,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "a9121423fea72611b677f39b764e105b22b4d3305e7da5c306e643936675ce1b",
+            "fills_sha256": "26f091ec8bdc7186d39369b50f58d6aed20c0a96d8b75938636970d8c606ac30",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 4.547473508864641e-13,
+            "target_mean_exposure_engine_field": 0.3687979339489748
+          },
+          "rebalance_event_count": 109,
+          "sharpe": 0.8203201534450869,
+          "total_fees": 22.1469588681282,
+          "total_return": 0.6348206746598963,
+          "turnover": 44.29391773625636
+        },
+        "severe": {
+          "asset_fill_counts": [
+            83,
+            36
+          ],
+          "average_exposure": 0.3687979339489748,
+          "fill_count": 119,
+          "max_drawdown": 0.3544382574419507,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 260.8852373865348,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.3692285319972723,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "7cd795820575e0e43a53b293978883943c2c122b295deb635b0a1d2f211adde0",
+            "fills_sha256": "ca0ad5b9a644b41909ecef225e5fb3d65dd501f528051c9f14f2bdd45729076f",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.2737367544323206e-13,
+            "target_mean_exposure_engine_field": 0.3687979339489748
+          },
+          "rebalance_event_count": 109,
+          "sharpe": 0.7175426790110249,
+          "total_fees": 53.26993676010063,
+          "total_return": 0.5217704747730696,
+          "turnover": 42.61594940808051
+        },
+        "stress": {
+          "asset_fill_counts": [
+            83,
+            36
+          ],
+          "average_exposure": 0.3687979339489748,
+          "fill_count": 119,
+          "max_drawdown": 0.3524515577424794,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 294.33162298173266,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.36912804947352307,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "8e17f4052d8af1c77ea933aab9cd404388ae6fbaa3bcad9aaf369354f3fa87b9",
+            "fills_sha256": "ef25bbe79075928f120932b1a98515a30dd5804ea32e0e2895e31290abf5115a",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 2.842170943040401e-14,
+            "target_mean_exposure_engine_field": 0.3687979339489748
+          },
+          "rebalance_event_count": 109,
+          "sharpe": 0.779258913362785,
+          "total_fees": 32.70999068944647,
+          "total_return": 0.5886632459634653,
+          "turnover": 43.61332091926196
+        }
+      },
+      "passive_BTC": {
+        "conservative": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.5344397804223774,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 702.1133763383491,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9996870109546165,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "3cfbbe88836de25606f319643502afce219f38a0bdea9f9309828b3366a8e545",
+            "fills_sha256": "93f818cf59901f76ce7b62c565ec435899af3f9e0ab0de0aceb69bc67cd5a134",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 1.1368683772161603e-13,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.883600398385674,
+          "total_fees": 1.70281719253188,
+          "total_return": 1.4042267526766983,
+          "turnover": 3.40563438506376
+        },
+        "severe": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.5344397804223775,
+          "minimum_cash_usdt": 0.0,
+          "net_pnl_usdt": 696.1177966073193,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9996870109546165,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "321b47559244cadaa3fb026a0c82eeeab0b03892e1656dca0da38e869c7766cf",
+            "fills_sha256": "3e13839269e01b86a076cbe15a938e390a0610d8e1b7713f00f711f8d5b63bfa",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.8798589916459075,
+          "total_fees": 4.244671756945575,
+          "total_return": 1.3922355932146386,
+          "turnover": 3.39573740555646
+        },
+        "stress": {
+          "asset_fill_counts": [
+            2,
+            0
+          ],
+          "average_exposure": 1.0,
+          "fill_count": 2,
+          "max_drawdown": 0.5344397804223775,
+          "minimum_cash_usdt": 5.684341886080802e-14,
+          "net_pnl_usdt": 699.7115496110291,
+          "qa": {
+            "actual_mean_marked_gross_exposure": 0.9996870109546165,
+            "buys_after_daily_target_reductions": 0,
+            "equity_marks_sha256": "ec0d313a72546edf091018ae7a58316023a009085ea14b6f4a89e9ca6887b51e",
+            "fills_sha256": "48a7024ffff0facccd2aff8a292cf0560cc2ce519cd3535989d77a173ca73811",
+            "ledger_replay_passed": true,
+            "maximum_reconciliation_error_usdt": 0.0,
+            "target_mean_exposure_engine_field": 1.0
+          },
+          "rebalance_event_count": 1,
+          "sharpe": 0.8821047927128755,
+          "total_fees": 2.5511474154848535,
+          "total_return": 1.3994230992220582,
+          "turnover": 3.4015298873131377
+        }
+      }
+    }
+  },
+  "schema": "nexus.portfolio-risk-cadence-diagnostic-result.v1",
+  "script_sha256_lf": "0e5e16d4164de1c343b949680c6e7d8733f9fceb4d2f2c5e1632232c97073d72",
+  "source_4h_rows_per_asset": 8034,
+  "source_commit": "7383788754e1f7bef8e70e7df0c765b40e49e6ff",
+  "source_hashes": {
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "source_history_preinspected": true
+}
