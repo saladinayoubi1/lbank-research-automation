@@ -38,10 +38,10 @@ ARTIFACT_PREFIX = "nexus-composite-runtime-requalification-"
 MAX_ARCHIVE_BYTES = 8_000_000
 MAX_UNCOMPRESSED_BYTES = 16_000_000
 MAX_ENTRIES = 32
-MAX_JSON_BYTES = 4_000_000
+MAX_JSON_BYTES = 12_000_000
 MAX_JOB_LOG_BYTES = 8_000_000
-MAX_LOG_EVIDENCE_BYTES = 500_000
-MAX_LOG_EVIDENCE_CHUNKS = 16
+MAX_LOG_EVIDENCE_BYTES = 4_000_000
+MAX_LOG_EVIDENCE_CHUNKS = 112
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -175,7 +175,7 @@ def parse_job_log_evidence(blob: bytes) -> bytes:
     )
     chunk_count = int(
         one(
-            r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=([1-9][0-9]?)",
+            r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=([1-9][0-9]{0,2})",
             "physical evidence chunk count",
         )
     )

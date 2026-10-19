@@ -73,11 +73,18 @@ def permit(root,rel):
     }
 
 
-def test_original_repo_allowlist_intentionally_empty_and_no_authority():
+def test_repo_allowlist_has_only_the_separately_reviewed_complete_research_system_and_no_order_authority():
     path=module.ROOT/module.DEFAULT_ALLOWLIST
     value=json.loads(path.read_text("utf8"))
-    assert value==approval_base()
-    assert value["approved_executable_contracts"]==[]
+    for field in ("research_only","paper_only","live_trading_authority",
+                  "automatic_strategy_promotion","qualification_authority"):
+        assert value[field] == approval_base()[field]
+    assert len(value["approved_executable_contracts"]) == 1
+    permit = value["approved_executable_contracts"][0]
+    assert permit["candidate_id"] == "factory_prior_day_sweep_peer_resilience"
+    assert permit["candidate_sha256"] == "ad20bb4b3d18da4b601793c6bdccdf42623187803df7389ffb2b6da3e75be92d"
+    assert permit["system_specification_path"] == "research/complete_systems/failure_test_structural_v1.json"
+    assert permit["review_pr_url"].endswith("/2733")
 
 
 def test_new_executable_grammar_is_not_executable_until_separate_review(tmp_path):
@@ -89,12 +96,12 @@ def test_new_executable_grammar_is_not_executable_until_separate_review(tmp_path
     assert value["orders"]==0 and value["live_enabled"] is False
 
 
-def test_separately_signed_exact_contract_can_pass_only_research_gate(tmp_path):
+def test_signal_only_review_cannot_approve_an_incomplete_system(tmp_path):
     root,rel,_,_=materialized(tmp_path)
     allow=approval_base()
     allow["approved_executable_contracts"]=[permit(root,rel)]
     row=module.inspect_candidate(root,rel,allow)
-    assert row["status"]=="APPROVED_FOR_RESEARCH_SIMULATION_ONLY"
+    assert row["status"]=="REVIEW_REQUIRED_COMPLETE_SYSTEM_SPECIFICATION"
     assert row["global_economic_semantic_novelty_proven"] is False
     assert row["strategy_proven_profitable"] is False
 

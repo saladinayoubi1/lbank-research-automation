@@ -16,6 +16,7 @@ from nexus_strategy_independent_qa import validate_task, verify_receipt
 
 SCHEMA = "nexus.strategy-qualification-gate.v2"
 VERIFY_SCHEMA = "nexus.strategy-qualification-gate-verification.v2"
+COMPOSITE_SCHEMA = "nexus.composite-strategy-qualification-gate.v1"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _WAITING = {"PENDING", "READY", "LEASED", "RUNNING", "VERIFYING"}
@@ -53,6 +54,12 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
     handoff = manager_task.get("qa_handoff_task")
     if not isinstance(handoff, Mapping):
         raise StrategyQualificationError("QA handoff task is unavailable")
+    if handoff.get("schema_version") == "nexus.composite-runtime-qa-task.v1":
+        from nexus_composite_strategy_qualification import evaluate
+        try:
+            return evaluate(manager_task)
+        except ValueError as exc:
+            raise StrategyQualificationError(str(exc)) from exc
     source_sha = str(handoff.get("source_sha", ""))
     try:
         verified_task = validate_task(handoff, source_sha)
@@ -163,6 +170,9 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
+    if isinstance(value, Mapping) and value.get("schema_version") == COMPOSITE_SCHEMA:
+        from nexus_composite_strategy_qualification import verify
+        return verify(value)
     checks = {
         "schema": False,
         "digest": False,

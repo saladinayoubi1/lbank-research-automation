@@ -331,3 +331,19 @@ def test_short_observation_is_no_work_not_broken_transport_or_phantom_qa(monkeyp
         validator=lambda *_: pytest.fail("inconclusive cannot issue QA task"),
     ) is None
     assert "INSUFFICIENT_OBSERVATION_COVERAGE" in capsys.readouterr().err
+
+
+def test_three_digit_shared500_chunk_count_and_upper_bounds():
+    # Byte content gives 100 chunks while staying under the 4 MB cap.
+    # This exercises framing alone; ZIP membership/verifier checks are separate.
+    archive = bytes(range(256))*14_000
+    log = _job_log_blob(archive,chunk_chars=48_000)
+    assert 99 < (len(base64.b64encode(archive))+47_999)//48_000 <= tr.MAX_LOG_EVIDENCE_CHUNKS
+    assert tr.parse_job_log_evidence(log) == archive
+    oversized = log.replace(f"EVIDENCE_SIZE={len(archive)}".encode(),
+                            f"EVIDENCE_SIZE={tr.MAX_LOG_EVIDENCE_BYTES+1}".encode())
+    with pytest.raises(tr.CompositeRuntimeQaTransportError,match="bounds"):
+        tr.parse_job_log_evidence(oversized)
+    bad_count = log.replace(b"EVIDENCE_CHUNK_COUNT=100",b"EVIDENCE_CHUNK_COUNT=113")
+    with pytest.raises(tr.CompositeRuntimeQaTransportError,match="bounds"):
+        tr.parse_job_log_evidence(bad_count)

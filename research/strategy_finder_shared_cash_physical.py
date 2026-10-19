@@ -41,6 +41,61 @@ class SharedCashDiagnosticError(ValueError):
     pass
 
 
+def execution_contract(stop_policy:str="prior_range_v1")->dict[str,Any]:
+    """Expose the actual fixed diagnostic semantics for complete-system review."""
+    if stop_policy not in {"prior_range_v1","signal_bar_low_v1"}:
+        raise SharedCashDiagnosticError("unsupported precommitted stop policy")
+    result = {
+        "schema":"nexus.shared-cash-execution-contract.v1",
+        "market":"bybit_spot_long_only",
+        "symbols":list(SYMBOLS),
+        "decision_timeframe":"15m_with_completed_1h_4h_context",
+        "signal":"reviewed_factory_context_and_entry_at_completed_close",
+        "entry":"next_observable_open_after_signal_close",
+        "initial_shared_cash_usdt":INITIAL_USDT,
+        "max_concurrent_portfolio_positions":1,
+        "simultaneous_signal_priority":list(SYMBOLS),
+        "max_gross_usdt":MAX_GROSS_USDT,
+        "max_nominal_gapless_stop_loss_usdt":MAX_GAPLESS_STOP_LOSS_USDT,
+        "quantity_rounding":"floor_to_8_decimal_places",
+        "range_proxy":"shifted_14_bar_mean_high_minus_low_not_wilder_atr",
+        "stop_range_multiple":STOP_ATR_MULT,
+        "target_r":TARGET_R,
+        "timeout_bars":MAX_HOLD_BARS,
+        "exit_precedence":["gap_stop_at_worse_open","timeout_at_open",
+                           "intrabar_stop_before_target","target","partition_final_close"],
+        "no_trade":["no_reviewed_signal","unavailable_positive_prior_range",
+                    "shared_cash_position_occupied","invalid_stop_geometry",
+                    "no_shared_cash_or_risk_capacity"],
+        "cost_profiles_bps":{name:{"fee":cost[0],"slippage":cost[1]}
+                             for name,cost in COSTS.items()},
+        "partitions":"chronological_60_20_20_cash_reset_per_partition",
+        "portfolio_drawdown_kill":"not_implemented_in_this_research_diagnostic",
+        "historical_holdout":"already_inspected_not_pristine",
+        "minimum_trade_count":None,
+        "paper_eligible":False,"live_enabled":False,"orders":0,
+    }
+    if stop_policy == "signal_bar_low_v1":
+        result.update({
+            "stop_policy":stop_policy,
+            "stop_anchor":"low_of_completed_signal_bar_without_buffer",
+            "range_proxy":"not_used_for_structural_stop",
+            "stop_range_multiple":None,
+            "no_trade":["no_reviewed_signal","shared_cash_position_occupied",
+                        "next_open_at_or_below_signal_low","invalid_stop_geometry",
+                        "no_shared_cash_or_risk_capacity"],
+        })
+    return result
+
+
+def reviewed_stop_policy(contract:Mapping[str,Any])->str:
+    """Only implemented complete contracts may select a stop; no free knobs."""
+    for policy in ("prior_range_v1","signal_bar_low_v1"):
+        if dict(contract) == execution_contract(policy):
+            return policy
+    raise SharedCashDiagnosticError("unsupported complete execution contract requires implementation review")
+
+
 def _digest(obj:dict[str,Any])->str:
     return sha256(json.dumps(obj,sort_keys=True,separators=(",",":"),
                              allow_nan=False).encode("utf-8")).hexdigest()
@@ -95,7 +150,7 @@ def validate_source(
 def replay_shared_cash(
     frames:Mapping[str,pd.DataFrame],
     signals:Mapping[str,np.ndarray],
-    start:int,end:int,profile:str,
+    start:int,end:int,profile:str,*,stop_policy:str="prior_range_v1",
 )->dict[str,Any]:
     """Physical long-only single position, next-open entry, stop-first exit.
 
@@ -107,6 +162,7 @@ def replay_shared_cash(
     """
     if profile not in COSTS:
         raise SharedCashDiagnosticError("only two predetermined cost profiles")
+    execution_contract(stop_policy)
     times,data=validate_source(frames,signals)
     n=len(times)
     if (type(start) is not int or type(end) is not int
@@ -138,15 +194,20 @@ def replay_shared_cash(
                 a=data[symbol]
                 prior_atr=float(a["atr"][i-1])
                 attempts["next_open_intent"]+=1
-                if (not np.isfinite(prior_atr) or prior_atr<=0):
+                if stop_policy=="prior_range_v1" and (not np.isfinite(prior_atr) or prior_atr<=0):
                     denials["UNAVAILABLE_PRIOR_ATR"]+=1
                     continue
                 midpoint=float(a["open"][i])
                 fill=midpoint*(1+slip)
-                stop=fill-STOP_ATR_MULT*prior_atr
+                stop=(float(a["low"][i-1]) if stop_policy=="signal_bar_low_v1"
+                      else fill-STOP_ATR_MULT*prior_atr)
+                if stop_policy=="signal_bar_low_v1" and midpoint<=stop:
+                    denials["NEXT_OPEN_AT_OR_BELOW_SIGNAL_LOW"]+=1
+                    continue
                 target=fill+TARGET_R*(fill-stop)
                 if not 0<stop<fill<target:
-                    denials["INVALID_ATR_STOP_GEOMETRY"]+=1
+                    denials["INVALID_STRUCTURAL_STOP_GEOMETRY" if stop_policy=="signal_bar_low_v1"
+                            else "INVALID_ATR_STOP_GEOMETRY"]+=1
                     continue
                 stop_liquidation=stop*(1-slip)*(1-fee)
                 per_unit_spend=fill*(1+fee)
@@ -170,7 +231,7 @@ def replay_shared_cash(
                 cash-=spent
                 active={
                     "symbol":symbol,"index":i,"entry_open_ms":int(times[i].value//10**6)-GRANULARITY_MS,
-                    "entry_fill":fill,"entry_fee":entry_fee,"qty":qty,
+                    "entry_fill":fill,"entry_mid":midpoint,"entry_fee":entry_fee,"qty":qty,
                     "entry_cash":spent,"stop":stop,"target":target,
                 }
                 attempts["admitted"]+=1
@@ -214,14 +275,34 @@ def replay_shared_cash(
                 pnl=proceeds-active["entry_cash"]
                 cash+=proceeds
                 fees_total+=exit_fee
+                gross=qty*(float(level)-active["entry_mid"])
+                slippage=qty*((active["entry_fill"]-active["entry_mid"])
+                              +(float(level)-exit_fill))
+                friction=slippage+active["entry_fee"]+exit_fee
+                if abs(gross-friction-pnl)>1e-7:
+                    raise SharedCashDiagnosticError("gross/friction/net identity drift")
+                bar_close_ms=int(times[i].value//10**6)
+                open_exit=label in {"STOP_GAP_AT_WORSE_OPEN","TIMEOUT_AT_PHYSICAL_NEXT_OPEN"}
                 closed.append({
                     "symbol":active["symbol"],
                     "entry_open_ms":active["entry_open_ms"],
-                    "exit_event_ms":int(times[i].value//10**6),
+                    "exit_event_ms":bar_close_ms-GRANULARITY_MS if (
+                        stop_policy=="signal_bar_low_v1" and open_exit) else bar_close_ms,
+                    "exit_bar_close_ms":bar_close_ms,
                     "exit_reason":label,
                     "qty":round(qty,8),
+                    "entry_mid":round(active["entry_mid"],8),
+                    "exit_mid":round(float(level),8),
                     "entry_fill":round(active["entry_fill"],8),
                     "exit_fill":round(exit_fill,8),
+                    "entry_fee_usdt":round(active["entry_fee"],8),
+                    "exit_fee_usdt":round(exit_fee,8),
+                    "slippage_usdt":round(slippage,8),
+                    "gross_price_pnl_usdt":round(gross,8),
+                    "total_friction_usdt":round(friction,8),
+                    "exit_clock":("exact_open" if stop_policy=="signal_bar_low_v1" else
+                                  "open_execution_recorded_at_legacy_bar_close")
+                                 if open_exit else "bounded_to_completed_15m_bar",
                     "stop":round(stop,8),"target":round(target,8),
                     "pnl_usdt":round(pnl,8),
                 })
@@ -260,6 +341,10 @@ def replay_shared_cash(
         "positive_trades":sum(t["pnl_usdt"]>0 for t in closed),
         "mean_pnl_usdt":round(net/len(closed),8) if closed else None,
         "fees_paid_usdt":round(fees_total,8),
+        "gross_price_pnl_usdt":round(sum(x["gross_price_pnl_usdt"] for x in closed),8),
+        "slippage_usdt":round(sum(x["slippage_usdt"] for x in closed),8),
+        "total_friction_usdt":round(sum(x["total_friction_usdt"] for x in closed),8),
+        "stop_policy":stop_policy,
         "signals_due_at_next_open":signals_seen,
         "denial_reasons":dict(sorted(denials.items())),
         "attempt_counts":dict(sorted(attempts.items())),
@@ -275,7 +360,8 @@ def replay_shared_cash(
 
 
 def sidecar_summary(
-    frames:Mapping[str,pd.DataFrame],signals:Mapping[str,np.ndarray]
+    frames:Mapping[str,pd.DataFrame],signals:Mapping[str,np.ndarray],*,
+    stop_policy:str="prior_range_v1",
 )->dict[str,Any]:
     """60/20/20 split; runs independent, shared-book paired-cost diagnostics.
 
@@ -294,7 +380,7 @@ def sidecar_summary(
         "validation_already_inspected":(c1,c2),
         "historical_test_already_inspected":(c2,n),
     }.items():
-        out[key]={profile:replay_shared_cash(frames,signals,lo,hi,profile)
+        out[key]={profile:replay_shared_cash(frames,signals,lo,hi,profile,stop_policy=stop_policy)
                   for profile in COSTS}
     core={
         "schema":SCHEMA,

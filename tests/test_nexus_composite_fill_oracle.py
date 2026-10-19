@@ -165,6 +165,10 @@ def test_val40_real_entrypoint_refuses_corrupted_engine_numeric_output(
     import nexus_canonical_paged_history as history
     import nexus_composite_runtime_requalification as val40
     import product_research_runtime as product
+    # This fixture mocks timeframe construction to inject a financial error.
+    # The separate context-audit integration tests exercise real raw frames.
+    import nexus_composite_higher_timeframe_audit as higher
+    monkeypatch.setattr(higher, "audit_features", lambda *args, **kwargs: {})
 
     def _artifact(symbol, tf):
         step = {"minute15": 900_000, "hour1": 3_600_000,
@@ -215,6 +219,7 @@ def test_val40_real_entrypoint_refuses_corrupted_engine_numeric_output(
 
     monkeypatch.setattr(producer, "backtest", broken_backtest)
     candidate = {
+        "candidate_digest": "b" * 64,
         "strategy_config": {"mechanism": "structural_pullback", "risk_variant": 0},
         "mechanism": "structural_pullback",
     }

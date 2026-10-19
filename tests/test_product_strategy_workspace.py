@@ -177,6 +177,11 @@ def test_workspace_gateway_proposal_select_and_hard_execution_gate(server) -> No
     assert b"reviewed" in json.dumps(invalid).encode()
     assert _request(port, "POST", "/api/product/strategy-workspace/propose", {**VALID, "live_enabled": True})[0] == 400
     assert _request(port, "GET", "/api/product/strategy-workspace?debug=1")[0] == 400
+    elliott_id = "research:elliott_wave2_support_v119"
+    assert _request(port, "POST", "/api/product/strategy-workspace/select",
+                    {"strategy_id": elliott_id})[0] == 200
+    assert _request(port, "POST", "/api/product/strategy-workspace/research",
+                    {"strategy_id": elliott_id, "binding_sha256": "0" * 64})[0] == 400
     code, again = _request(port, "GET", "/api/product/strategy-workspace")
     assert code == 200 and len(again["proposals"]) == 1
     assert runtime.paper_events_path.read_bytes() == before

@@ -13,3 +13,44 @@ data/market/** export-ignore
 
 # Pinned SIWC provenance hashes are byte-exact and must survive Windows checkout.
 desktop/nexus-product/vendor/siwc-local/** text eol=lf
+
+# Complete-system review and Developer input identities bind exact committed bytes.
+# Keep these bounded code/data/lock inputs stable on Windows checkouts too.
+nexus_source_system_development.py text eol=lf
+nexus_complete_strategy_system.py text eol=lf
+nexus_mechanism_factory.py text eol=lf
+nexus_composite_strategy_research.py text eol=lf
+research/strategy_finder_shared_cash_physical.py text eol=lf
+scripts/nexus_strategy_finder_executable_intake.py text eol=lf
+scripts/nexus_strategy_finder_shared_cash_eval.py text eol=lf
+nexus_multitimeframe_verified_archive_discovery.py text eol=lf
+research/mechanism_factory_v1.json text eol=lf
+research/intake_candidates/*.json text eol=lf
+research/source_notes/*.json text eol=lf
+research/system_development_requests/*.json text eol=lf
+research/complete_systems/*.json text eol=lf
+research/source_system_economic_requests/*.json text eol=lf
+scripts/nexus_source_system_economic_execution.py text eol=lf
+nexus_source_system_economic_review.py text eol=lf
+research/source_system_economic_reviews/*.json text eol=lf
+research/source_system_economic_results/*.json text eol=lf
+scripts/select_nexus_bybit_replay_artifact.py text eol=lf
+nexus_demo_archive_replay.py text eol=lf
+requirements.lock text eol=lf
+requirements-dev.lock text eol=lf
+
+# Preserve the unchanged V119 engine and its original byte-pinned ledger on Windows.
+research/elliott_v119_wave2_support/retest_v119.py text eol=lf
+product_ui/research-reports/elliott-v119-completed-study.json text eol=lf
+product_ui/research-reports/elliott-v119-fixed-path-accounting-qa.json text eol=lf
+nexus_elliott_v119_entry_witness_qa.py text eol=lf
+product_ui/research-reports/elliott-v119-entry-witness-qa.json text eol=lf
+
+# Source-bound future replay traces use identical code bytes on every platform.
+nexus_composite_signal_trace.py text eol=lf
+nexus_composite_fill_oracle.py text eol=lf
+nexus_composite_runtime_requalification.py text eol=lf
+nexus_composite_higher_timeframe_audit.py text eol=lf
+scripts/nexus_composite_higher_timeframe_archive_qa.py text eol=lf
+research/higher_timeframe_qa/*.json text eol=lf
+

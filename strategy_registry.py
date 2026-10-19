@@ -4,16 +4,16 @@ import hashlib
 import json
 import math
 import re
+from copy import deepcopy
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from phase5_data_binding import CanonicalDataError, validate_canonical_dataset
-from phase5_strategy_factory import EXPERIMENT_SCHEMA, QUALIFICATION_SCHEMA
-from nexus_strategy_qualification_gate import verify_qualification
+from nexus_strategy_qualification_gate import COMPOSITE_SCHEMA, verify_qualification
 
 
 REGISTRY_SCHEMA = "nexus.phase7-strategy-registry.v1"
 MODERN_REGISTRY_SCHEMA = "nexus.strategy-registry-record.v2"
+COMPOSITE_REGISTRY_SCHEMA = "nexus.composite-strategy-registry-record.v1"
 MODERN_REGISTRY_VERIFY_SCHEMA = "nexus.strategy-registry-record-verification.v2"
 HEALTH_SCHEMA = "nexus.phase7-strategy-health.v1"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -55,6 +55,7 @@ def _validate_digest(value: Any, field: str) -> str:
 
 
 def _validate_experiment(experiment: Mapping[str, Any]) -> None:
+    from phase5_strategy_factory import EXPERIMENT_SCHEMA
     if not isinstance(experiment, Mapping) or experiment.get("schema_version") != EXPERIMENT_SCHEMA:
         raise StrategyRegistryError("experiment schema mismatch")
     claimed = experiment.get("experiment_id")
@@ -70,6 +71,7 @@ def _validate_experiment(experiment: Mapping[str, Any]) -> None:
 
 
 def _validate_qualification(qualification: Mapping[str, Any]) -> None:
+    from phase5_strategy_factory import QUALIFICATION_SCHEMA
     if not isinstance(qualification, Mapping) or qualification.get("schema_version") != QUALIFICATION_SCHEMA:
         raise StrategyRegistryError("qualification schema mismatch")
     claimed = qualification.get("qualification_digest")
@@ -90,6 +92,7 @@ def build_strategy_record(
     evidence: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Build one immutable registry record from already-produced deterministic evidence."""
+    from phase5_data_binding import CanonicalDataError, validate_canonical_dataset
     try:
         dataset = validate_canonical_dataset(dataset)
     except CanonicalDataError as exc:
@@ -182,7 +185,7 @@ def evaluate_strategy_health(record: Mapping[str, Any], signals: Mapping[str, An
         core.pop("record_digest", None)
         if claimed != _digest(core):
             raise StrategyRegistryError("registry record digest mismatch")
-    elif record.get("schema_version") == MODERN_REGISTRY_SCHEMA:
+    elif record.get("schema_version") in {MODERN_REGISTRY_SCHEMA, COMPOSITE_REGISTRY_SCHEMA}:
         verification = verify_qualified_strategy_record(record)
         if verification.get("decision") != "pass":
             raise StrategyRegistryError("modern registry record verification failed")
@@ -243,6 +246,8 @@ def build_qualified_strategy_record(
     """
     if not isinstance(qualification, Mapping) or not isinstance(qualification_verification, Mapping):
         raise StrategyRegistryError("modern registry admission requires qualification and verification")
+    if qualification.get("schema_version") == COMPOSITE_SCHEMA:
+        return _build_composite_strategy_record(qualification, qualification_verification)
     computed = verify_qualification(qualification)
     if computed.get("decision") != "pass" or dict(qualification_verification) != computed:
         raise StrategyRegistryError("QUAL-42 verification is missing, stale, or rejected")
@@ -324,6 +329,8 @@ def build_qualified_strategy_record(
 
 
 def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]:
+    if isinstance(value, Mapping) and value.get("schema_version") == COMPOSITE_REGISTRY_SCHEMA:
+        return _verify_composite_strategy_record(value)
     checks = {
         "schema": False,
         "digest": False,
@@ -459,6 +466,92 @@ def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]
 
 
 
+def _build_composite_strategy_record(
+    qualification: Mapping[str, Any],
+    verification: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Native composite case of the existing REG-50 admission, without activation."""
+    computed = verify_qualification(qualification)
+    if computed.get("decision") != "pass" or dict(verification) != computed:
+        raise StrategyRegistryError("composite QUAL-42 verification is missing, stale, or rejected")
+    if (
+        qualification.get("decision") != "QUALIFIED_FOR_REGISTRY"
+        or qualification.get("qualified") is not True
+        or qualification.get("registry_admission_allowed") is not True
+    ):
+        raise StrategyRegistryError("composite QUAL-42 does not authorize registry admission")
+    # The typed qualification verifier reconstructs all native proof fields and
+    # all authority flags. No simple-family pipeline receipt is manufactured.
+    strategy_id = _digest({
+        "strategy_kind": "composite_mechanism",
+        "mechanism": qualification["mechanism"],
+        "timeframe": qualification["timeframe"],
+        "strategy_config_digest": qualification["strategy_config_digest"],
+    })
+    carried = (
+        "family", "mechanism", "timeframe", "variant_id", "config_fingerprint",
+        "source_sha", "candidate_source_sha", "candidate_digest",
+        "research_report_digest", "research_producer_receipt_digest",
+        "producer_workflow_run_id", "runtime_as_of_ms",
+        "requalification_digest", "requalification_verification_digest",
+        "qa_task_digest", "qa_receipt_digest", "qualification_digest",
+        "runtime_evidence", "runtime_evidence_digest", "observation_adequacy",
+        "registration_scope", "economic_edge_established",
+        "pristine_prospective_evidence_present", "owner_shared_500_portfolio_verified",
+        "owner_demo_admission_allowed", "no_minimum_trade_count_gate",
+    )
+    core = {
+        **{key: deepcopy(qualification[key]) for key in carried},
+        "schema_version": COMPOSITE_REGISTRY_SCHEMA,
+        "system_map_node": "REG-50",
+        "strategy_kind": "composite_mechanism",
+        "strategy_id": strategy_id,
+        "strategy_version": _digest({
+            "strategy_id": strategy_id,
+            "qualification_digest": qualification["qualification_digest"],
+        }),
+        "config": deepcopy(qualification["strategy_config"]),
+        "config_sha256": qualification["strategy_config_digest"],
+        "qualification_artifact": deepcopy(dict(qualification)),
+        "qualification_verification": deepcopy(dict(verification)),
+        "qualification_verification_digest": verification["verification_digest"],
+        "lifecycle_state": "QUALIFIED_CANDIDATE",
+        "demo_matrix_member": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "paper_only": True,
+        "live_execution_allowed": False,
+        "deterministic_risk_final_authority": True,
+    }
+    return {**core, "record_digest": _digest(core)}
+
+
+def _verify_composite_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]:
+    checks = {"schema": False, "digest": False, "qualification_binding": False}
+    try:
+        core = dict(value)
+        claimed = core.pop("record_digest", None)
+        checks["schema"] = core.get("schema_version") == COMPOSITE_REGISTRY_SCHEMA
+        checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
+        qualification = core.get("qualification_artifact")
+        verification = core.get("qualification_verification")
+        if isinstance(qualification, Mapping) and isinstance(verification, Mapping):
+            checks["qualification_binding"] = (
+                qualification.get("schema_version") == COMPOSITE_SCHEMA
+                and dict(value) == _build_composite_strategy_record(qualification, verification)
+            )
+    except (ValueError, KeyError, TypeError):
+        pass
+    result = {
+        "schema_version": MODERN_REGISTRY_VERIFY_SCHEMA,
+        "decision": "pass" if all(checks.values()) else "reject",
+        "checks": checks,
+        "record_digest": value.get("record_digest"),
+    }
+    return {**result, "verification_digest": _digest(result)}
+
+
 def build_runtime_candidate_view(
     record: Mapping[str, Any],
     health: Mapping[str, Any],
@@ -470,7 +563,9 @@ def build_runtime_candidate_view(
     preserves cash until a separate reviewed RUNTIME-60 activation contract is
     introduced. This function grants no Paper execution or Live authority.
     """
-    if not isinstance(record, Mapping) or record.get("schema_version") != MODERN_REGISTRY_SCHEMA:
+    if not isinstance(record, Mapping) or record.get("schema_version") not in {
+        MODERN_REGISTRY_SCHEMA, COMPOSITE_REGISTRY_SCHEMA,
+    }:
         raise StrategyRegistryError("runtime candidate requires modern REG-50 record")
     if verify_qualified_strategy_record(record).get("decision") != "pass":
         raise StrategyRegistryError("runtime candidate registry verification failed")

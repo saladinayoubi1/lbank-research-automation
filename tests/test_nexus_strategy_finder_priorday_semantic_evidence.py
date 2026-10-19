@@ -100,4 +100,15 @@ def test_original_source_and_proposal_permit_remain_research_only():
     assert a["live_enabled"] is False
     assert a["orders"]==0
     approved=json.loads((ROOT/"research"/"strategy_finder_executable_intake_allowlist_v1.json").read_text("utf8"))
-    assert approved["approved_executable_contracts"]==[]
+    # The historical signal-only reports remain byte/digest locked above.
+    # PR2733 separately approves exactly one complete-system falsification;
+    # that newer permit does not turn either original report into economic QA.
+    permits=approved["approved_executable_contracts"]
+    assert len(permits)==1
+    assert permits[0]["candidate_sha256"]==ORIGINAL_SHA
+    assert permits[0]["system_specification_path"]=="research/complete_systems/failure_test_structural_v1.json"
+    assert permits[0]["review_pr_url"].endswith("/2733")
+    assert approved["research_only"] is True
+    assert approved["qualification_authority"] is False
+    assert approved["automatic_strategy_promotion"] is False
+    assert approved["live_trading_authority"] is False

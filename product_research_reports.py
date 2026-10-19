@@ -8,6 +8,8 @@ import stat
 from pathlib import Path
 from typing import Any
 
+from product_elliott_research import REPORT_ID as ELLIOTT_REPORT_ID, completed_study
+
 
 class ResearchReportError(ValueError):
     pass
@@ -163,6 +165,10 @@ class ResearchReportStore:
                 })
             except (OSError, KeyError, TypeError, ResearchReportError) as exc:
                 errors.append({"id": label, "status": "rejected", "reason": str(exc)})
+        try:
+            reports.append(completed_study(self.root, safe_json))
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append({"id": ELLIOTT_REPORT_ID, "status": "rejected", "reason": str(exc)})
         return {"contract_version": "nexus.reviewed-research-view.v1", "read_only": True,
                 "paper_only": True, "live_trading_authority": False,
                 "report_count": len(reports), "reports": reports, "errors": errors}

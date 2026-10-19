@@ -1,0 +1,117 @@
+{
+  "already_inspected_history": true,
+  "decision": "PASS_FEATURE_ONLY_QA",
+  "economic_qualification": false,
+  "execution_source_sha": "c8ccce5c9c165d3f6b43240e4f6885d631c07e27",
+  "feature_reconstruction_performed": true,
+  "financial_replay_performed": false,
+  "frozen_strategy_execution_performed": false,
+  "live_trading_authority": false,
+  "paper_execution_authority": false,
+  "request": {
+    "baseline_main_sha": "6e53338f8c283562920b555262cdea4da97b8561",
+    "code_sha256": {
+      "nexus_composite_higher_timeframe_audit.py": "0065534d68204c9928438fe3b50d81ccef1b8b7dfb169cb691f23bf1a011fa1d",
+      "nexus_composite_strategy_research.py": "63854147e0b7ff00bd93383e165912d210ca2e489011b64fe062c4665db8fb80",
+      "scripts/nexus_composite_higher_timeframe_archive_qa.py": "3ec3272b99c2c90bdcd1cdc4439e3ef1f2ee5f08e56ec74e2198cffc634375f0"
+    },
+    "financial_replay_permitted": false,
+    "input_sha256": {
+      "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+      "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+      "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+      "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+      "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+      "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+    },
+    "purpose": "Independently verify the current main composite four 1h/4h context equations and UTC as-of origins only; no frozen strategy replay.",
+    "schema_version": "nexus.composite-higher-timeframe-archive-request.v1",
+    "signal_generation_permitted": false
+  },
+  "request_digest": "de3e0ecb87b8146eda6bbf5a33b0cf7ec0ad8c8f72d718a32d36969a949150f6",
+  "result_digest": "0f35ecfa62fecc22a460d46071081934c9cc62a0761dd111d92059ed26ed6c12",
+  "rows": [
+    {
+      "audit_digest": "3d07e6beb56446b0d18958b6dbd59849247a49b9ddb90203073549168b2815b6",
+      "audited_15m_decisions": 128544,
+      "audited_context_cells": 514176,
+      "datasets": {
+        "hour1": {
+          "binding_sha256": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785538800000,
+          "row_count": 32136,
+          "timeframe": "hour1"
+        },
+        "hour4": {
+          "binding_sha256": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785528000000,
+          "row_count": 8034,
+          "timeframe": "hour4"
+        },
+        "minute15": {
+          "binding_sha256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785541500000,
+          "row_count": 128544,
+          "timeframe": "minute15"
+        }
+      },
+      "first_decision_utc": "2022-12-01T00:15:00+00:00",
+      "input_file_sha256": {
+        "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+        "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+        "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226"
+      },
+      "last_decision_utc": "2026-08-01T00:00:00+00:00",
+      "mismatched_context_cells": 0,
+      "observed_values_sha256": "46ed25ae242984ff47e6fd025dbf1df8a68cc16ba4ca7985d7ce005e08b1aa36",
+      "proof_file": "btcusdt-higher-timeframe-feature-audit.json",
+      "proof_file_sha256": "bf197aa0e13b54650a410d7cbd2c89bcd122aefb9fe9949b4549983b7cda6c2d",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "audit_digest": "34053d4a8de43bced2739695d4124292591f001dd8293572016cdeb7b22ec55f",
+      "audited_15m_decisions": 128544,
+      "audited_context_cells": 514176,
+      "datasets": {
+        "hour1": {
+          "binding_sha256": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785538800000,
+          "row_count": 32136,
+          "timeframe": "hour1"
+        },
+        "hour4": {
+          "binding_sha256": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785528000000,
+          "row_count": 8034,
+          "timeframe": "hour4"
+        },
+        "minute15": {
+          "binding_sha256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+          "first_open_time_ms": 1669852800000,
+          "last_open_time_ms": 1785541500000,
+          "row_count": 128544,
+          "timeframe": "minute15"
+        }
+      },
+      "first_decision_utc": "2022-12-01T00:15:00+00:00",
+      "input_file_sha256": {
+        "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+        "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+        "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+      },
+      "last_decision_utc": "2026-08-01T00:00:00+00:00",
+      "mismatched_context_cells": 0,
+      "observed_values_sha256": "50498b1d01d0e7c68ab8b047ff35d7e001ce7b687e180d488dc9daeb9ef624ea",
+      "proof_file": "ethusdt-higher-timeframe-feature-audit.json",
+      "proof_file_sha256": "92931d305267b7c45502d8befac0f6b4599821093e262ad177bc7ebe2a86035d",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "schema_version": "nexus.composite-higher-timeframe-archive-result.v1",
+  "signal_generation_performed": false
+}

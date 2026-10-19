@@ -94,6 +94,13 @@ jobs:
           --stale-minutes 150
           --output data/agent_coordination/prospective_paper_schedule_watchdog.json
 
+      - name: Persist independently verified QUAL-42 and non-activating REG-50 reviews
+        run: >-
+          python scripts/nexus_strategy_admission_reviews.py
+          --runtime data/agent_coordination/agent_manager_runtime.json
+          --store data/agent_coordination/strategy_admission_reviews
+          --summary data/agent_coordination/strategy_admission_summary.json
+
       - name: Export portable Mission Control snapshot
         if: always()
         run: >-

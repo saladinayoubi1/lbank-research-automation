@@ -17,8 +17,13 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any, Mapping
+
+ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
 
 import numpy as np
 import pandas as pd
@@ -32,7 +37,10 @@ from nexus_composite_strategy_research import (
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
 from nexus_demo_archive_replay import ARCHIVE_SHA256
 from research.strategy_finder_shared_cash_physical import (
-    SYMBOLS,sidecar_summary,_digest
+    SYMBOLS,sidecar_summary,_digest,execution_contract,reviewed_stop_policy,SharedCashDiagnosticError
+)
+from nexus_complete_strategy_system import (
+    CompleteSystemError, REVIEW_FIELDS, validate_system, _read,
 )
 from scripts.nexus_strategy_finder_shared_cash_eval import (
     verify_pinned_market_files,write_once
@@ -42,7 +50,6 @@ SCHEMA="nexus.strategy-finder-reviewed-executable-intake.v1"
 APPROVAL_SCHEMA="nexus.strategy-finder-executable-intake-allowlist.v1"
 DEFAULT_ALLOWLIST=Path("research/strategy_finder_executable_intake_allowlist_v1.json")
 APPROVED_ROOT=Path("research/intake_candidates")
-ROOT=Path(__file__).resolve().parents[1]
 MAX_CANDIDATE_BYTES=100_000
 MAX_ALLOWLIST_BYTES=200_000
 MAX_WINDOW_DAYS=150
@@ -154,12 +161,14 @@ def inspect_candidate(
         raise IntakeError("unbounded approval registry")
     seen=set()
     for row in approved:
-        if (type(row) is not dict or set(row)!={
+        base_keys={
             "candidate_path","candidate_id","candidate_sha256",
             "qualitative_signature","review_pr_url",
             "independent_legacy_semantic_review","source_provenance_review",
             "rationale"
-        } or not isinstance(row["candidate_path"],str)
+        }
+        if (type(row) is not dict or set(row) not in (base_keys,base_keys|REVIEW_FIELDS)
+            or not isinstance(row["candidate_path"],str)
             or not isinstance(row["candidate_id"],str)
             or not isinstance(row["candidate_sha256"],str)
             or not _SHA64.fullmatch(row["candidate_sha256"])
@@ -175,6 +184,12 @@ def inspect_candidate(
         if pair in seen:
             raise IntakeError("duplicated review admission key")
         seen.add(pair)
+        if REVIEW_FIELDS <= set(row) and (
+            not isinstance(row["system_specification_path"],str)
+            or not _SHA64.fullmatch(str(row["system_specification_sha256"]))
+            or not _SHA64.fullmatch(str(row["execution_contract_digest"]))
+        ):
+            raise IntakeError("complete-system review permit malformed")
     permits=[row for row in approved if row["candidate_path"]==candidate_relative
              or row["candidate_id"]==ident]
     if len(permits)>1:
@@ -193,9 +208,11 @@ def inspect_candidate(
           or permit["candidate_sha256"]!=rawsha
           or permit["qualitative_signature"]!=signature):
         status="REJECT_STALE_OR_MISMATCHED_APPROVAL"
+    elif not REVIEW_FIELDS <= set(permit):
+        status="REVIEW_REQUIRED_COMPLETE_SYSTEM_SPECIFICATION"
     else:
         status="APPROVED_FOR_RESEARCH_SIMULATION_ONLY"
-    return {
+    result={
         "schema":SCHEMA,
         "candidate_id":ident,
         "candidate_path":candidate_relative,
@@ -212,6 +229,14 @@ def inspect_candidate(
         "live_enabled":False,
         "orders":0,
     }
+    if status=="APPROVED_FOR_RESEARCH_SIMULATION_ONLY":
+        try:
+            system,_=_read(root,permit["system_specification_path"],"system")
+            policy=reviewed_stop_policy(system["execution_contract"])
+            result["complete_system"]=validate_system(root,result,permit,execution_contract(policy))
+        except (CompleteSystemError,SharedCashDiagnosticError,KeyError) as exc:
+            raise IntakeError(str(exc)) from exc
+    return result
 
 
 def evaluate_approved(
@@ -222,6 +247,10 @@ def evaluate_approved(
     row=inspect_candidate(root,candidate_relative,allowlist)
     if row["status"]!="APPROVED_FOR_RESEARCH_SIMULATION_ONLY":
         raise IntakeError("unreviewed, duplicate or stale strategy contract cannot run: "+row["status"])
+    if row["complete_system"]["study_window"]!={
+        "warmup_utc":warmup_utc,"start_utc":start_utc,"end_exclusive_utc":end_exclusive_utc,
+    }:
+        raise IntakeError("study window differs from the reviewed complete-system freeze")
     try:
         warm=pd.Timestamp(warmup_utc)
         start=pd.Timestamp(start_utc)
@@ -236,6 +265,8 @@ def evaluate_approved(
         or (end-start)<pd.Timedelta(days=30)
         or any(x.value%(900_000*1_000_000)!=0 for x in (warm,start,end))):
         raise IntakeError("research window must be UTC, 15m-aligned, 25d warmup, >=30d trial, <=150d total")
+    system,_=_read(root,row["complete_system"]["system_specification_path"],"system")
+    policy=reviewed_stop_policy(system["execution_contract"])
     # Actual physical source byte hashes are checked before ANY features.
     locked=verify_pinned_market_files(archive)
     frames={}
@@ -254,6 +285,10 @@ def evaluate_approved(
                                      peer_15m=frames[other]["minute15"])
     specs=load_factory_contract(root/candidate_relative)
     spec=specs[row["candidate_id"]]
+    if (spec["contract_digest"]!=row["original_factory_contract_digest"]
+        or hashlib.sha256(_reviewed_bytes(root/candidate_relative,MAX_CANDIDATE_BYTES)).hexdigest()
+            !=row["candidate_sha256"]):
+        raise IntakeError("candidate changed after complete-system review")
     source={}
     signal={}
     for sym in SYMBOLS:
@@ -263,17 +298,23 @@ def evaluate_approved(
         signal[sym]=factory_signal(
             source[sym],row["candidate_id"],specs=specs,
             expected_contract_digest=spec["contract_digest"]
-        ) & (
-            np.isfinite(source[sym]["atr"].to_numpy(dtype=float))
-            & (source[sym]["atr"].to_numpy(dtype=float)>0)
         )
-    replay=sidecar_summary(source,signal)
+        if policy=="prior_range_v1":
+            signal[sym] &= (
+                np.isfinite(source[sym]["atr"].to_numpy(dtype=float))
+                & (source[sym]["atr"].to_numpy(dtype=float)>0)
+            )
+    replay=sidecar_summary(source,signal,stop_policy=policy)
+    if inspect_candidate(root,candidate_relative,allowlist)!=row:
+        raise IntakeError("complete-system evidence changed during replay")
     evidence={
         **replay,
         "source_scope":"SIX_PHYSICAL_SHA_ATTESTED_ORIGINAL_BYBIT_SPOT",
         "exact_market_file_sha256":locked,
         "source_canonical_semantic_sha256":ARCHIVE_SHA256,
         "readiness":row,
+        "complete_system_digest":row["complete_system"]["system_digest"],
+        "execution_contract":execution_contract(policy),
         "warmup_utc":warm.isoformat(),
         "evaluation_start_utc":start.isoformat(),
         "evaluation_end_exclusive_utc":end.isoformat(),

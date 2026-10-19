@@ -1,0 +1,20 @@
+{
+  "baseline_main_sha": "6e53338f8c283562920b555262cdea4da97b8561",
+  "code_sha256": {
+    "nexus_composite_higher_timeframe_audit.py": "0065534d68204c9928438fe3b50d81ccef1b8b7dfb169cb691f23bf1a011fa1d",
+    "nexus_composite_strategy_research.py": "63854147e0b7ff00bd93383e165912d210ca2e489011b64fe062c4665db8fb80",
+    "scripts/nexus_composite_higher_timeframe_archive_qa.py": "3ec3272b99c2c90bdcd1cdc4439e3ef1f2ee5f08e56ec74e2198cffc634375f0"
+  },
+  "financial_replay_permitted": false,
+  "input_sha256": {
+    "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "purpose": "Independently verify the current main composite four 1h/4h context equations and UTC as-of origins only; no frozen strategy replay.",
+  "schema_version": "nexus.composite-higher-timeframe-archive-request.v1",
+  "signal_generation_permitted": false
+}

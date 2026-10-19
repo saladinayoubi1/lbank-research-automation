@@ -16,6 +16,8 @@ from scripts.nexus_research_input_incident_recovery import SPEC as RESEARCH_INPU
 from nexus_strategy_qa_task_materializer import materialize_qa_tasks
 from nexus_strategy_review_qa_handoff import verify_handoff
 from nexus_composite_runtime_qa_task_materializer import materialize_composite_qa_task
+from nexus_source_system_development import materialize_development_tasks
+from nexus_source_system_economic_review import materialize_reviews
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -34,6 +36,8 @@ STATE_BINDING_KEYS = (
     "qa_handoff_task",
     "authority",
     "acceptance",
+    "source_system_development_task",
+    "source_system_economic_review_task",
 )
 
 
@@ -59,7 +63,8 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "required_data_locality", "preferred_data_locality",
         "required_trust_domain", "preferred_trust_domains",
         "min_health_score", "max_cost_units", "authority", "acceptance",
-        "qa_verifier_only", "qa_dispatch_enabled", "required_verifier", "qa_handoff_task"
+        "qa_verifier_only", "qa_dispatch_enabled", "required_verifier", "qa_handoff_task",
+        "source_system_development_task", "source_system_economic_review_task"
     }
     runtime_keys = {
         "status", "ready_at", "assigned_worker", "producer", "verifier", "lease_id",
@@ -747,6 +752,8 @@ def main() -> int:
     args = parser.parse_args()
 
     template = am.load_config(Path(args.config))
+    template = materialize_development_tasks(template)
+    template = materialize_reviews(template)
     template = materialize_strategy_qa_store(template, Path(args.strategy_qa_store))
     template = materialize_composite_runtime_qa_store(
         template, Path(args.composite_runtime_qa_store)

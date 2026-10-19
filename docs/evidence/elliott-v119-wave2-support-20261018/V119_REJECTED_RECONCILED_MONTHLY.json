@@ -1,0 +1,692 @@
+{
+  "automatic_demo_promotion": false,
+  "bars_per_asset": 128544,
+  "end": "2026-07-31T23:45:00+00:00",
+  "fixed_design_was_not_tuned_after_replay": true,
+  "historical_test_already_inspected": true,
+  "live_enabled": false,
+  "new_pristine_holdout": false,
+  "original_frozen_configuration": {
+    "fees_slip_each_side_bps": {
+      "conservative": [
+        10,
+        5
+      ],
+      "stress": [
+        25,
+        15
+      ]
+    },
+    "initial_shared_cash_usdt": 500,
+    "max_hold_bars": 96,
+    "max_nominal_gapless_risk_usdt": 2.5,
+    "max_notional_usdt": 250,
+    "max_pattern_span_bars": 128,
+    "min_structural_reward_risk": 1.5,
+    "min_wave1_relative_move": 0.006,
+    "pivot_left": 3,
+    "pivot_right": 3,
+    "reclaim_leg_fraction": 0.04,
+    "retest_horizon_bars": 48,
+    "support_near_leg_fraction": 0.15,
+    "target_r_multiple": 2,
+    "w2_stop_buffer_fraction": 0.002,
+    "wave2_retrace_max": 0.886,
+    "wave2_retrace_min": 0.382
+  },
+  "paper_eligible": false,
+  "raw_QA_only_path": "E:\\NEXUS-QA\\elliott-v119-20261018\\physical-v119-fixed-eval.json",
+  "raw_sha256": "46be9c744f14d73d0be391f3b164d127ef93e5bcc80f701225b34ab8838e2546",
+  "result_digest": "bd27b37d66caabfd79e7d19ad158bdf665e0efce51772167e98ea05957f90fb8",
+  "schema": "nexus.elliott-v119-source-bound-rejection-evidence.v1",
+  "source": "Bybit_public_Spot_archive_no_exchange_order_api",
+  "source_hashes": {
+    "BTC": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "ETH": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "splits": {
+    "historical_test_already_inspected": {
+      "end_utc": "2026-07-31T23:45:00+00:00",
+      "profiles": {
+        "conservative": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 8,
+            "insufficient_structural_reward_vs_risk": 164,
+            "unfavorable_next_open_or_invalid_original_stop": 23
+          },
+          "ending_cash_usdt": 493.59221406,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 7,
+            "STRUCTURE_STOP_ONLY": 9
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -0.40048662,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.01661145,
+              "month": "2025-11",
+              "net_pnl_usdt": -2.01661145,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 2.24805478,
+              "month": "2026-01",
+              "net_pnl_usdt": 2.24805478,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.12905523,
+              "month": "2026-02",
+              "net_pnl_usdt": 0.51622091,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": -1.52946986,
+              "month": "2026-03",
+              "net_pnl_usdt": -7.64734929,
+              "round_trips": 5
+            },
+            {
+              "mean_pnl_usdt": -1.88950838,
+              "month": "2026-04",
+              "net_pnl_usdt": -1.88950838,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 1.17053473,
+              "month": "2026-05",
+              "net_pnl_usdt": 1.17053473,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.40362426,
+              "month": "2026-06",
+              "net_pnl_usdt": 1.21087278,
+              "round_trips": 3
+            }
+          ],
+          "net_pnl_usdt": -6.40778594,
+          "positive_net_trades": 7,
+          "round_trips": 16
+        },
+        "stress": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 8,
+            "insufficient_structural_reward_vs_risk": 164,
+            "unfavorable_next_open_or_invalid_original_stop": 23
+          },
+          "ending_cash_usdt": 481.1822442,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 7,
+            "STRUCTURE_STOP_ONLY": 9
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -1.17610974,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.49999604,
+              "month": "2025-11",
+              "net_pnl_usdt": -2.49999604,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.81960078,
+              "month": "2026-01",
+              "net_pnl_usdt": 0.81960078,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.78322721,
+              "month": "2026-02",
+              "net_pnl_usdt": -3.13290884,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": -1.95019597,
+              "month": "2026-03",
+              "net_pnl_usdt": -9.75097987,
+              "round_trips": 5
+            },
+            {
+              "mean_pnl_usdt": -2.49999701,
+              "month": "2026-04",
+              "net_pnl_usdt": -2.49999701,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.06422833,
+              "month": "2026-05",
+              "net_pnl_usdt": -0.06422833,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.56308216,
+              "month": "2026-06",
+              "net_pnl_usdt": -1.68924647,
+              "round_trips": 3
+            }
+          ],
+          "net_pnl_usdt": -18.8177558,
+          "positive_net_trades": 5,
+          "round_trips": 16
+        }
+      },
+      "source_causal_signals": 211,
+      "source_triplet_funnel": {
+        "BTC": {
+          "no_retest_reclaim_within_48_completed_bars": 81,
+          "non_LHL_source_triplets": 3320,
+          "physical_support_reclaim_signals": 98,
+          "physical_wave2_support_failed_before_entry": 313,
+          "source_confirmed_triplets": 4981,
+          "structural_geometry_failure": 1169,
+          "structural_partial_pass_not_wave_certificate": 492
+        },
+        "ETH": {
+          "no_retest_reclaim_within_48_completed_bars": 90,
+          "non_LHL_source_triplets": 3411,
+          "physical_support_reclaim_signals": 113,
+          "physical_wave2_support_failed_before_entry": 411,
+          "source_confirmed_triplets": 5076,
+          "structural_geometry_failure": 1051,
+          "structural_partial_pass_not_wave_certificate": 614
+        }
+      },
+      "start_utc": "2025-11-06T04:45:00+00:00"
+    },
+    "training": {
+      "end_utc": "2025-02-11T09:15:00+00:00",
+      "profiles": {
+        "conservative": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 10,
+            "insufficient_structural_reward_vs_risk": 551,
+            "unfavorable_next_open_or_invalid_original_stop": 71
+          },
+          "ending_cash_usdt": 477.19685404,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 14,
+            "STRUCTURE_STOP_ONLY": 25,
+            "TIMEOUT_OR_PARTITION_END_OPEN": 3
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -0.54293205,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.02761492,
+              "month": "2022-12",
+              "net_pnl_usdt": -4.05522985,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -0.02285234,
+              "month": "2023-01",
+              "net_pnl_usdt": -0.04570468,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.19922653,
+              "month": "2023-02",
+              "net_pnl_usdt": -2.19922653,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.41303368,
+              "month": "2023-03",
+              "net_pnl_usdt": -2.06516842,
+              "round_trips": 5
+            },
+            {
+              "mean_pnl_usdt": -2.03030729,
+              "month": "2023-04",
+              "net_pnl_usdt": -6.09092186,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": -1.59519426,
+              "month": "2023-05",
+              "net_pnl_usdt": -3.19038851,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -1.99236473,
+              "month": "2023-06",
+              "net_pnl_usdt": -7.96945893,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": -1.8607302,
+              "month": "2023-07",
+              "net_pnl_usdt": -1.8607302,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.32260054,
+              "month": "2023-09",
+              "net_pnl_usdt": 1.29040215,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": 1.29484524,
+              "month": "2023-10",
+              "net_pnl_usdt": 3.88453571,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": -0.71885375,
+              "month": "2023-12",
+              "net_pnl_usdt": -1.4377075,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.49999999,
+              "month": "2024-01",
+              "net_pnl_usdt": -2.49999999,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 2.38666405,
+              "month": "2024-02",
+              "net_pnl_usdt": 4.77332811,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": 3.17886993,
+              "month": "2024-04",
+              "net_pnl_usdt": 3.17886993,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -1.82319608,
+              "month": "2024-06",
+              "net_pnl_usdt": -1.82319608,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.49999995,
+              "month": "2024-07",
+              "net_pnl_usdt": -2.49999995,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 1.01610076,
+              "month": "2024-10",
+              "net_pnl_usdt": 1.01610076,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -1.01065389,
+              "month": "2024-11",
+              "net_pnl_usdt": -3.03196168,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": 1.5141319,
+              "month": "2025-01",
+              "net_pnl_usdt": 1.5141319,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.15458984,
+              "month": "2025-02",
+              "net_pnl_usdt": 0.30917968,
+              "round_trips": 2
+            }
+          ],
+          "net_pnl_usdt": -22.80314596,
+          "positive_net_trades": 16,
+          "round_trips": 42
+        },
+        "stress": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 10,
+            "insufficient_structural_reward_vs_risk": 551,
+            "unfavorable_next_open_or_invalid_original_stop": 71
+          },
+          "ending_cash_usdt": 444.96295258,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 14,
+            "STRUCTURE_STOP_ONLY": 25,
+            "TIMEOUT_OR_PARTITION_END_OPEN": 3
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -1.31040589,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.4999999,
+              "month": "2022-12",
+              "net_pnl_usdt": -4.9999998,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -0.83405469,
+              "month": "2023-01",
+              "net_pnl_usdt": -1.66810937,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.4999998,
+              "month": "2023-02",
+              "net_pnl_usdt": -2.4999998,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -1.16357294,
+              "month": "2023-03",
+              "net_pnl_usdt": -5.81786469,
+              "round_trips": 5
+            },
+            {
+              "mean_pnl_usdt": -2.4999986,
+              "month": "2023-04",
+              "net_pnl_usdt": -7.4999958,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": -2.49999991,
+              "month": "2023-05",
+              "net_pnl_usdt": -4.99999982,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.49999838,
+              "month": "2023-06",
+              "net_pnl_usdt": -9.99999353,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": -2.49999994,
+              "month": "2023-07",
+              "net_pnl_usdt": -2.49999994,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.76781514,
+              "month": "2023-09",
+              "net_pnl_usdt": -3.07126057,
+              "round_trips": 4
+            },
+            {
+              "mean_pnl_usdt": 0.14805678,
+              "month": "2023-10",
+              "net_pnl_usdt": 0.44417034,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": -1.3764502,
+              "month": "2023-12",
+              "net_pnl_usdt": -2.7529004,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.49999976,
+              "month": "2024-01",
+              "net_pnl_usdt": -2.49999976,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": 0.90060083,
+              "month": "2024-02",
+              "net_pnl_usdt": 1.80120167,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": 2.20598637,
+              "month": "2024-04",
+              "net_pnl_usdt": 2.20598637,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.49999722,
+              "month": "2024-06",
+              "net_pnl_usdt": -2.49999722,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.49999961,
+              "month": "2024-07",
+              "net_pnl_usdt": -2.49999961,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.19290069,
+              "month": "2024-10",
+              "net_pnl_usdt": -0.19290069,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -1.54100646,
+              "month": "2024-11",
+              "net_pnl_usdt": -4.62301938,
+              "round_trips": 3
+            },
+            {
+              "mean_pnl_usdt": 0.19569849,
+              "month": "2025-01",
+              "net_pnl_usdt": 0.19569849,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.77903196,
+              "month": "2025-02",
+              "net_pnl_usdt": -1.55806392,
+              "round_trips": 2
+            }
+          ],
+          "net_pnl_usdt": -55.03704742,
+          "positive_net_trades": 10,
+          "round_trips": 42
+        }
+      },
+      "source_causal_signals": 674,
+      "source_triplet_funnel": {
+        "BTC": {
+          "no_retest_reclaim_within_48_completed_bars": 262,
+          "non_LHL_source_triplets": 10023,
+          "physical_support_reclaim_signals": 349,
+          "physical_wave2_support_failed_before_entry": 861,
+          "source_confirmed_triplets": 14905,
+          "structural_geometry_failure": 3410,
+          "structural_partial_pass_not_wave_certificate": 1472
+        },
+        "ETH": {
+          "no_retest_reclaim_within_48_completed_bars": 279,
+          "non_LHL_source_triplets": 10108,
+          "physical_support_reclaim_signals": 325,
+          "physical_wave2_support_failed_before_entry": 954,
+          "source_confirmed_triplets": 14921,
+          "structural_geometry_failure": 3255,
+          "structural_partial_pass_not_wave_certificate": 1558
+        }
+      },
+      "start_utc": "2022-12-01T16:00:00+00:00"
+    },
+    "validation_already_inspected": {
+      "end_utc": "2025-11-06T04:30:00+00:00",
+      "profiles": {
+        "conservative": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 3,
+            "insufficient_structural_reward_vs_risk": 179,
+            "unfavorable_next_open_or_invalid_original_stop": 23
+          },
+          "ending_cash_usdt": 480.0585327,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 5,
+            "STRUCTURE_STOP_ONLY": 14
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -1.04955091,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.4999998,
+              "month": "2025-02",
+              "net_pnl_usdt": -2.4999998,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.35470569,
+              "month": "2025-03",
+              "net_pnl_usdt": -2.35470569,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.13028321,
+              "month": "2025-04",
+              "net_pnl_usdt": -0.26056642,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -1.34249802,
+              "month": "2025-05",
+              "net_pnl_usdt": -8.05498812,
+              "round_trips": 6
+            },
+            {
+              "mean_pnl_usdt": 2.86964109,
+              "month": "2025-06",
+              "net_pnl_usdt": 2.86964109,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.52765973,
+              "month": "2025-07",
+              "net_pnl_usdt": -1.05531947,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.26097973,
+              "month": "2025-08",
+              "net_pnl_usdt": -2.26097973,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.11472133,
+              "month": "2025-09",
+              "net_pnl_usdt": -4.22944266,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": 0.128623,
+              "month": "2025-10",
+              "net_pnl_usdt": 0.257246,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.35235249,
+              "month": "2025-11",
+              "net_pnl_usdt": -2.35235249,
+              "round_trips": 1
+            }
+          ],
+          "net_pnl_usdt": -19.9414673,
+          "positive_net_trades": 5,
+          "round_trips": 19
+        },
+        "stress": {
+          "denied_after_signal": {
+            "cash_book_already_occupied": 3,
+            "insufficient_structural_reward_vs_risk": 179,
+            "unfavorable_next_open_or_invalid_original_stop": 23
+          },
+          "ending_cash_usdt": 469.87668509,
+          "exit_reason_counts": {
+            "PRECOMMITTED_TARGET": 5,
+            "STRUCTURE_STOP_ONLY": 14
+          },
+          "initial_cash_usdt": 500,
+          "mean_pnl_usdt": -1.58543763,
+          "monthly": [
+            {
+              "mean_pnl_usdt": -2.49999955,
+              "month": "2025-02",
+              "net_pnl_usdt": -2.49999955,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.49999984,
+              "month": "2025-03",
+              "net_pnl_usdt": -2.49999984,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -0.8920921,
+              "month": "2025-04",
+              "net_pnl_usdt": -1.7841842,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -1.77686939,
+              "month": "2025-05",
+              "net_pnl_usdt": -10.66121631,
+              "round_trips": 6
+            },
+            {
+              "mean_pnl_usdt": 1.13966499,
+              "month": "2025-06",
+              "net_pnl_usdt": 1.13966499,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -1.36436249,
+              "month": "2025-07",
+              "net_pnl_usdt": -2.72872499,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.49999946,
+              "month": "2025-08",
+              "net_pnl_usdt": -2.49999946,
+              "round_trips": 1
+            },
+            {
+              "mean_pnl_usdt": -2.49999961,
+              "month": "2025-09",
+              "net_pnl_usdt": -4.99999922,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -0.54442825,
+              "month": "2025-10",
+              "net_pnl_usdt": -1.08885649,
+              "round_trips": 2
+            },
+            {
+              "mean_pnl_usdt": -2.49999983,
+              "month": "2025-11",
+              "net_pnl_usdt": -2.49999983,
+              "round_trips": 1
+            }
+          ],
+          "net_pnl_usdt": -30.12331491,
+          "positive_net_trades": 4,
+          "round_trips": 19
+        }
+      },
+      "source_causal_signals": 224,
+      "source_triplet_funnel": {
+        "BTC": {
+          "no_retest_reclaim_within_48_completed_bars": 86,
+          "non_LHL_source_triplets": 3255,
+          "physical_support_reclaim_signals": 94,
+          "physical_wave2_support_failed_before_entry": 232,
+          "source_confirmed_triplets": 4791,
+          "structural_geometry_failure": 1124,
+          "structural_partial_pass_not_wave_certificate": 412
+        },
+        "ETH": {
+          "no_retest_reclaim_within_48_completed_bars": 104,
+          "non_LHL_source_triplets": 3371,
+          "physical_support_reclaim_signals": 130,
+          "physical_wave2_support_failed_before_entry": 364,
+          "source_confirmed_triplets": 4953,
+          "structural_geometry_failure": 984,
+          "structural_partial_pass_not_wave_certificate": 598
+        }
+      },
+      "start_utc": "2025-02-11T09:30:00+00:00"
+    }
+  },
+  "start": "2022-12-01T00:00:00+00:00",
+  "verdict": "REJECT_ALL_THREE_SPLITS_AFTER_COSTS"
+}

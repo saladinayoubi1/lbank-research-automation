@@ -23,6 +23,9 @@ from typing import Any, Callable, Mapping
 from nexus_composite_validation_candidate import verify_candidate
 
 SCHEMA = "nexus.composite-runtime-requalification.v1"
+TRACE_SCHEMA = "nexus.composite-runtime-requalification.v2"
+ASOF_SCHEMA = "nexus.composite-runtime-requalification.v3"
+SHARED_CASH_SCHEMA = "nexus.composite-runtime-requalification.v4"
 VERIFY_SCHEMA = "nexus.composite-runtime-requalification-verification.v1"
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
 TIMEFRAMES = ("minute15", "hour1", "hour4")
@@ -43,7 +46,7 @@ class CompositeRuntimeRequalificationError(RuntimeError):
     pass
 
 
-Evaluator = Callable[[Mapping[str, Any], str, int, Path], list[dict[str, Any]]]
+Evaluator = Callable[[Mapping[str, Any], str, int, Path], list[dict[str, Any]] | dict[str, Any]]
 
 
 def _canonical(value: Any) -> bytes:
@@ -90,8 +93,12 @@ def _atomic_json(path: str | Path, value: Mapping[str, Any]) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
     with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        # Per-event v2 evidence is bounded by the existing transport. Avoid
+        # nested indentation multiplying its uncompressed artifact size.
+        formatting = ({"separators": (",", ":")} if value.get("schema_version") in {TRACE_SCHEMA, ASOF_SCHEMA, SHARED_CASH_SCHEMA}
+                      else {"indent": 2})
         handle.write(
-            json.dumps(dict(value), indent=2, sort_keys=True, ensure_ascii=False)
+            json.dumps(dict(value), sort_keys=True, ensure_ascii=False, **formatting)
         )
         handle.write("\n")
         handle.flush()
@@ -224,6 +231,7 @@ def _validate_evaluation(
     value: Mapping[str, Any],
     *,
     candidate: Mapping[str, Any],
+    source_sha: str,
 ) -> dict[str, Any]:
     if not isinstance(value, Mapping) or value.get("symbol") not in SYMBOLS:
         raise CompositeRuntimeRequalificationError("runtime symbol evaluation is invalid")
@@ -258,6 +266,22 @@ def _validate_evaluation(
     }
     clean_profiles = [_validate_profile(row) for row in profiles]
     clean_profiles.sort(key=lambda row: PROFILES.index(row["profile"]))
+    if "emitted_signal_trace" in value:
+        from nexus_composite_signal_trace import SignalTraceError, verify_trace
+        try:
+            verify_trace(value["emitted_signal_trace"], candidate=candidate,
+                         source_sha=source_sha, symbol=value["symbol"], datasets=clean_datasets,
+                         peer_binding=value.get("peer_minute15_binding_sha256"), profiles=clean_profiles)
+        except (SignalTraceError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError("emitted signal trace rejected") from exc
+    if "higher_timeframe_feature_audit" in value:
+        from nexus_composite_higher_timeframe_audit import HigherTimeframeAuditError, verify_audit
+        try:
+            verify_audit(value["higher_timeframe_feature_audit"],
+                         candidate_digest=candidate["candidate_digest"], source_sha=source_sha,
+                         symbol=value["symbol"], datasets=clean_datasets)
+        except (HigherTimeframeAuditError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError("independent higher-timeframe audit rejected") from exc
     result = dict(value)
     result["datasets"] = clean_datasets
     result["profiles"] = clean_profiles
@@ -269,14 +293,21 @@ def _default_evaluator(
     source_sha: str,
     now_ms: int,
     state_root: Path,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     """Replay the exact candidate on fresh canonical public Bybit closed candles."""
+    if (type(candidate["strategy_config"].get("risk_variant")) is not int
+        or candidate["strategy_config"]["risk_variant"] != 0):
+        raise CompositeRuntimeRequalificationError(
+            "shared 500 diagnostic requires reviewed risk_variant=0 before fetching data"
+        )
     del state_root  # reserved for future bounded cache/evidence staging
     from canonical_backtest import canonical_ohlcv_frame
     import nexus_composite_strategy_research as composite
     from product_research_runtime import ProductResearchRuntime
     from nexus_canonical_paged_history import fetch_verified_15m_window
     from nexus_composite_fill_oracle import CompositeFillOracleError, verify_fills
+    from nexus_composite_signal_trace import capture_signals, bind_fill_audits
+    from nexus_composite_higher_timeframe_audit import HigherTimeframeAuditError, audit_features
 
     runtime = ProductResearchRuntime(
         None,  # type: ignore[arg-type]
@@ -306,6 +337,7 @@ def _default_evaluator(
     config = dict(candidate["strategy_config"])
     mechanism = str(candidate["mechanism"])
     evaluations: list[dict[str, Any]] = []
+    shared_frames, shared_signals = {}, {}
     for symbol in SYMBOLS:
         peer_symbol = next(item for item in SYMBOLS if item != symbol)
         peer = (
@@ -321,7 +353,48 @@ def _default_evaluator(
             },
             peer_15m=peer,
         )
+        dataset_rows = {}
+        for timeframe in TIMEFRAMES:
+            artifact = artifacts[symbol][timeframe]
+            rows = artifact.get("rows")
+            if (
+                not isinstance(rows, list)
+                or len(rows) < 60
+                or not isinstance(rows[0], Mapping)
+                or not isinstance(rows[-1], Mapping)
+            ):
+                raise CompositeRuntimeRequalificationError(
+                    f"fresh canonical {symbol}/{timeframe} rows are unavailable"
+                )
+            dataset_rows[timeframe] = {
+                "timeframe": timeframe,
+                "binding_sha256": artifact.get("binding_sha256"),
+                "row_count": artifact.get("row_count"),
+                "first_open_time_ms": rows[0].get("open_time_ms"),
+                "last_open_time_ms": rows[-1].get("open_time_ms"),
+            }
+
+        # Reconstruct the four context equations and as-of join from raw inputs
+        # with a separate stdlib reference, before generating signals or fills.
+        try:
+            feature_audit = audit_features(
+                frames[symbol], feature_frame, candidate_digest=candidate["candidate_digest"],
+                source_sha=source_sha, symbol=symbol, datasets=dataset_rows,
+            )
+        except (HigherTimeframeAuditError, KeyError, TypeError, ValueError) as exc:
+            raise CompositeRuntimeRequalificationError(
+                f"independent higher-timeframe reconstruction disagrees for {symbol}"
+            ) from exc
         signals = composite.signal_for(feature_frame, config)
+        capture = capture_signals(
+            feature_frame, signals, candidate=candidate, source_sha=source_sha,
+            symbol=symbol, datasets=dataset_rows,
+            peer_binding=(artifacts[peer_symbol]["minute15"].get("binding_sha256")
+                          if peer is not None else None),
+        )
+        shared_frames[symbol] = feature_frame.copy(deep=True)
+        shared_signals[symbol] = signals.copy()
+        fill_audits = {}
         profile_rows: list[dict[str, Any]] = []
         for profile, fee_bps, slip_bps in (
             (
@@ -359,40 +432,20 @@ def _default_evaluator(
             # This intentionally runs AGAIN during independent QA replay.
             # It neither alters v1 receipt fields nor grants Paper authority.
             try:
-                verify_fills(
+                fill_audits[profile] = verify_fills(
                     feature_frame,
                     signals,
                     fee_bps=fee_bps,
                     slip_bps=slip_bps,
                     risk_variant=int(config["risk_variant"]),
                     observed=first,
+                    include_trace=True,
                 )
             except CompositeFillOracleError as exc:
                 raise CompositeRuntimeRequalificationError(
                     f"independent fill accounting disagrees for {symbol}/{profile}"
                 ) from exc
             profile_rows.append({"profile": profile, **first})
-
-        dataset_rows = {}
-        for timeframe in TIMEFRAMES:
-            artifact = artifacts[symbol][timeframe]
-            rows = artifact.get("rows")
-            if (
-                not isinstance(rows, list)
-                or len(rows) < 60
-                or not isinstance(rows[0], Mapping)
-                or not isinstance(rows[-1], Mapping)
-            ):
-                raise CompositeRuntimeRequalificationError(
-                    f"fresh canonical {symbol}/{timeframe} rows are unavailable"
-                )
-            dataset_rows[timeframe] = {
-                "timeframe": timeframe,
-                "binding_sha256": artifact.get("binding_sha256"),
-                "row_count": artifact.get("row_count"),
-                "first_open_time_ms": rows[0].get("open_time_ms"),
-                "last_open_time_ms": rows[-1].get("open_time_ms"),
-            }
 
         evaluations.append({
             "symbol": symbol,
@@ -405,6 +458,8 @@ def _default_evaluator(
                 if peer is not None else None
             ),
             "profiles": profile_rows,
+            "emitted_signal_trace": bind_fill_audits(capture, fill_audits),
+            "higher_timeframe_feature_audit": feature_audit,
             "deterministic_replay_verified": True,
             "data_origin": "canonical_public_bybit_runtime",
             "closed_candle_finality_verified": True,
@@ -416,7 +471,28 @@ def _default_evaluator(
             "automatic_strategy_promotion": False,
             "live_trading_authority": False,
         })
-    return evaluations
+    from nexus_composite_shared_cash import build_shared_cash
+    shared = build_shared_cash(shared_frames, shared_signals, candidate=candidate,
+                               source_sha=source_sha, evaluations=evaluations)
+    return {"evaluations": evaluations, "shared_cash_portfolio": shared}
+
+
+def _review_decision(total, halted, all_positive, shared=None):
+    if shared is None and total == 0:
+        return "REJECTED", ["ZERO_ACTIVITY_ON_FRESH_RUNTIME_DATA"]
+    if halted:
+        return "REJECTED", ["FRESH_RUNTIME_DRAWDOWN_HALT"]
+    if shared is not None:
+        state = shared["diagnostic_state"]
+        if state == "NEGATIVE_SHARED_CASH_CELL":
+            return "REJECTED", ["NEGATIVE_SHARED_500_CASH_CELL"]
+        if state.startswith("INCONCLUSIVE_"):
+            return "INCONCLUSIVE", [state]
+    if total == 0:
+        return "REJECTED", ["ZERO_ACTIVITY_ON_FRESH_RUNTIME_DATA"]
+    if not all_positive:
+        return "REJECTED", ["NON_POSITIVE_FRESH_RUNTIME_CELL"]
+    return "QUALIFIED_FOR_REVIEW", ["FRESH_CANONICAL_RUNTIME_REPLAY_PASSED"]
 
 
 def build_requalification(
@@ -432,12 +508,21 @@ def build_requalification(
     if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
         raise CompositeRuntimeRequalificationError("now_ms must be a positive integer")
     verified_candidate = _validated_candidate(candidate, candidate_verification)
-    rows = evaluator(
+    evaluated = evaluator(
         verified_candidate,
         source_sha,
         now_ms,
         Path(state_root).resolve(),
     )
+    shared = None
+    if isinstance(evaluated, Mapping):
+        if set(evaluated) != {"evaluations", "shared_cash_portfolio"}:
+            raise CompositeRuntimeRequalificationError("complete shared cash evaluator output required")
+        rows, shared = evaluated["evaluations"], evaluated["shared_cash_portfolio"]
+        if not isinstance(shared, dict):
+            raise CompositeRuntimeRequalificationError("shared cash portfolio proof missing")
+    else:
+        rows = evaluated
     if (
         not isinstance(rows, list)
         or len(rows) != len(SYMBOLS)
@@ -448,10 +533,23 @@ def build_requalification(
             "fresh runtime evaluator must return the complete two-symbol grid"
         )
     evaluations = [
-        _validate_evaluation(row, candidate=verified_candidate)
+        _validate_evaluation(row, candidate=verified_candidate, source_sha=source_sha)
         for row in rows
     ]
     evaluations.sort(key=lambda row: SYMBOLS.index(row["symbol"]))
+    traced = ["emitted_signal_trace" in row for row in evaluations]
+    if any(traced) and not all(traced):
+        raise CompositeRuntimeRequalificationError("both symbols require emitted signal traces")
+    audited = ["higher_timeframe_feature_audit" in row for row in evaluations]
+    if any(audited) and (not all(audited) or not all(traced)):
+        raise CompositeRuntimeRequalificationError("both traced symbols require higher-timeframe audits")
+
+    if shared is not None:
+        if not all(audited):
+            raise CompositeRuntimeRequalificationError("shared cash requires traced and audited symbols")
+        from nexus_composite_shared_cash import verify_shared_cash
+        verify_shared_cash(shared, candidate=verified_candidate, source_sha=source_sha,
+                           evaluations=evaluations)
 
     for timeframe in TIMEFRAMES:
         last_opens = {
@@ -500,21 +598,10 @@ def build_requalification(
     halted = any(row["halted_on_drawdown"] is True for row in profiles)
     all_positive = all(float(row["net_return_pct"]) > 0.0 for row in profiles)
 
-    if total_round_trips == 0:
-        decision = "REJECTED"
-        reasons = ["ZERO_ACTIVITY_ON_FRESH_RUNTIME_DATA"]
-    elif halted:
-        decision = "REJECTED"
-        reasons = ["FRESH_RUNTIME_DRAWDOWN_HALT"]
-    elif not all_positive:
-        decision = "REJECTED"
-        reasons = ["NON_POSITIVE_FRESH_RUNTIME_CELL"]
-    else:
-        decision = "QUALIFIED_FOR_REVIEW"
-        reasons = ["FRESH_CANONICAL_RUNTIME_REPLAY_PASSED"]
+    decision, reasons = _review_decision(total_round_trips, halted, all_positive, shared)
 
     core = {
-        "schema_version": SCHEMA,
+        "schema_version": SHARED_CASH_SCHEMA if shared is not None else ASOF_SCHEMA if all(audited) else TRACE_SCHEMA if all(traced) else SCHEMA,
         "system_map_node": "VAL-40",
         "candidate_digest": verified_candidate["candidate_digest"],
         "candidate_source_sha": verified_candidate["source_sha"],
@@ -555,6 +642,8 @@ def build_requalification(
         "private_credentials_used": False,
         "deterministic_risk_final_authority": True,
     }
+    if shared is not None:
+        core["shared_cash_portfolio"] = shared
     return {**core, "requalification_digest": digest(core)}
 
 
@@ -572,7 +661,7 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         core = dict(value)
         claimed = core.pop("requalification_digest", None)
         checks["schema"] = bool(
-            core.get("schema_version") == SCHEMA
+            core.get("schema_version") in {SCHEMA, TRACE_SCHEMA, ASOF_SCHEMA, SHARED_CASH_SCHEMA}
             and core.get("system_map_node") == "VAL-40"
         )
         checks["digest"] = isinstance(claimed, str) and claimed == digest(core)
@@ -600,7 +689,8 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         clean_rows = []
         if isinstance(rows, list) and len(rows) == len(SYMBOLS):
             clean_rows = [
-                _validate_evaluation(row, candidate=verified_candidate)
+                _validate_evaluation(row, candidate=verified_candidate,
+                                     source_sha=core.get("requalification_source_sha"))
                 for row in rows
             ]
             clean_rows.sort(key=lambda row: SYMBOLS.index(row["symbol"]))
@@ -644,6 +734,10 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
             len(clean_rows) == len(SYMBOLS)
             and {row["symbol"] for row in clean_rows} == set(SYMBOLS)
             and aligned
+            and all(("emitted_signal_trace" in row) == (core.get("schema_version") in {TRACE_SCHEMA, ASOF_SCHEMA, SHARED_CASH_SCHEMA})
+                    for row in clean_rows)
+            and all(("higher_timeframe_feature_audit" in row) == (core.get("schema_version") in {ASOF_SCHEMA, SHARED_CASH_SCHEMA})
+                    for row in clean_rows)
             and core.get("evaluations_digest") == digest(clean_rows)
             and (
                 core.get("fresh_history_limit_per_timeframe") == HISTORY_LIMIT
@@ -660,6 +754,14 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
             and core.get("no_minimum_trade_count_gate") is True
         )
 
+        shared = core.get("shared_cash_portfolio")
+        if core.get("schema_version") == SHARED_CASH_SCHEMA:
+            from nexus_composite_shared_cash import verify_shared_cash
+            verify_shared_cash(shared, candidate=verified_candidate,
+                               source_sha=core.get("requalification_source_sha"), evaluations=clean_rows)
+        elif "shared_cash_portfolio" in core:
+            checks["evaluations"] = False
+
         profile_rows = [
             profile
             for row in clean_rows
@@ -673,39 +775,11 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         decision = core.get("decision")
         reasons = core.get("reason_codes")
         qualified = core.get("qualified_for_review")
+        expected_decision, expected_reasons = _review_decision(total, halted, all_positive, shared)
         checks["decision"] = bool(
             core.get("total_fresh_runtime_round_trips") == total
-            and (
-                (
-                    total == 0
-                    and decision == "REJECTED"
-                    and reasons == ["ZERO_ACTIVITY_ON_FRESH_RUNTIME_DATA"]
-                    and qualified is False
-                )
-                or (
-                    total > 0
-                    and halted
-                    and decision == "REJECTED"
-                    and reasons == ["FRESH_RUNTIME_DRAWDOWN_HALT"]
-                    and qualified is False
-                )
-                or (
-                    total > 0
-                    and not halted
-                    and not all_positive
-                    and decision == "REJECTED"
-                    and reasons == ["NON_POSITIVE_FRESH_RUNTIME_CELL"]
-                    and qualified is False
-                )
-                or (
-                    total > 0
-                    and not halted
-                    and all_positive
-                    and decision == "QUALIFIED_FOR_REVIEW"
-                    and reasons == ["FRESH_CANONICAL_RUNTIME_REPLAY_PASSED"]
-                    and qualified is True
-                )
-            )
+            and decision == expected_decision and reasons == expected_reasons
+            and qualified is (expected_decision == "QUALIFIED_FOR_REVIEW")
         )
         checks["authority"] = bool(
             core.get("candidate_state_created") is False
