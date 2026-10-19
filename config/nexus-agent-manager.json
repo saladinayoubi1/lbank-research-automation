@@ -891,6 +891,34 @@
         "zero-activity candidates cannot outrank actually exercised systems and only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
         "research only with no automatic Paper/Demo promotion, no owner-wallet mutation, no private credentials and no live authority"
       ]
+    },
+    {
+      "id": "P7-PORTFOLIO-FORWARD-PREP-8547412a0c6c4500",
+      "title": "Prepared fixed dual-rotation source handoff; wait for full future source and reviewed exact-engine route",
+      "phase": 7,
+      "gate": 17,
+      "status": "BLOCKED",
+      "priority": 94,
+      "dependencies": [],
+      "required_capabilities": [
+        "research",
+        "data_validation"
+      ],
+      "required_resources": [
+        "windows-local"
+      ],
+      "preferred_resources": [
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "Source handoff research/portfolio_v3_fixed_source_handoff_20261019.json SHA256 8547412a0c6c4500848ca5773bec2f0226094ea075fa4f87dfc4dc3e24bc872e",
+        "Preserve fixed candidate b4e4a2c33304aec1, original shared500 engine, costs, source-anchored cadence and optional fixed posthoc risk20",
+        "Require complete 2026-10-19 through 2027-01-17 source, separate archive-source authorization and an exact-engine Research/QA execution handoff before any dispatch",
+        "No generic factory substitution, reopening exhausted studies, automatic Paper/Live promotion or zero-trade profitability claim"
+      ],
+      "blocked_reason": "Frozen prospective horizon incomplete until 2027-01-17T00:00:00Z; archive source authorization and reviewed exact-portfolio executor handoff still required",
+      "failure_class": "prospective_portfolio_source_and_executor_not_ready"
     }
   ]
 }
