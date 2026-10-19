@@ -1,0 +1,32 @@
+{
+  "schema": "nexus.portfolio-warmup-context-fixture-portability-review.v1",
+  "reviewed_parent_commit": "888388d1c318a6825c417100f46d7666aeb458ea",
+  "failing_macos_job": 118281661632,
+  "hosted_failure_summary": {
+    "failed": 4,
+    "passed": 4279,
+    "skipped": 65
+  },
+  "cause": "Unresolved macOS temporary paths under /var encounter the intentional symlink-ancestor guard.",
+  "change": "Canonicalize temporary fixture directories only; production path checks remain byte-identical.",
+  "reproduction": {
+    "environment": "Local synthetic var -> private-var alias, not a real macOS runner",
+    "before_fixture_errors": 4,
+    "after_tests_passed": 11,
+    "after_errors": 0,
+    "after_failures": 0,
+    "production_link_guard_still_rejects_alias": true
+  },
+  "original_test_sha256_lf": "3f44795e5b8101fbcbb7e5d9ac1ce92a51c401d94710c32ff4a09801a1be8f3e",
+  "corrected_test_sha256_lf": "06d0798470c6e702d607d03f919e94143759842ec358be25817f2c0a520037dc",
+  "unchanged_runtime_script_sha256_lf": "21141d0364f2c6c053ec81629a909a8901eb0ca6a86ebc3463c9524fe7958af7",
+  "retained_physical_context_digest": "bd3b57243c7ac5c6ed017b8840df77f4d1bec519a1449e964bb3b4e27e6bc3d3",
+  "retained_original_native_receipt_unchanged": true,
+  "fresh_hosted_macos_verification_required": true,
+  "new_physical_context_runs": 0,
+  "financial_backtest_runs": 0,
+  "future_source_prices_read": false,
+  "paper_eligible": false,
+  "live_enabled": false,
+  "orders": 0
+}

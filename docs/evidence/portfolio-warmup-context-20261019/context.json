@@ -1,0 +1,74 @@
+{
+  "context": {
+    "feature_array_sha256": {
+      "eligible": "2e5dd27f8c50ce23ba14feecfc5dd481e2981c7efaec67ba5c652cff502ff81b",
+      "score": "3ff7713dfb9011ec998a4d6d5919e75d741a28133180bdc7677ea51c54941fdd",
+      "target": "3092ca0441cf0d289d847be35d55baa89a3f72714602c8900c7916afed8955f9",
+      "volatility": "0e41e270b690d7364f21d9ae1e38c57d5a358c4a200ccd81a867ee30da34b206"
+    },
+    "global_review_mask_sha256": "41bdf28cdd6415c71d216fefc8c56bdb7f2da2935fde75be99fcb0a0d5e575a9",
+    "last_closed_context_not_order_intent": {
+      "eligible": [
+        true,
+        true
+      ],
+      "score": [
+        0.005440286149551377,
+        0.002611863937299077
+      ],
+      "target": [
+        1.0,
+        0.0
+      ],
+      "volatility": [
+        0.32412618431585055,
+        0.4561158223804787
+      ]
+    },
+    "last_completed_bar_closed_at_utc": "2026-10-19T00:00:00+00:00",
+    "last_completed_source_open_utc": "2026-10-18T20:00:00+00:00",
+    "last_review_source_open_utc": "2026-10-15T00:00:00+00:00",
+    "next_review_observed_at_utc": "2026-10-22T04:00:00+00:00",
+    "next_review_source_open_utc": "2026-10-22T00:00:00+00:00",
+    "original_feature_target_prefix_rows_preserved": 8034,
+    "original_price_prefix_preserved": true
+  },
+  "digest": "bd3b57243c7ac5c6ed017b8840df77f4d1bec519a1449e964bb3b4e27e6bc3d3",
+  "engine_bundle_round_trip_verified": true,
+  "financial_dispatch_authorized": false,
+  "fixed_handoff_sha256_lf": "8547412a0c6c4500848ca5773bec2f0226094ea075fa4f87dfc4dc3e24bc872e",
+  "formal_independent_signal_or_financial_qa_complete": false,
+  "future_source_policy_still_required": true,
+  "future_source_prices_read": false,
+  "joined_market_bundle_sha256": "0b5e7fb1801fb173af38816d3375c9e37fffb483940b07100640d7d58ee8c1d0",
+  "joined_rows_per_asset": 8508,
+  "live_enabled": false,
+  "orders": 0,
+  "original_rows_per_asset": 8034,
+  "paper_eligible": false,
+  "plan_digest": "a246e384ada17ac538bbf06ea016b2c41862a1321fcd86f6a8e880880e09b90b",
+  "schema": "nexus.portfolio-v3-verified-warmup-context.v1",
+  "script_sha256_lf": "21141d0364f2c6c053ec81629a909a8901eb0ca6a86ebc3463c9524fe7958af7",
+  "source_bindings": {
+    "capture_digest": "edbf345dc3bc1094f7595aebefb191181f8ca878e9dc0f8d6fb19c5562ccbc98",
+    "day_receipts_rehashed": 158,
+    "independent_qa_digest": "1141ba15a6bed8fb5388e2ef390c01dc563cd874916dd89d986dfd768e0ae5f0",
+    "original_archive_six_sha256": {
+      "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+      "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+      "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+      "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+      "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+      "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+    },
+    "raw_days_rehashed": 158
+  },
+  "source_provider_exchange_signature_verified": false,
+  "status": "HISTORICAL_CONTEXT_PREPARED_FINANCIAL_DISPATCH_BLOCKED",
+  "strategy_backtest_performed": false,
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "warmup_rows_per_asset": 474
+}
