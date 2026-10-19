@@ -1,0 +1,30 @@
+{
+  "schema": "nexus.joint-risk-cadence-physical-validation.v1",
+  "device": "Laptop2 / DESKTOP-F4SA4VL",
+  "implementation_frozen_commit": "e8ef58e450f604e3a8a70e5fe5044b972ce3a2df",
+  "unit_tests": {
+    "passed": 11,
+    "native_exit": 0,
+    "log": "E:/NEXUS-QA/joint-risk-cadence-20261019/unit-tests-research-env.log"
+  },
+  "economic_run": {
+    "completed": 1,
+    "native_exit": 0,
+    "account_replays": 84,
+    "all_ledger_reconciliations_passed": true,
+    "maximum_error_usdt": 4.547473508864641e-13,
+    "result_digest": "1ad241bf96ee678ee67d7ff1a0311820df98ac6a7fffd5e11f1b1f66204dfe37"
+  },
+  "source_hashes_lf": {
+    "research/portfolio_risk_cadence_diagnostic_v1.json": "eaa96e827d98799eb669bc1c9b7631b45886f507e354ede304d55ec6ecaa6708",
+    "research/portfolio_risk_cadence_diagnostic_v1.lock.json": "7f3375bafb07a89db9e6b16892437fead035d627b416b1d6a3ddfda7c2f12975",
+    "scripts/nexus_portfolio_risk_cadence_diagnostic.py": "0e5e16d4164de1c343b949680c6e7d8733f9fceb4d2f2c5e1632232c97073d72",
+    "tests/test_nexus_portfolio_risk_cadence_diagnostic.py": "ba2dbcb992fdc495ed9132c03994221e7ba63cf227725b2c0f04dca28237d809"
+  },
+  "source_history_preinspected": true,
+  "future_prices_read": false,
+  "formal_independent_paper_qa_complete": false,
+  "paper_eligible": false,
+  "live_enabled": false,
+  "orders": 0
+}

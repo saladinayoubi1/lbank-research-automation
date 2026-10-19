@@ -1,0 +1,44 @@
+{
+  "schema": "nexus.joint-external-ai-research-review.v1",
+  "source_commit": "7383788754e1f7bef8e70e7df0c765b40e49e6ff",
+  "implementation_frozen_commit": "e8ef58e450f604e3a8a70e5fe5044b972ce3a2df",
+  "reviewers": [
+    "Codex",
+    "DeepSeek",
+    "Perplexity"
+  ],
+  "claude": {
+    "fresh_response": false,
+    "observed_notice": "You are out of free messages until 10:50 PM",
+    "earlier_review_used_as_prior_context": true,
+    "quota_bypassed": false
+  },
+  "round_ids": [
+    "b68b970467c746158bb227d013fb09a4",
+    "73da87d51a4f4b41b8cda37e72e870c6",
+    "5ae89eae9a3e4ba2aef3f74bd10d1e20"
+  ],
+  "final_responses": [
+    {
+      "provider": "deepseek",
+      "sha256": "b57d17c2524b7001e6c249846527cae8b54371262ad045a7443f3184bc4ad333",
+      "text": "حکم نهایی: REJECT — تأیید می‌شود.\r\nچه شکست خورد:\r\n فرضیه‌ی «زمان‌بندی کاهشی ریسک» نه‌تنها DD را در برش‌های منفی ۳ واحد بهبود نداد، بلکه DD را از ۳۴٫۴۳٪ به ۳۵٫۱۳٪ بدتر کرد و بازده را از ۳۴۳٫۶۶ به ۳۱۷٫۴۱ کاهش داد، با ۱۱۹ پرکردن در برابر ۱۰۶ — یعنی هزینه‌ی معاملاتی بیشتر و محافظت کمتر. همچنین ratchet در استرس (۲۹۴٫۳۳ در برابر ۳۲۰٫۱۱) و شدید (۲۶۰٫۸۹ در برابر ۲۸۵٫۹۸) بدتر از باسلاین است. آزمون gap مصنوعی نشان داد «کاهش وزن هدف» تضمین فروش‌تنها نیست و می‌تواند بای ایجاد کند — پس ادعای مکانیزم یک‌طرفه باطل است.\r\nچه چیزی اثبات می‌شود:\r\n در این پنجره‌ی ثابت، با موتور و هزینه‌های بدون تغییر و ۸۴ اجرا، این قاعده ارزش مستقل ندارد؛ کاهش DD عمدتاً از کاهش اکسپوژر می‌آید (fixed0.75: DD26.93٪) نه از زمان‌بندی.\r\nچه چیزی اثبات نمی‌شود:\r\n تعمیم به رژیم‌های دیگر، پنجره‌های آینده، یا دارایی‌های دیگر؛ و اینکه «زمان‌بندی ریسک» به‌طور کلی بی‌ارزش است.\r\nاستنباط بدون پشتوانه:\r\n هیچ ادعای علی درباره‌ی منبع دقیق DD اضافه؛ و هیچ تفسیر «fixed0.75 بهتر است» به‌عنوان توصیه — آن هم فقط در همین پنجره و با DD بالاتر بازده پایین‌تر سنجیده شده. باسلاین حفظ شود."
+    },
+    {
+      "provider": "perplexity",
+      "sha256": "c7920aa7bb5781a85ead8caefd9dcf9ae54c79e37d2522fbe786a9a5e093b183",
+      "text": "حکم نهایی: رد فرضیهٔ fixed daily ratchet؛ حفظ baseline.\r\nآنچه شکست خورد، ایدهٔ «کاهش روزانهٔ یک‌طرفهٔ exposure» بود: با وجود اجرای صحیح و ۸۴ اجرای سازگار، نه DD بهبود یافت (۳۵.۱۳٪ در برابر ۳۴.۴۳٪) و نه بازده حفظ شد (۳۱۷.۴۱ در برابر ۳۴۳.۶۶). شرط قفل‌شدهٔ بهبود حداقل ۳ واحد درصدی DD در همهٔ رژیم‌های بازنده نیز برآورده نشد. آزمون gap نیز نشان داد «فقط-فروش» به‌صورت جهانی تضمین‌شدنی نیست؛ بنابراین استدلال ساختاری اولیه ناقص بود.\r\nآزمون \r\nاثبات می‌کند\r\n که در این داده، موتور و هزینه‌های ثابت، ratchet روزانه ارزش افزودهٔ قابل‌اتکایی نسبت به baseline ندارد و fixed 0.75 مسیر متفاوتی دارد (DD کمتر، بازده کمتر). اما \r\nاثبات نمی‌کند\r\n که volatility timing در همهٔ بازارها بی‌فایده است، یا که baseline در آینده بهتر خواهد بود؛ نمونهٔ تاریخی محدود است و نتیجه به قواعد دقیق ratchet وابسته است.\r\nاستنباط پشتیبانی‌نشده: هرگونه ادعای «شکست کلی volatility management»، «برتری ساختاری baseline» یا تعمیم نتیجه به رژیم‌ها/دوره‌های آزموده‌نشده. بدون retuning یا آستانهٔ جدید، baseline باید بایگانی و حفظ شود."
+    }
+  ],
+  "codex_corrections": [
+    "The 90% profit-retention hurdle PASSES in every cost profile. Rejection is from the regime-DD and fixed075 comparison hurdles.",
+    "One losing reset regime improves DD by 5.27524pp, another worsens by0.85131pp, the last is unchanged. Do not claim every regime worsens.",
+    "Higher fill count alone cannot quantify costs. Actual fees are22.14696 vs21.59697 USDT; the P/L loss cannot all be attributed to this0.54999 fee difference.",
+    "A target-only asymmetric rule does not guarantee sell-only fills after a gap. All13 historical daily reductions were sells; the adversarial synthetic witness still invalidates the general guarantee.",
+    "All 84 ledger observers passing is technical validation, not84 independent statistical trials or formal Paper qualification."
+  ],
+  "verdict": "REJECT_FIXED_HYPOTHESIS_NO_RETUNE",
+  "paper_eligible": false,
+  "live_enabled": false,
+  "orders": 0
+}
