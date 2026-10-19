@@ -158,7 +158,7 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     import nexus_canonical_paged_history as history
     import product_research_runtime as product
     f = frame(3072)
-    f.loc[1, "high"] = 110
+    f.loc[[1, int(len(f)*.6)+1, int(len(f)*.8)+1], "high"] = 110
     f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
     f["volume"] = 1.
     info = datasets(f)
@@ -184,7 +184,7 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     monkeypatch.setattr(canonical, "canonical_ohlcv_frame", lambda a: (a, raw_frames[a["tf"]]))
     monkeypatch.setattr(producer, "build_features", lambda *a, **kw: f)
     mask = np.zeros(len(f), dtype=bool)
-    mask[[0, -1]] = True
+    mask[[0, int(len(f)*.6), int(len(f)*.8), -1]] = True
     monkeypatch.setattr(producer, "signal_for", lambda *a: mask)
     capture_impl, backtest_impl, order = trace.capture_signals, producer.backtest, []
     def capture(*args, **kwargs):
@@ -196,27 +196,39 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
         return backtest_impl(*args, **kwargs)
     monkeypatch.setattr(trace, "capture_signals", capture)
     monkeypatch.setattr(producer, "backtest", backtest)
-    rows = rq._default_evaluator(CANDIDATE, SOURCE, 1_767_312_060_000, tmp_path)
+    evaluated = rq._default_evaluator(CANDIDATE, SOURCE, 1_767_312_060_000, tmp_path)
+    rows = evaluated["evaluations"]
     assert order == ["capture", "backtest", "backtest", "backtest", "backtest"] * 2
     for row in rows:
         trace.verify_trace(row["emitted_signal_trace"], candidate=CANDIDATE, source_sha=SOURCE,
                            symbol=row["symbol"], datasets=row["datasets"], peer_binding=None,
                            profiles=row["profiles"])
     # The exact existing producer -> verifier -> QA-task/receipt path consumes
-    # v3. Candidate validation itself is covered by its separate contract suite.
+    # v4. Candidate validation itself is covered by its separate contract suite.
     import nexus_composite_runtime_independent_qa as qa
     candidate = {**CANDIDATE, "source_sha": "c" * 40, "archive_sha256": "d" * 64,
                  "timeframe": "minute15_with_completed_1h_4h", "config_fingerprint": "e" * 64}
     monkeypatch.setattr(rq, "_validated_candidate", lambda *args: deepcopy(candidate))
     now = int(f.decision_at.iloc[-1].value // 1_000_000) + 60_000
     result = rq.build_requalification(candidate, {}, source_sha=SOURCE, now_ms=now,
-                                      state_root=tmp_path, evaluator=lambda *args: rows)
-    assert result["schema_version"] == rq.ASOF_SCHEMA
+                                      state_root=tmp_path, evaluator=lambda *args: evaluated)
+    assert result["schema_version"] == rq.SHARED_CASH_SCHEMA
     assert rq.verify_requalification(result)["decision"] == "pass"
     task = qa.build_task(result, rq.verify_requalification(result), producer_workflow_run_id=123)
     receipt = qa.run_independent_qa(task, lease_id="separate-qa-lease", execution_source_sha=SOURCE,
-                                   state_root=tmp_path, replay=lambda *args: deepcopy(result))
+                                   state_root=tmp_path)
     assert qa.verify_receipt(receipt, task, lease_id="separate-qa-lease", execution_source_sha=SOURCE)
+    assert order.count("capture") == 4  # two producer symbols + two separate QA replays
+    corrupted = deepcopy(result)
+    corrupted["shared_cash_portfolio"]["cells"]["training"]["stress"]["net_pnl_usdt"] += 1
+    shared_proof = corrupted["shared_cash_portfolio"]
+    shared_proof["portfolio_digest"] = rq.digest({k:v for k,v in shared_proof.items() if k != "portfolio_digest"})
+    corrupted["requalification_digest"] = rq.digest({k:v for k,v in corrupted.items() if k != "requalification_digest"})
+    assert rq.verify_requalification(corrupted)["decision"] == "reject"
+    missing = deepcopy(result)
+    missing.pop("shared_cash_portfolio")
+    missing["requalification_digest"] = rq.digest({k:v for k,v in missing.items() if k != "requalification_digest"})
+    assert rq.verify_requalification(missing)["decision"] == "reject"
     broken = deepcopy(result)
     broken["evaluations"][0].pop("emitted_signal_trace")
     broken["evaluations_digest"] = rq.digest(broken["evaluations"])
@@ -225,6 +237,7 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     broken = deepcopy(result)
     for row in broken["evaluations"]:
         row.pop("higher_timeframe_feature_audit")
+    broken.pop("shared_cash_portfolio")
     broken["schema_version"] = rq.TRACE_SCHEMA
     broken["evaluations_digest"] = rq.digest(broken["evaluations"])
     broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
@@ -238,6 +251,22 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
     broken["schema_version"] = rq.SCHEMA
     broken["requalification_digest"] = rq.digest({k: v for k, v in broken.items() if k != "requalification_digest"})
     assert rq.verify_requalification(broken)["decision"] == "reject"
+    # Real default execution: the old 64th-bar close profits, whereas the
+    # shared book remains open until the next adverse open. Positive independent
+    # books must not override the consumed shared-book loss.
+    f["high"] = 100.1
+    for start in (0,int(len(f)*.6),int(len(f)*.8)):
+        f.loc[start+64,["high","close"]] = [101.2,101.]
+        f.loc[start+65,["open","high","low","close"]] = [97.,97.1,96.9,97.]
+    for field in ("open","high","low","close"):
+        raw_frames["minute15"][field] = f[field]
+    negative = rq.build_requalification(candidate,{},source_sha=SOURCE,now_ms=now,state_root=tmp_path)
+    assert all(p["net_pnl_usdt"] > 0 for r in negative["evaluations"] for p in r["profiles"])
+    assert negative["decision"] == "REJECTED"
+    assert negative["reason_codes"] == ["NEGATIVE_SHARED_500_CASH_CELL"]
+    assert rq.verify_requalification(negative)["decision"] == "pass"
+    with pytest.raises(qa.CompositeRuntimeQaError):
+        qa.build_task(negative,rq.verify_requalification(negative),producer_workflow_run_id=124)
     # A detected context discrepancy must stop before signal/fill generation.
     import nexus_composite_higher_timeframe_audit as higher
     def failed_audit(*args, **kwargs):
@@ -269,7 +298,18 @@ def test_full_3072_bar_high_activity_trace_fits_bounded_transport(tmp_path):
     htf = higher.audit_features(raw_frames, f, candidate_digest=CANDIDATE["candidate_digest"],
                                 source_sha=SOURCE, symbol="BTCUSDT", datasets=data)
     value, _, _ = evidence(f, np.ones(len(f), dtype=bool))
-    producer_result = {"schema_version": rq.ASOF_SCHEMA,
+    import nexus_composite_shared_cash as shared
+    evaluations = []
+    for symbol in rq.SYMBOLS:
+        cap = trace.capture_signals(f, np.ones(len(f), dtype=bool), candidate=CANDIDATE,
+                                    source_sha=SOURCE, symbol=symbol, datasets=data, peer_binding=None)
+        evaluations.append({"symbol":symbol, "datasets":data,
+                            "emitted_signal_trace":{**value,"capture":cap}})
+    portfolio = shared.build_shared_cash({s:f for s in rq.SYMBOLS},
+                    {s:np.ones(len(f),dtype=bool) for s in rq.SYMBOLS},
+                    candidate=CANDIDATE,source_sha=SOURCE,evaluations=evaluations)
+    producer_result = {"schema_version": rq.SHARED_CASH_SCHEMA,
+                "shared_cash_portfolio":portfolio,
                 "evaluations": [{"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf},
                                 {"emitted_signal_trace": value, "higher_timeframe_feature_audit": htf}]}
     path = tmp_path / "producer.json"

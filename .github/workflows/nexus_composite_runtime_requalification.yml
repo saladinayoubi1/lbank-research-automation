@@ -242,15 +242,15 @@ jobs:
           "$PYTHON_BIN" - "$OUTPUT_ROOT/runtime-requalification.json" "$OUTPUT_ROOT/verification.json" <<'PY'
           import json, sys
           from pathlib import Path
-          from nexus_composite_runtime_requalification import ASOF_SCHEMA, verify_requalification
+          from nexus_composite_runtime_requalification import SHARED_CASH_SCHEMA, verify_requalification
 
           path = Path(sys.argv[1])
           result = json.loads(path.read_text(encoding="utf-8"))
           verification = verify_requalification(result)
           if verification.get("decision") != "pass":
               raise SystemExit("fresh composite requalification verification rejected")
-          if result.get("schema_version") != ASOF_SCHEMA:
-              raise SystemExit("new physical execution requires signal traces and independent higher-timeframe audits")
+          if result.get("schema_version") != SHARED_CASH_SCHEMA:
+              raise SystemExit("new physical execution requires signal traces, higher-timeframe audits and independently checked shared-500 evidence")
           Path(sys.argv[2]).write_text(
               json.dumps(verification, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
@@ -328,6 +328,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_composite_runtime_requalification.py
           tests/test_nexus_composite_signal_trace.py
+          tests/test_nexus_composite_shared_cash.py
           tests/test_nexus_composite_runtime_requalification_workflow.py
           tests/test_nexus_composite_validation_candidate.py
           tests/test_nexus_composite_validation_candidate_transport.py
