@@ -76,6 +76,21 @@ The exact result and code/test/log bindings are in
 `verification.json`. The native bundle remains in the isolated context
 directory recorded there; raw source and owner state remain unchanged.
 
+## macOS fixture portability correction
+
+The first hosted macOS test execution reported four fixture errors because
+its temporary paths used the system `/var` alias. The intentional production
+guard rejects symlink ancestors. Test-created directories are now resolved
+to their physical path before use; the production script and guards are
+byte-identical. A local `var -> private-var` fixture reproduced the same four
+errors before the correction, then all 11 methods passed. An explicit aliased
+source path still fails the unchanged production guard.
+
+`portability-review.json` records that reproduction and the corrected test
+hash. The original physical receipt still attests its original test hash
+and unchanged runtime; no physical context or financial study was rerun.
+Fresh hosted macOS validation is required before merge.
+
 ## Remaining authority boundary
 
 This prepares historical input, not a backtest, edge, formal independent

@@ -46,7 +46,8 @@ class ContextTests(unittest.TestCase):
 
     def test_altered_plan_handoff_or_original_engine_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            # macOS's /var alias must not masquerade as a caller-created link.
+            root = Path(tmp).resolve()
             paths = [context.PLAN, context.HANDOFF,
                      *self.spec["code_and_contract_sha256_lf_normalized"]]
             for p in paths:
@@ -68,7 +69,7 @@ class ContextTests(unittest.TestCase):
 
     def test_rehashed_but_unapproved_qa_receipt_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "receipt.json"
+            path = Path(tmp).resolve() / "receipt.json"
             body = {"synthetic_unit_fixture": True, "value": 1}
             expected = context.digest(body)
             path.write_text(json.dumps({**body, "digest": expected}))
@@ -80,7 +81,7 @@ class ContextTests(unittest.TestCase):
 
     def test_source_byte_changes_cannot_inherit_old_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             for folder in ("raw", "receipts", "archive"):
                 (root / folder).mkdir()
             raw = root / "raw/BTCUSDT_2026-08-01.csv.gz"
@@ -171,14 +172,15 @@ class ContextTests(unittest.TestCase):
     def test_prepare_writes_reusable_bundle_without_financial_authority(self):
         original, bars = fixture()
         with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / "new"
+            root = Path(tmp).resolve()
+            out = root / "new"
             with (mock.patch.object(context, "attest_sources", return_value=(
                     {"bars": bars}, {"synthetic_unit_fixture": True})),
                   mock.patch.object(context.engine, "load_market", return_value=original),
                   mock.patch.object(context.engine, "exact_backtest", side_effect=AssertionError("P/L forbidden"))):
-                report = context.prepare(Path(tmp), Path(tmp), out)
+                report = context.prepare(root, root, out)
                 with self.assertRaises(context.ContextError):
-                    context.prepare(Path(tmp), Path(tmp), out)
+                    context.prepare(root, root, out)
             for field in ("future_source_prices_read", "strategy_backtest_performed",
                           "financial_dispatch_authorized", "paper_eligible", "live_enabled"):
                 self.assertIs(report[field], False)
