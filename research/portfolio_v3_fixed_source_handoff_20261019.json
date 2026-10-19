@@ -1,0 +1,139 @@
+{
+  "automatic_strategy_promotion": false,
+  "candidate": {
+    "family": "dual_rotation",
+    "params": {
+      "absolute_days": 90,
+      "allocation": "winner",
+      "lookbacks": [
+        30,
+        90,
+        180
+      ],
+      "ma_filter_days": 0,
+      "minimum_absolute_return": 0,
+      "quantum": 0.25,
+      "rebalance_days": 7,
+      "target_vol": 0.3,
+      "vol_days": 30
+    }
+  },
+  "candidate_id": "b4e4a2c33304aec1",
+  "code_and_contract_sha256_lf_normalized": {
+    "bybit_portfolio_search_v3.py": "1f086b5958a59c19657dea5b642a888d9039d6db2fd088893f7870dd7f549688",
+    "research/portfolio_existing_engine_shared500_calibration_v1.json": "a620495f086bae7863ac74cf74c4bcb06071004be39fe8b83ec41a5dc4b88710",
+    "research/portfolio_v3_forward_bybit_source_freeze_20261018.json": "99d70217e1ce05fe6429c075e04e7b6f99e042d61947216e51f06493732baed4",
+    "scripts/nexus_portfolio_v3_forward_source_preflight.py": "3d7b360cd1c7b684609d61a5833cc0ec11723a66d131a2fc4dae763ea58e9ada"
+  },
+  "comparators": [
+    "existing_dual_rotation_unmodified",
+    "existing_dual_rotation_dd20",
+    "passive_BTC_Spot",
+    "passive_ETH_Spot",
+    "passive_50_50_BTC_ETH",
+    "cash_only"
+  ],
+  "context": {
+    "completed_source_timeframe": "4h",
+    "eligibility": "positive 90-day return; no moving-average filter",
+    "ranking": "median(log(1+return)/sqrt(days)) over fixed 30/90/180-day horizons",
+    "winner": "highest eligible ranking; original BTC then ETH tie order; cash if none"
+  },
+  "cost_profiles": {
+    "conservative": {
+      "fee_bps": 10,
+      "initial_cash": 500,
+      "slippage_bps": 5
+    },
+    "severe": {
+      "fee_bps": 25,
+      "initial_cash": 500,
+      "slippage_bps": 15
+    },
+    "stress": {
+      "fee_bps": 15,
+      "initial_cash": 500,
+      "slippage_bps": 10
+    }
+  },
+  "current_readiness": "PREPARED_NOT_DISPATCHABLE_PENDING_FULL_FUTURE_SOURCE_AND_REVIEWED_EXECUTOR_HANDOFF",
+  "economic_edge_established": false,
+  "engine_symbols": [
+    "btc_usdt",
+    "eth_usdt"
+  ],
+  "exchange_symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "execution_engine": "bybit_portfolio_search_v3.exact_backtest",
+  "exits": {
+    "allocation_change": "sell before buying the new allocation at the next eligible open",
+    "cash": "cash when no eligible winner at allocation review",
+    "per_lot_physical_SL_TP": "not implemented in original engine; admission limitation, not silently added",
+    "terminal": "last research candle close with adverse costs"
+  },
+  "future_study": {
+    "end_exclusive_utc": "2027-01-17T00:00:00Z",
+    "expected_future_4h_bars_per_symbol": 540,
+    "full_horizon_required": true,
+    "source_prices_read_in_this_preparation": false,
+    "start_utc": "2026-10-19T00:00:00Z"
+  },
+  "initial_shared_cash_usdt": 500,
+  "live_enabled": false,
+  "market": "Bybit Spot long_only_cash_no_borrow",
+  "minimum_trade_count": null,
+  "orders": 0,
+  "paper_eligible": false,
+  "rebalance": {
+    "bars": 42,
+    "days": 7,
+    "eligibility_and_ranking_review": "at original globally anchored review rows; allocation held between reviews",
+    "execution": "prior closed 4h target at next 4h open; retain exact existing scheduled-mask semantics",
+    "original_grid_anchor_utc": "2022-12-01T00:00:00Z"
+  },
+  "reports_required": [
+    "source-bound fill ledger with actual execution times",
+    "closed position/FIFO segment/fill counts distinguished",
+    "monthly net PnL, fees/slippage and mean per defined closed position",
+    "continuous mark-to-market equity and drawdown",
+    "same-capital fixed passive comparators",
+    "separate independent signal, source and financial QA"
+  ],
+  "research_only": true,
+  "risk_comparisons": {
+    "fixed_posthoc_dd20": {
+      "exit": "next_4h_open_sell_first_no_reentry",
+      "halt_rest_of_research_period": true,
+      "live_authority": false,
+      "max_closed_bar_drawdown_fraction": 0.2,
+      "schema": "nexus.portfolio-v3-causal-close-dd20-nextopen.v1"
+    },
+    "gap_can_exceed_trigger": true,
+    "threshold_chosen_after_known_historical_drawdown": true,
+    "unguarded_original": null
+  },
+  "schema": "nexus.portfolio-v3-fixed-system-source-handoff.v1",
+  "selection_basis": "existing_fixed_research_priority_no_new_enumeration_or_retuning",
+  "sizing": {
+    "annual_volatility_target": 0.3,
+    "annualization_4h_bars": 2191.5,
+    "cash_model": "one shared book; sell before buy; pro-rate buys including all costs",
+    "maximum_total_weight": 1.0,
+    "realized_volatility_days": 30,
+    "volatility_ddof": 0,
+    "weight_rounding": "original numpy round to 0.25 increments"
+  },
+  "source_requirements": {
+    "future_archive_source_policy_separately_required": true,
+    "historical_warmup_end_exclusive_utc": "2026-10-19T00:00:00Z",
+    "historical_warmup_start_utc": "2026-08-01T00:00:00Z",
+    "original_V5_only_future_preflight_unchanged": true,
+    "original_archive_six_hash_recheck": true,
+    "warmup_bars_per_symbol": 474,
+    "warmup_is_not_independent_strategy_score": true,
+    "warmup_representation": "official HTTPS Spot raw trades independently aggregated to UTC 4h OHLCV"
+  },
+  "strategy_backtest_performed": false
+}

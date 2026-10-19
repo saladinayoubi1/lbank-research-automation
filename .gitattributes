@@ -54,3 +54,9 @@ nexus_composite_higher_timeframe_audit.py text eol=lf
 scripts/nexus_composite_higher_timeframe_archive_qa.py text eol=lf
 research/higher_timeframe_qa/*.json text eol=lf
 
+# Official Spot warmup receipts bind exact LF source bytes on Windows too.
+scripts/nexus_bybit_official_spot_raw_4h_adapter.py text eol=lf
+scripts/nexus_bybit_official_spot_warmup_capture.py text eol=lf
+scripts/nexus_bybit_official_spot_warmup_qa.py text eol=lf
+research/bybit_official_spot_daily_raw_sample_claims_20261018.json text eol=lf
+research/portfolio_v3_fixed_source_handoff_20261019.json text eol=lf
