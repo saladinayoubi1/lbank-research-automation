@@ -99,8 +99,8 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=" in physical
-    assert 'test "$evidence_size" -le 3000000' in physical
-    assert 'test "${#evidence_b64}" -le 4200000' in physical
+    assert 'test "$evidence_size" -le 4000000' in physical
+    assert 'test "${#evidence_b64}" -le 5400000' in physical
     assert "zipfile.ZIP_DEFLATED" in physical
     assert "$WORK_ROOT/evidence.zip" in physical
     assert "needs: runtime-requalification" in hosted
@@ -111,3 +111,14 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
     assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in hosted
     assert "if-no-files-found: error" in hosted
+
+
+def test_shared500_transport_bounds_match_publisher_and_decoder() -> None:
+    import nexus_composite_runtime_qa_transport as transport
+    text = _text()
+    assert transport.MAX_LOG_EVIDENCE_BYTES == 4_000_000
+    assert transport.MAX_LOG_EVIDENCE_CHUNKS == 112
+    assert 'test "$chunk_count" -le 112' in text
+    assert 'expected_size > 4000000' in text
+    assert 'chunk_count <= 112' in text
+    assert 'CHUNK_COUNT=([1-9][0-9]{0,2})' in text

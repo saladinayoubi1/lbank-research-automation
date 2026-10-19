@@ -84,3 +84,12 @@ occupancy at exit, adverse gaps, timeout differences, reset boundaries, stop
 priority, fees/slippage, no activity, re-digested corrupt evidence, legacy reads,
 the actual default producer-to-verifier-to-QA path, and a 3,072-bar high-activity
 v4 artifact round trip through the existing bounded transport.
+
+
+A varying-price, all-signals 3,072-bar synthetic receipt exposed the original
+3 MB compressed limit: 11,594,497 JSON bytes and 3,452,220 ZIP bytes. Its
+full v4 round-trip is now a retained regression test. The publisher and both
+consumers share a bounded 4 MB ZIP limit, 5.4 MB publisher base64 limit and 112
+48,000-character chunks (including three-digit count parsing). Existing 8 MB
+job-log/archive, 12 MB JSON-member and 16 MB expansion caps remain unchanged.
+This fixes evidence delivery rather than truncating ledgers or changing results.

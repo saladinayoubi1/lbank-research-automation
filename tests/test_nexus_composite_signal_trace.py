@@ -281,6 +281,10 @@ def test_default_val40_producer_captures_before_either_financial_profile(monkeyp
 def test_full_3072_bar_high_activity_trace_fits_bounded_transport(tmp_path):
     import nexus_composite_runtime_qa_transport as transport
     f = frame(3072)
+    # Variable physical prices reproduce the compressed-size boundary that
+    # repeated constants hide; keep every emitted signal and every shared fill.
+    mid = 100 + np.sin(np.arange(len(f))*1.23456789)*.375
+    f["open"], f["close"], f["low"] = mid, mid+.0135792468, mid-.0987654321
     f["high"] = 110
     f["timestamp"] = f["decision_at"] - pd.Timedelta(minutes=15)
     f["volume"] = 1.
