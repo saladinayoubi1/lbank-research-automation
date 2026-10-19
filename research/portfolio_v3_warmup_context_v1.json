@@ -1,0 +1,20 @@
+{
+  "schema": "nexus.portfolio-v3-warmup-context-plan.v1",
+  "source_commit": "5eaf0dc7513adcec2707fc88ff28caedee1e850f",
+  "fixed_handoff_sha256_lf": "8547412a0c6c4500848ca5773bec2f0226094ea075fa4f87dfc4dc3e24bc872e",
+  "capture_digest": "edbf345dc3bc1094f7595aebefb191181f8ca878e9dc0f8d6fb19c5562ccbc98",
+  "independent_warmup_qa_digest": "1141ba15a6bed8fb5388e2ef390c01dc563cd874916dd89d986dfd768e0ae5f0",
+  "candidate_id": "b4e4a2c33304aec1",
+  "original_rows_per_symbol": 8034,
+  "warmup_rows_per_symbol": 474,
+  "joined_rows_per_symbol": 8508,
+  "original_grid_anchor_utc": "2022-12-01T00:00:00Z",
+  "context_end_exclusive_utc": "2026-10-19T00:00:00Z",
+  "purpose": "connect_verified_historical_context_to_unchanged_engine_features_only",
+  "strategy_backtest_authorized": false,
+  "future_source_authorized": false,
+  "financial_dispatch_authorized": false,
+  "paper_eligible": false,
+  "live_enabled": false,
+  "orders": 0
+}
