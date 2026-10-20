@@ -1,0 +1,33 @@
+{
+  "schema": "nexus.mr40-windows-checkout-qa.v1",
+  "core_autocrlf": true,
+  "before_sha256": "23562fdfbc610a3b5a583dafcd93ccc6dedaeca37d8199572ea688d039badee2",
+  "after_sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+  "reproduces_failed_windows_ci": true,
+  "source_files_unchanged": true,
+  "lf_source_files": 4,
+  "cap_tests": 11,
+  "cap_tests_pass": true,
+  "attributes": [
+    "research/nexus_mean_reversion_40_m2_retest_v1.py: text: set",
+    "research/nexus_mean_reversion_40_m2_retest_v1.py: eol: lf",
+    "research/nexus_mean_reversion_40_m2_time_cap_v1.py: text: set",
+    "research/nexus_mean_reversion_40_m2_time_cap_v1.py: eol: lf",
+    "tests/test_nexus_mean_reversion_40_m2_time_cap_v1.py: text: set",
+    "tests/test_nexus_mean_reversion_40_m2_time_cap_v1.py: eol: lf",
+    "research/nexus_mean_reversion_40_m2_regime_diagnostic_v1.py: text: set",
+    "research/nexus_mean_reversion_40_m2_regime_diagnostic_v1.py: eol: lf"
+  ],
+  "test_log": "test_accounting_and_no_phantom_orders_after_expiry (__main__.TimeCapTests.test_accounting_and_no_phantom_orders_after_expiry) ... ok\ntest_baseline_engine_bytes_match_reviewed_dependency (__main__.TimeCapTests.test_baseline_engine_bytes_match_reviewed_dependency) ... ok\ntest_exactly_forty_active_targets_then_expiry (__main__.TimeCapTests.test_exactly_forty_active_targets_then_expiry) ... ok\ntest_expiry_signal_sells_at_next_open_after_160_hours (__main__.TimeCapTests.test_expiry_signal_sells_at_next_open_after_160_hours) ... ok\ntest_extra_latency_still_limits_actual_episode_length (__main__.TimeCapTests.test_extra_latency_still_limits_actual_episode_length) ... ok\ntest_forced_end_is_not_relabelled_as_time_exit (__main__.TimeCapTests.test_forced_end_is_not_relabelled_as_time_exit) ... ok\ntest_mean_exit_rearms_next_oversold_episode (__main__.TimeCapTests.test_mean_exit_rearms_next_oversold_episode) ... ok\ntest_mean_exit_takes_priority_on_expiry_boundary (__main__.TimeCapTests.test_mean_exit_takes_priority_on_expiry_boundary) ... ok\ntest_no_reentry_during_same_oversold_episode (__main__.TimeCapTests.test_no_reentry_during_same_oversold_episode) ... ok\ntest_nonbinary_targets_rejected (__main__.TimeCapTests.test_nonbinary_targets_rejected) ... ok\ntest_prefix_causality (__main__.TimeCapTests.test_prefix_causality) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 0.005s\n\nOK\n",
+  "orders": 0,
+  "live_enabled": false,
+  "failed_ci_job_id": 118907750280,
+  "failed_ci_details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/39503856959/job/118907750280",
+  "original_ci_summary": {
+    "failed": 1,
+    "passed": 4368,
+    "skipped": 20,
+    "passed_subtests": 439
+  },
+  "change_scope": "Bounded .gitattributes LF checkout policy; frozen strategy and recorded result bytes unchanged"
+}

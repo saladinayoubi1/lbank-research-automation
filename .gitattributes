@@ -60,3 +60,14 @@ scripts/nexus_bybit_official_spot_warmup_capture.py text eol=lf
 scripts/nexus_bybit_official_spot_warmup_qa.py text eol=lf
 research/bybit_official_spot_daily_raw_sample_claims_20261018.json text eol=lf
 research/portfolio_v3_fixed_source_handoff_20261019.json text eol=lf
+
+# MR40 research receipts bind these exact bytes across Windows checkouts.
+research/nexus_mean_reversion_40_m2_retest_v1.py text eol=lf
+research/prepare_mean_reversion_40_m2_retest_v1.py text eol=lf
+research/run_mean_reversion_40_m2_retest_v1.py text eol=lf
+research/mean_reversion_40_m2_retest_v1.json text eol=lf
+tests/test_nexus_mean_reversion_40_m2_retest_v1.py text eol=lf
+research/nexus_mean_reversion_40_m2_time_cap_v1.py text eol=lf
+research/mean_reversion_40_m2_time_cap_v1.json text eol=lf
+tests/test_nexus_mean_reversion_40_m2_time_cap_v1.py text eol=lf
+research/nexus_mean_reversion_40_m2_regime_diagnostic_v1.py text eol=lf

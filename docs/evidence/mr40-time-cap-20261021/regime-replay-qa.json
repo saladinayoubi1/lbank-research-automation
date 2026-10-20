@@ -1,0 +1,14 @@
+{
+  "schema": "nexus.mr40-attribution-replay-qa.v1",
+  "physical_worker": "DESKTOP-F4SA4VL",
+  "baseline_input_digest": "fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe",
+  "baseline_result_digest": "44ea00e4528ccbe3e420bd999152a36b58450565f8a45bb9489a3c79fe4b4514",
+  "attribution_result_digest": "958731bf06901f43ae0e7b8368b6d610a47b1e471e7da275812dd7ef82506871",
+  "original_and_extracted_zip_outputs_byte_equal": true,
+  "output_file_sha256": "911ab5fcd98fd6771bea4cea22e09a2d1ca04cadadace7e5e3c965fe27d460cd",
+  "profiles": 4,
+  "original_positions_each": 81,
+  "new_strategy_simulations": 0,
+  "orders": 0,
+  "live_enabled": false
+}
