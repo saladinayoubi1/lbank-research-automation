@@ -1,0 +1,95 @@
+{
+  "schema": "nexus.ctrend-cmc-metadata-sample.v1",
+  "utc": "2026-10-20T19:00:08.642648+00:00",
+  "preflight": {
+    "schema": "nexus.ctrend-metadata-intake.v1",
+    "provider": "coinmarketcap",
+    "method": "GET",
+    "canonical_url": "https://pro-api.coinmarketcap.com/public-api/v1/cryptocurrency/map?listing_status=active%2Cinactive%2Cuntracked&sort=id&start=1&limit=5",
+    "coverage": null,
+    "coverage_is_caller_annotation_only": true,
+    "status_coverage_requested": [
+      "active",
+      "inactive",
+      "untracked"
+    ],
+    "all_cmc_statuses_requested": true,
+    "response_received": false,
+    "metadata_only": true,
+    "historical_vintage_certified": false,
+    "complete_universe_certified": false,
+    "price_fetch_authorized": false,
+    "label_fetch_authorized": false,
+    "financial_fetch_authorized": false,
+    "financial_backtest_authorized": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "orders": 0,
+    "network_requests": 0
+  },
+  "http_status": 200,
+  "provider_error_code": 0,
+  "source_authenticated": false,
+  "sample_received": true,
+  "complete_universe_certified": false,
+  "historical_vintage_certified": false,
+  "prices_requested": false,
+  "credentials_used": false,
+  "protected_future_data_read": false,
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "live_enabled": false,
+  "real_orders": 0,
+  "raw_sha256": "b9b88eb65dcf024d8e80404b07fdbf869393b3dbc2f896fcda4cf215a6460043",
+  "raw_bytes": 1148,
+  "sample": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "is_active": 1,
+      "first_historical_data": "2010-07-13T00:05:00.000Z",
+      "last_historical_data": "2026-10-20T18:55:00.000Z",
+      "platform": null
+    },
+    {
+      "id": 2,
+      "name": "Litecoin",
+      "symbol": "LTC",
+      "is_active": 1,
+      "first_historical_data": "2013-04-28T18:45:00.000Z",
+      "last_historical_data": "2026-10-20T18:55:00.000Z",
+      "platform": null
+    },
+    {
+      "id": 3,
+      "name": "Namecoin",
+      "symbol": "NMC",
+      "is_active": 1,
+      "first_historical_data": "2013-04-28T18:45:00.000Z",
+      "last_historical_data": "2026-10-20T18:55:00.000Z",
+      "platform": null
+    },
+    {
+      "id": 4,
+      "name": "Terracoin",
+      "symbol": "TRC",
+      "is_active": 1,
+      "first_historical_data": "2013-04-28T18:45:00.000Z",
+      "last_historical_data": "2026-10-20T18:55:00.000Z",
+      "platform": null
+    },
+    {
+      "id": 5,
+      "name": "Peercoin",
+      "symbol": "PPC",
+      "is_active": 1,
+      "first_historical_data": "2013-04-28T18:45:00.000Z",
+      "last_historical_data": "2026-10-20T18:55:00.000Z",
+      "platform": null
+    }
+  ],
+  "raw_filename": "cmc-metadata-sample.response.json",
+  "finished_at_utc": "2026-10-20T19:00:09.805453+00:00"
+}

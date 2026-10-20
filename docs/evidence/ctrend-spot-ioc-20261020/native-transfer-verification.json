@@ -1,0 +1,43 @@
+{
+  "schema": "nexus.ctrend-spot-native-transfer.v1",
+  "source_commit": "d3d96f44ce09f23b4315be562f24d06d3d4a8c7f",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "host": "DESKTOP-F4SA4VL",
+  "native_exit_code": 0,
+  "native_tests_run": 58,
+  "sources_match_local": true,
+  "all_nine_staged_sources_still_match": true,
+  "transfer_sha256_verified": [
+    {
+      "name": "native-validation.json",
+      "sha256": "ec3e3a82f66c853ddd27dab76d05f80bc45d0a11d1490877860a0cdc930b6b30"
+    },
+    {
+      "name": "staging-receipt.json",
+      "sha256": "beb66a767698ec92f7a9c0920dde6a442912f40b2505f09beac85e7187c6fd16"
+    },
+    {
+      "name": "cmc-metadata-sample.json",
+      "sha256": "53cad56d58f85ae31b7ffe6283bf5b21326c9abc456569778496a6eed437b586"
+    },
+    {
+      "name": "cmc-metadata-sample.response.json",
+      "sha256": "b9b88eb65dcf024d8e80404b07fdbf869393b3dbc2f896fcda4cf215a6460043"
+    }
+  ],
+  "current_source_sha256": {
+    "research/nexus_ctrend_bybit_spot_ioc_v1.py": "d36a1b295598aa67ac0dcfa5262dd97ab2073b6792a8cd0ebc467d123f7a4501",
+    "research/ctrend_bybit_spot_ioc_technical_v1.json": "0fbe913a51b091075acf1ba36e209306dd052a9a172c35d7445ad950bacf2f12",
+    "research/nexus_ctrend_causal_wallet_v1.py": "5d1c90fb10ff5273dbde074897c43eea7030d5bbe7ac0d8a4c3ed2f6595cc78d",
+    "research/nexus_ctrend_intake_guard_v1.py": "262e047edbe914aeaa5f05928fc02118ab3ec6fe5a0b5dc6525f26efbf9216b1",
+    "research/run_ctrend_spot_ioc_validation_v1.py": "241ff7aa2fc6b4a831ef7e8532ccd135eb130710340c253fee503054e755e0b9",
+    "tests/test_nexus_ctrend_bybit_spot_ioc_v1.py": "81fcbb86f2823fb106585f1e5f2f1c7d04c8d3252ae468e588f821abcb01f529",
+    "tests/test_nexus_ctrend_causal_wallet_v1.py": "140d394441f8ccc7801ea87e1212aa8365c75e77278867bcff4f4a736b49589f",
+    "tests/test_nexus_ctrend_intake_guard_v1.py": "2016ef5ae9fb0a7137b2696ec29f2da7a591f19cbe04c0d9e68820124569ca78",
+    "research/ops/ctrend_cmc_metadata_sample_20261020.py": "ef1ce3414e8ec8f312dfaef7e3d2892b5ca2a638708d65d2b2f3efd7cb30a1e1"
+  },
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "live_enabled": false,
+  "real_orders": 0
+}
