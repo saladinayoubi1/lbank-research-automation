@@ -1,0 +1,72 @@
+{
+  "schema": "nexus.mr40.published-artifacts.v1",
+  "result_digest": "44ea00e4528ccbe3e420bd999152a36b58450565f8a45bb9489a3c79fe4b4514",
+  "code_commit": "b08d7916581ea98ee44aba222255c643e6873afe",
+  "preregistered_contract_commit": "653a1d4a82d084f4a4c17460e884a41685dafbe7",
+  "parameter_search": false,
+  "repeat_results_and_csv_identical": true,
+  "zip_members": 21,
+  "bundle": {
+    "name": "NEXUS_MR40_Professional_Backtest_20261021.zip",
+    "bytes": 650475,
+    "sha256": "485cc5206866d880bdedd1c6f141d342813c0f7b9c1f46fbd603125730f4fb65",
+    "git_blob": "72bca46adb9d74456120198b61d4008ba5711431"
+  },
+  "outputs": [
+    {
+      "name": "closed_positions.csv",
+      "bytes": 69813,
+      "sha256": "8361ad9770fa4b13a484077f6eaa76478c5237e1fcdd043fac5a981216ca6639",
+      "git_blob": "dd19cb1e887cc094ae15f04055b7ad63419392d5"
+    },
+    {
+      "name": "equity_curve.csv",
+      "bytes": 2650937,
+      "sha256": "f3e0a2e9275b4e10eb6953065e1ab706731cb1ea5feb41c86928ad780ee0e6d9",
+      "git_blob": "16b46134bbaf588cc5d155f005051e98eea1e2ff"
+    },
+    {
+      "name": "fills.csv",
+      "bytes": 185549,
+      "sha256": "a71f935fa114c64f64f78005a90c4bd60cdf4beb53a540d32bd81eb6588c4ed8",
+      "git_blob": "b229edace2a7755fc1ce3ffec5af0d64717381d2"
+    },
+    {
+      "name": "monthly_attribution.csv",
+      "bytes": 22881,
+      "sha256": "bf3e5254ee5610e63d3b72c85109b5d2cdbeeca69cea4a0ca3d9546cc41b4f10",
+      "git_blob": "0aacdb38c42a003d0eb6685ada54da720670d13a"
+    },
+    {
+      "name": "output_manifest.json",
+      "bytes": 1435,
+      "sha256": "e4fcf371fc288e73aa36a3d109bffebaa28230cc3103a401180a0245cbc49f3c",
+      "git_blob": "ea7d118d98292c0d0f32427bd926e1fa4267d491"
+    },
+    {
+      "name": "results.json",
+      "bytes": 488957,
+      "sha256": "33d53dd81e68f59abca2d3a83adffee5e31fd24ab04feae53e05baf9aaa45fd3",
+      "git_blob": "991d932ef2004a1eb861471c16e4a6475787ad9f"
+    },
+    {
+      "name": "summary.csv",
+      "bytes": 10811,
+      "sha256": "99c6a6b0ef118c8298ca5a2e3a37b12d1390ebc2f941d66abe46d359ff21d716",
+      "git_blob": "639e59f79cef44e9e7f09b64633a0111c7274992"
+    }
+  ],
+  "physical_worker": "DESKTOP-F4SA4VL",
+  "checks": {
+    "signal_bars": 8400,
+    "independent_accounting_profiles": 24,
+    "source_files_verified": 5,
+    "unit_tests_passed": 14
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}
