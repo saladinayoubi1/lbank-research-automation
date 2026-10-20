@@ -1,0 +1,49 @@
+{
+  "schema": "nexus.ctrend-ci-collection-diagnosis.v1",
+  "failed_head": "555c9950a1f7c2320ceec87035b9a7bf7d6e8fbe",
+  "workflow_run": 39458652597,
+  "observed_failures": [
+    {
+      "os": "Windows",
+      "job_id": 118752028742,
+      "stage": "pytest collection",
+      "error": "ModuleNotFoundError: No module named 'scipy'"
+    },
+    {
+      "os": "Ubuntu",
+      "job_id": 118752028703,
+      "stage": "pytest collection",
+      "error": "ModuleNotFoundError: No module named 'scipy'"
+    }
+  ],
+  "affected_modules": [
+    "tests/test_nexus_ctrend_causal_model_v1.py",
+    "tests/test_nexus_ctrend_causal_pipeline_v1.py"
+  ],
+  "root_cause": "New research tests import SciPy/scikit-learn but the existing requirements-dev.lock did not include them; isolated native environment installation did not update hosted CI dependencies.",
+  "fix": {
+    "file": "requirements-dev.lock",
+    "added_pins": {
+      "joblib": "1.5.3",
+      "scikit-learn": "1.8.0",
+      "scipy": "1.17.0",
+      "threadpoolctl": "3.6.0"
+    },
+    "runtime_lock_changed": false,
+    "workflow_changed": false,
+    "tests_skipped_or_disabled": false,
+    "model_code_changed": false
+  },
+  "protection_read": "Frozen Phase3 control-plane path list in .github/workflows/nexus-autopilot-policy.yml does not include requirements-dev.lock. No protected path edit is proposed.",
+  "native_current_check": {
+    "checked_at_utc": "2026-10-20T16:38:10.4189972Z",
+    "code_files_checked": 13,
+    "mismatches": [],
+    "report_hash_matches": true,
+    "old_qa_numpy": "2.5.3"
+  },
+  "hosted_ci_success_claimed": false,
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "orders": 0
+}
