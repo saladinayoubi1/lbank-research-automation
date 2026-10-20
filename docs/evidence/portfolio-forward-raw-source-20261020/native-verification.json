@@ -1,0 +1,30 @@
+{
+    "schema":  "nexus.portfolio-v3-forward-source-native-synthetic-verification.v1",
+    "observed_utc":  "2026-10-19T21:49:59.0246602Z",
+    "scope":  "SYNTHETIC_PROTOCOL_TESTS_NOT_REAL_FUTURE_MARKET_DATA",
+    "device":  "DESKTOP-F4SA4VL",
+    "focused_test_methods":  12,
+    "test_exit":  0,
+    "status_exit":  0,
+    "code_and_policy_sha256_lf":  {
+                                      "scripts/nexus_portfolio_v3_forward_raw_source.py":  "f6c818e5faca35d048473ecbd18c4ea8fc54e07025710a423345769cd3cf1e0f",
+                                      "tests/test_nexus_portfolio_v3_forward_raw_source.py":  "611a10c567c1ed50aafcb440338339dac28737fbe294d8f6e92c65e4dac0d45b",
+                                      "research/portfolio_v3_forward_raw_source_policy_v1.json":  "4ed30c9315c053f43db8f2b09c69db15ef6a6bd3400ea821ae45cf311326d3b1"
+                                  },
+    "test_log_sha256":  "15c92fd0c8208f4bd1347516b418eabed65d84693c35788ce0fa6c734ea9872d",
+    "actual_current_time_status":  {
+                                       "status":  "BLOCKED_FULL_HORIZON_INCOMPLETE",
+                                       "policy_digest":  "b9023729d4c1a06755d8699b896376b90489ac8f132f5a2b2e59b6b7c776e075",
+                                       "full_horizon_elapsed":  false,
+                                       "source_prices_read":  false,
+                                       "ready_for_strategy_result_or_paper":  false,
+                                       "financial_dispatch_authorized":  false,
+                                       "paper_eligible":  false,
+                                       "live_enabled":  false,
+                                       "orders":  0
+                                   },
+    "real_future_data_acquired":  false,
+    "financial_execution_performed":  false,
+    "live_enabled":  false,
+    "orders":  0
+}
