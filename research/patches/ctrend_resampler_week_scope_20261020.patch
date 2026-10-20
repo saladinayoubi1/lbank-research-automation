@@ -1,0 +1,11 @@
+--- a/Utils/fResampleLiuEtAl.m
++++ b/Utils/fResampleLiuEtAl.m
+@@ -118,7 +118,7 @@
+                     idx = vIdxLoop(iIdxA);
+         
+                     % Find last valid observation
+-                    vUseThisObs(idx) = mDataTemp(find(~isnan(mDataTemp(:,idx)),1,'last'), idx);
++                    vUseThisObs(idx) = mDataDailyTemp(find(~isnan(mDataDailyTemp(:,idx)),1,'last'), idx);
+                 end
+     
+                 % Save resampled data
