@@ -1,0 +1,125 @@
+{
+  "schema": "nexus.mean-reversion-40-m2-fixed-retest.v1",
+  "study_id": "mr40-professional-20261021",
+  "classification": "strategy-factory/evidence-verification",
+  "strategy_id": "mean_reversion_40_m2",
+  "symbol": "BTCUSDT",
+  "market": "Bybit Spot",
+  "timeframe": "4h",
+  "params": {
+    "lookback": 40,
+    "entry_z": -2,
+    "exit_z": 0
+  },
+  "params_sha256": "0916ba925966b2d21ca3b1e4e584acc17ce22a4c49f09aa77b7f0049d2d33d8e",
+  "capital_usdt": 10000,
+  "legacy_source_sha": "d60c063a2a79d2359538d48dd6088133c704eb8f",
+  "legacy_engine_blob": "7afcd759d1874dda1ca774cfd270ef209e4b2ff8",
+  "legacy_engine_sha256": "aa9d335900226ce671a543ed256b9069d6870a71c06f0cf4a6cfebb9490bd664",
+  "baseline_main_sha": "76e111c0fb39e4e1f7422644906c5118b02b5ddd",
+  "cohorts": [
+    {
+      "id": "july_legacy_control",
+      "start": "2026-07-01",
+      "end_exclusive": "2026-08-01",
+      "warmup": "none; exact historical first-bar execution rule",
+      "role": "known-result reproduction"
+    },
+    {
+      "id": "july_warm_start",
+      "start": "2026-07-01",
+      "end_exclusive": "2026-08-01",
+      "warmup": "available previous closed history",
+      "role": "boundary sensitivity; seen data"
+    },
+    {
+      "id": "august",
+      "start": "2026-08-01",
+      "end_exclusive": "2026-09-01",
+      "warmup": "previous closed history",
+      "role": "post-July historical validation"
+    },
+    {
+      "id": "september",
+      "start": "2026-09-01",
+      "end_exclusive": "2026-10-01",
+      "warmup": "previous closed history",
+      "role": "post-July historical validation"
+    },
+    {
+      "id": "august_september_continuous",
+      "start": "2026-08-01",
+      "end_exclusive": "2026-10-01",
+      "warmup": "previous closed history",
+      "role": "primary post-July historical validation; no month-end reset"
+    },
+    {
+      "id": "retrospective_42_months",
+      "start": "2023-01-01",
+      "end_exclusive": "2026-07-01",
+      "warmup": "December 2022",
+      "role": "retrospective robustness; not pristine OOS"
+    }
+  ],
+  "execution": {
+    "sizing": "all cash, long/flat, no leverage",
+    "decision": "prior closed-bar target",
+    "normal": {
+      "fee_bps": 10,
+      "slippage_bps": 5
+    },
+    "stress": {
+      "fee_bps": 25,
+      "slippage_bps": 15
+    },
+    "zero_cost_diagnostic": {
+      "fee_bps": 0,
+      "slippage_bps": 0
+    },
+    "additional_latency_diagnostic": "one additional complete 4h bar using normal costs",
+    "start_rule": "cash account follows last available closed-bar target at first open; legacy control skips first open",
+    "terminal_rule": "force sell at final closed-bar close with costs; every such exit explicitly tagged",
+    "fee_currency_assumption": "quote currency; historical model convention",
+    "partial_fills_modelled": false,
+    "order_book_modelled": false,
+    "intrabar_path_known": false,
+    "minimum_trade_count_gate": false
+  },
+  "source_inputs": [
+    {
+      "kind": "pinned canonical official trade archive Parquet",
+      "path_hint": "bybit_market/btc_usdt/hour4.parquet",
+      "sha256": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6"
+    },
+    {
+      "kind": "official monthly Spot trade gzip; reuse cached bytes",
+      "month": "2026-08",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-08.csv.gz",
+      "sha256": "08fe0babad662446591593c5b7b709460823b629567b7f6db28f7a2f3f295f3f",
+      "bytes": 109705306,
+      "rows": 15618765
+    },
+    {
+      "kind": "official monthly Spot trade gzip; reuse cached bytes",
+      "month": "2026-09",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-09.csv.gz",
+      "sha256": "b45655ffb9069e97925905d51fbfd02fe0ff8ef0298d7ecfc501111110fd64d8",
+      "bytes": 128140828,
+      "rows": 19355495
+    }
+  ],
+  "validation": {
+    "fixed_single_configuration": true,
+    "no_parameter_search": true,
+    "training_or_selection_performed": false,
+    "post_july_is_prospective": false,
+    "source_checks": "digest, expected row count, gzip parse through EOF, finite positive prices, nonnegative volume, exact month, side, unique increasing IDs and nondecreasing timestamps, gap-free 4h buckets",
+    "numeric_checks": "independent Decimal signal/accounting, historical engine compatibility, cash/asset reconciliation, causality, boundary and terminal-exit tests"
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders_placed": 0
+  }
+}
