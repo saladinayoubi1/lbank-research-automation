@@ -12,7 +12,7 @@ def load_verified(root):
     if contract["authority"]!={"research_only":True,"auto_demo":False,"live_enabled":False,"orders_placed":0}: raise ValueError("authority boundary")
     inputs=json.loads((root/"prepared_inputs.json").read_text(encoding="utf-8"))
     unsigned={k:v for k,v in inputs.items() if k!="input_digest"}
-    if m.digest(unsigned)!=inputs["input_digest"] or m.digest(inputs["rows"])!=inputs["all_bars_sha256"]: raise ValueError("input digest mismatch")
+    if m.digest(unsigned)!=inputs["input_digest"] or inputs["input_digest"]!="fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe" or m.digest(inputs["rows"])!=inputs["all_bars_sha256"]: raise ValueError("input digest mismatch")
     if inputs.get("symbol")!="BTCUSDT" or inputs.get("timeframe")!="hour4": raise ValueError("input identity")
     if [s["sha256"] for s in inputs["sources"]]!=[s["sha256"] for s in contract["source_inputs"]]: raise ValueError("source substitution")
     if not all(s.get("raw_trade_semantics_validated") is True for s in inputs["sources"][1:]): raise ValueError("raw semantic evidence missing")
@@ -26,7 +26,8 @@ def csv_write(path,rows):
     with path.open("w",encoding="utf-8",newline="") as target:
         writer=csv.DictWriter(target,fieldnames=list(rows[0]),lineterminator="\n")
         writer.writeheader();writer.writerows(rows)
-def run(root,code_sha,prereg_sha):
+def run(root,code_sha,prereg_sha,output_name="results"):
+    if not output_name or Path(output_name).name!=output_name or output_name in (".",".."): raise ValueError("invalid output subdirectory")
     for value in (code_sha,prereg_sha):
         if len(value)!=40 or any(c not in "0123456789abcdef" for c in value): raise ValueError("exact commit required")
     contract,inputs,legacy=load_verified(root);all_rows=inputs["rows"];signal=m.targets(all_rows);independent=m.decimal_targets(all_rows)
@@ -85,7 +86,7 @@ def run(root,code_sha,prereg_sha):
         b=(root/rel).read_bytes();source_files[rel]={"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest(),"git_blob":hashlib.sha1(f"blob {len(b)}\0".encode()+b).hexdigest()}
     report={"schema":"nexus.mr40-professional-fixed-retest-results.v1","study_id":contract["study_id"],"study_user_date":"2026-10-21",
         "executed_utc":datetime.now(timezone.utc).isoformat(),"code_commit":code_sha,"preregistered_contract_commit":prereg_sha,
-        "python":platform.python_version(),"pandas":pd.__version__,"numpy":np.__version__,"physical_worker":"DESKTOP-F4SA4VL",
+        "python":platform.python_version(),"pandas":pd.__version__,"numpy":np.__version__,"physical_worker":platform.node(),
         "strategy_id":contract["strategy_id"],"params":m.PARAMS,"params_sha256":m.digest(m.PARAMS),
         "input_digest":inputs["input_digest"],"input_sources":inputs["sources"],"source_files":source_files,
         "independent_signal_bars":len(signal),"historical_pandas_target_match":True,"prefix_causality_checks":len(cutpoints),
@@ -95,7 +96,7 @@ def run(root,code_sha,prereg_sha):
         "qualification":"RESEARCH_ONLY_NO_AUTO_PROMOTION","parameter_search_performed":False,"minimum_trade_count_gate_applied":False,
         "post_july_period_is_prospective":False,"orders_placed":0,"live_enabled":False}
     report["result_digest"]=m.digest(report)
-    dest=root/"results"
+    dest=root/output_name
     if dest.exists():raise ValueError("refuse overwrite completed study outputs")
     dest.mkdir()
     (dest/"results.json").write_text(json.dumps(report,ensure_ascii=False,separators=(",",":"),allow_nan=False)+"\n",encoding="utf-8")
@@ -109,5 +110,6 @@ def run(root,code_sha,prereg_sha):
     return report
 def main():
     p=argparse.ArgumentParser();p.add_argument("--root",type=Path,required=True);p.add_argument("--source-sha",required=True);p.add_argument("--prereg-sha",required=True)
-    a=p.parse_args();run(a.root,a.source_sha,a.prereg_sha)
+    p.add_argument("--output-name",default="results")
+    a=p.parse_args();run(a.root,a.source_sha,a.prereg_sha,a.output_name)
 if __name__=="__main__":main()
