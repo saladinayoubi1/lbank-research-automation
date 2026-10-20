@@ -27,6 +27,8 @@ def number(x):
 def compare(actual, expected, path="result"):
     if isinstance(expected, dict):
         require(isinstance(actual, dict), path + ": not an object")
+        if path.endswith(".monthly_pnl_usdt"):
+            require(set(actual) == set(expected), path + ": month set")
         for k, v in expected.items():
             require(k in actual, path + ": missing " + k)
             compare(actual[k], v, path + "." + k)
