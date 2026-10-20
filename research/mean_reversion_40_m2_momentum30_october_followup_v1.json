@@ -1,0 +1,81 @@
+{
+  "schema": "nexus.mr40-momentum30-october-followup.v1",
+  "study_id": "mr40-momentum30-october-followup-20261021",
+  "frozen_candidate_commit": "764d544af246769ffae0c6aca00d02c00fb34078",
+  "candidate_engine_sha256": "d899e9dd991695959c230426b50ebdb4bab2eca8c5f413ea3c471d957c1f69bb",
+  "baseline_engine_sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+  "previous_input_digest": "fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe",
+  "previous_candidate_result_digest": "959832aa111ba6bbab7a899547a7d4e031a0f3cd0a283de30397635f1ba5f118",
+  "policy": "Unchanged original MR40 signals, momentum30 episode admission, original exits, all-cash long/flat; no cap40 and no new parameter.",
+  "cohorts": [
+    {
+      "id": "october_01_19",
+      "start": "2026-10-01",
+      "end_exclusive": "2026-10-20",
+      "days": 19,
+      "role": "new candidate-specific historical follow-up beyond prior September endpoint; warm previous history, fresh account"
+    },
+    {
+      "id": "august_october19_continuous",
+      "start": "2026-08-01",
+      "end_exclusive": "2026-10-20",
+      "role": "continuous historical follow-up; no monthly account or admission resets"
+    }
+  ],
+  "capital_usdt": 10000,
+  "profiles": [
+    {
+      "id": "normal",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 1
+    },
+    {
+      "id": "stress",
+      "fee_bps": 25,
+      "slippage_bps": 15,
+      "lag_bars": 1
+    },
+    {
+      "id": "zero_cost_diagnostic",
+      "fee_bps": 0,
+      "slippage_bps": 0,
+      "lag_bars": 1
+    },
+    {
+      "id": "additional_4h_latency",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 2
+    }
+  ],
+  "compared_strategies": [
+    "original_mean_reversion_40_m2",
+    "frozen_momentum30_entry_v1"
+  ],
+  "data_rules": {
+    "required_days": "Every complete UTC day October 1 through 19; do not use unfinished UTC day October20.",
+    "source": "Official Bybit Spot BTCUSDT raw trade daily gzip archive only; reuse hash-verified local sources and audited aggregations, fetch missing days from the official HTTPS source.",
+    "format": "Accept six-column header, or documented five-name header with exactly six trade fields including RPI; record schema. No skipped rows or imputed candles.",
+    "validation": "SHA256 and gzip EOF/CRC; monotonic trade ID and timestamp, exact UTC day, finite positive price, finite nonnegative quantity, side/RPI enum, six observed 4h buckets per day.",
+    "fail_closed": "If complete coverage or provenance cannot be established, record the exact missing date/source and do not score a silently shortened substitute.",
+    "warmup": "Append to the immutable 8400-bar previous input; preserve every prior row, verify contiguous 4h cadence and original input digest.",
+    "freeze": "Record exact source receipts and augmented-input digest before any new performance score."
+  },
+  "classification": {
+    "prospective": false,
+    "pristine_oos": false,
+    "reason": "October raw days were previously used by other NEXUS studies, including Elliott. They were not scored for this frozen MR40 candidate before this stage; this is historical follow-up, not unseen project data.",
+    "parameter_search": false,
+    "alternative_cutoff_after_scores": false,
+    "minimum_trade_count_gate": false,
+    "all_results_reported": true,
+    "independent_economic_qualification": false
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}
