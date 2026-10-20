@@ -1,0 +1,23 @@
+[Reading 20 new lines (total: 20 lines)]
+
+test_additional_latency_uses_an_older_signal (__main__.ExecutionTests.test_additional_latency_uses_an_older_signal) ... ok
+test_close_signal_waits_for_next_open (__main__.ExecutionTests.test_close_signal_waits_for_next_open) ... ok
+test_continuous_monthly_attribution_does_not_flatten (__main__.ExecutionTests.test_continuous_monthly_attribution_does_not_flatten) ... ok
+test_future_prices_cannot_change_past_target (__main__.ExecutionTests.test_future_prices_cannot_change_past_target) ... ok
+test_gap_and_invalid_envelope_are_rejected (__main__.ExecutionTests.test_gap_and_invalid_envelope_are_rejected) ... ok
+test_no_repeated_dust_orders (__main__.ExecutionTests.test_no_repeated_dust_orders) ... ok
+test_terminal_close_costs_and_time_are_explicit (__main__.ExecutionTests.test_terminal_close_costs_and_time_are_explicit) ... ok
+test_two_sided_fee_formula_and_independent_marks (__main__.ExecutionTests.test_two_sided_fee_formula_and_independent_marks) ... ok
+test_warm_boundary_and_legacy_first_bar_are_distinct (__main__.ExecutionTests.test_warm_boundary_and_legacy_first_bar_are_distinct) ... ok
+test_digest_tampering_rejected_before_parsing (__main__.SourceTests.test_digest_tampering_rejected_before_parsing) ... ok
+test_duplicate_ids_rejected (__main__.SourceTests.test_duplicate_ids_rejected) ... ok
+test_full_original_six_field_rows_under_five_name_header (__main__.SourceTests.test_full_original_six_field_rows_under_five_name_header) ... {"month": "2026-09", "quality": "PASS", "rows": 180, "bars": 180, "bar_sha256": "a4f7e6ef75a3bf7e44bb98fee85252c16857fd56e94ce1dd4cea236fda6d0baf"}
+ok
+test_original_gzip_corruption_is_not_skipped (__main__.SourceTests.test_original_gzip_corruption_is_not_skipped) ... ok
+test_out_of_month_trade_rejected (__main__.SourceTests.test_out_of_month_trade_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.420s
+
+OK
+✅ Process completed with exit code 0 (runtime: 3.66s)
