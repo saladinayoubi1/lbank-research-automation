@@ -83,3 +83,8 @@ scripts/nexus_mr40_october_followup_intake_v1.py text eol=lf
 tests/test_nexus_mr40_october_followup_intake_v1.py text eol=lf
 research/nexus_mr40_momentum30_october_followup_v1.py text eol=lf
 tests/test_nexus_mr40_momentum30_october_followup_v1.py text eol=lf
+
+# Fixed-path MR40 robustness receipts also require LF checkout bytes.
+research/mean_reversion_40_m2_robustness_v1.json text eol=lf
+research/nexus_mr40_fixed_path_robustness_v1.py text eol=lf
+tests/test_nexus_mr40_fixed_path_robustness_v1.py text eol=lf
