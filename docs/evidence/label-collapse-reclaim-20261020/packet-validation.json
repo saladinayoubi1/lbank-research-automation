@@ -1,0 +1,21 @@
+{
+  "schema": "nexus.label-collapse-evidence-packet-validation.v1",
+  "verified": true,
+  "packet_bytes": 338717,
+  "packet_sha256": "4fdcea89d7069931f21a13d57180cc5e7696e977141b8d78a892c6d2fde030a7",
+  "packet_git_blob": "254ddb602d1d17b1aed2a1c566ba313f302ffc35",
+  "entries_checked": 20,
+  "raw_trade_rows": 70815420,
+  "verified_bars": 948,
+  "financial_reports": 21,
+  "close_marks_verified": 9954,
+  "mean_pnl_reports_checked": 6,
+  "features_digest": "f6dbade5feccf15db5c6ea23b621b40c3c37202b0ef5689430a74bc1e0c4f583",
+  "result_digest": "544ae621cf0b3b8064c7eda9e8651e99e2bb0eb2aa7c0e76274adfdba2610ace",
+  "outcome": "terminal_negative_no_retune",
+  "paper_eligible": false,
+  "live_enabled": false,
+  "orders": 0,
+  "protected_prices_read": false,
+  "post_execution_source_hashes_match": true
+}
