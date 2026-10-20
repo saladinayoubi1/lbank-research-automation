@@ -169,7 +169,7 @@ def run_book(bars,profile,flow):
             if b["open"]<=pos["stop"]:sell(i,b["open"],"stop_gap","first_trade")
             elif b["open"]>=pos["target"]:sell(i,pos["target"],"target_gap","first_trade")
             elif i>=pos["entry_index"]+6:sell(i,b["open"],"time","first_trade")
-        if not held_at_open and pos is None and i<n-1:
+        if not held_at_open and pos is None:
             for s in SYMBOLS:
                 bb=bars[s];b=bb[i]
                 if not signal(bb,i,flow):continue
