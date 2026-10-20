@@ -1,0 +1,23 @@
+{
+  "schema": "nexus.ctrend-causal-real-source-probe.v1",
+  "scope": "current_instrument_metadata_only",
+  "url": "https://api.bybit.com/v5/market/instruments-info?category=spot",
+  "started_at_utc": "2026-10-20T16:19:33.940847+00:00",
+  "protected_prices_requested": false,
+  "market_prices_requested": false,
+  "credentials_used": false,
+  "historical_availability_proven": false,
+  "status": "SOURCE_METADATA_UNAVAILABLE",
+  "error": "HTTPError: HTTP Error 403: Forbidden",
+  "exact_raw_filenames_searched": [
+    "MetaData.mat",
+    "close_cmc.csv",
+    "high_cmc.csv",
+    "low_cmc.csv",
+    "market_cap_cmc.csv",
+    "open_cmc.csv",
+    "volume_cmc.csv"
+  ],
+  "filename_inventory_only": [],
+  "finished_at_utc": "2026-10-20T16:19:37.279621+00:00"
+}
