@@ -1,0 +1,19 @@
+{
+  "schema": "nexus.label-collapse-real-room-final-decision.v1",
+  "review": {
+    "id": "demo-label-v1-final-20261020",
+    "reviewer": "Codex coordinator; independently checked by /root/demo_strategy_critic",
+    "provider": "codex",
+    "round_id": "8672db1c07e24e33985ba5a6ca9dc346",
+    "verdict": "terminal_negative_no_retune",
+    "text": "ACTUAL FINAL RESULT, not an AI performance estimate:158 retained official rawfiles/70,815,420trades/948bars Aug1-Oct18. CandidateONEtrade net conservative+3.3099958546,stress+2.6482665981,severe+1.8954548820USDT. Identicalno-flow24trades stress-6.2550508602. Cappedinitialgross250passive50/50stress+73.4606982847. Candidate stresscloseDD0.25060009% vs6.71323937%passive. Threefixedgates pass; stressnet>cappedpassive FAILS. Independently authoredDecimalQAverified21reports/9954closemarks. Independentcritic confirms rejection follows financialgate, not arbitrarytradecount; positiveone-tradehistorydoesnotestablishalpha. Exacthypothesisclosedwithoutretuning. Full20-entrypacketpersistedPR2763Gitblob254ddb602d1d17b1aed2a1c566ba313f302ffc35/SHA2564fdcea89d7069931f21a13d57180cc5e7696e977141b8d78a892c6d2fde030a7. Source4code/contracthashesunchangedafter; protectedpricesread=false;paper_eligible=false;Live=false;orders0.",
+    "paper_eligible": false,
+    "live_enabled": false,
+    "orders": 0,
+    "terminal_for_exact_contract": true,
+    "thresholds_changed": false
+  },
+  "room_worker_save_confirmed": true,
+  "confirmation": "Action Review returned ok:true, exit0; the saved room.json final review was read back with the same ID and verdict.",
+  "worker_output": "[Reading 1 new lines (total: 1 lines)]\n\n{\"room_file\":\"F:\\\\NEXUS-Tools\\\\ChatCLI\\\\AI-Room\\\\room.json\",\"ok\":true,\"rounds\":8,\"action\":\"Review\",\"messages\":40}\r\n✅ Process completed with exit code 0 (runtime: 6.15s)"
+}

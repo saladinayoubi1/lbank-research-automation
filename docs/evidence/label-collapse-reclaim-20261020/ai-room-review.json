@@ -1,0 +1,82 @@
+{
+  "schema": "nexus.label-collapse-real-ai-room-review.v1",
+  "room_reviews_verified_utc": "2026-10-20T14:21:29.5704513Z",
+  "room_review_count": 3,
+  "deepseek": {
+    "round": {
+      "id": "8672db1c07e24e33985ba5a6ca9dc346",
+      "prompt": "NEXUS bounded follow-up,20Oct2026. We acted on your request for genuinely new input. A new contract is committed BEFORE reading its prices/features at Git commit6f0ea6f036da8c3d6a60b79a501c359419ce6848: research/label_collapse_reclaim_4h_v1.json. Actual two independent Codex agents reviewed novelty/mechanics in this room; no claim that they are Claude. PPL is IP-blocked and Claude region-blocked; neither supplied a fresh vote and no bypass was tried.\n\nActual already retained input:158 official Bybit Spot BTC/ETH rawdaily CSVs, Aug1-Oct18,2026,70,815,420 trades, previously DecimalOHLCV-verified. Fieldsid,timestamp,price,volume,side,rpi. Exact CSV taker-side mapping remains unverified. Solve that dependency by using ABSOLUTE publisher-label quote-notional imbalance I=abs(sum(p*v,label=buy)-sum(p*v,label=sell))/sum(p*v). Global buy/sell swap leaves exact signal invariant. We call it label concentration/price response, NOT taker absorption.\n\nONE frozen system: event e=t-1 red(Ce<Oe), Ie>=0.20; response t close>eventhigh, It<=0.05; enter firsttrade/open t+1. E=open*(1+slip); S=min(two signal lows). Require1%-4% E-to-S. TargetE+2*(E-S). Exit after6bars atopen; stopgap=open,ordinary stop=S,target=T(no favorablegapimprovement),bothhit=stopfirst. All sells adverse slip thenfee. No reentry inexitbar. One shared500Spotlong/cashbook, oneposition,BTCtiepriority; qty=min(250/E,2.5/[E*(1+fee)-S*(1-slip)*(1-fee)],cash/[E*(1+fee)]). Per-sidecostsfee/slipbps10/5,15/10,25/15. LastOct18close terminalexit; never readOct19+protectedprices.\n\nIdentical price-only ablation removes ONLY the two I gates. Report all3costs plus cash/fullpassiveBTC/ETH/50-50 and 250-gross passive50-50. Frozen exploratory gate: candidateall3net>0; stressnet>priceonlystressnet and>250gross50-50stressnet; stresscloseDD<=samepassiveDD. Zeroevents/failure terminal, NO thresholdretune. Any positive is inspected-development-only, NOT OOS or Demoqualification. OriginalOct19-Jan17 study untouched. Independent allrawfeaturearithmetic and tradeaccounting QA are required. Primary arxiv2608.21888 reports15minreversalgross~1.3bps vs5bpscost; this does not validate our4hoperationaladaptation or30bpsminimumcost.\n\nGive a concise critical verdict on this exact system:1)real new information vs renamedOHLCV?2)causal/risk/accounting flaw?3)does label-swap invariance suffice for computation despite unresolvedCSVside?4)one stop-condition. Do not propose replacement parameters, claim profitability, codeaccess, or markDemoapproved. <=280Persianwords.",
+      "prompt_sha256": "b92d5a90e0f8755c8f9df779135ad193b3b5fede1faea7b1381c457b535881bf",
+      "created_at": "2026-10-20T14:10:27.0384465Z",
+      "requests": [
+        {
+          "provider": "deepseek",
+          "status": "completed",
+          "submitted": true,
+          "user_index": 16,
+          "answer_index": 17,
+          "submitted_at": "2026-10-20T14:10:34.6952811Z",
+          "finished_at": "2026-10-20T14:10:49.3251550Z",
+          "answer_sha256": "47345f50b318de40bb2a1cccd748c0c8b144d672820a4666c8982cae74bf2517",
+          "error": "",
+          "attempts": 1
+        }
+      ]
+    },
+    "answer": {
+      "id": "deepseek:3d25e6b2c1f0:17",
+      "provider": "deepseek",
+      "role": "assistant",
+      "index": 17,
+      "conversation_url": "https://chat.deepseek.com/a/chat/s/8223d253-91ae-4fa7-beee-ba53d387d599",
+      "text": "Found 14 web pages\r\nحکم: رد می‌شود — به‌عنوان کاندیدای Demo/Paper واجد شرایط نیست؛ فقط به‌عنوان یک آزمون تشخیصی محدود با ریسک بالای شکست قابل ثبت است.\r\n۱) اطلاعات واقعاً جدید در برابر OHLCV تغییرنام‌یافته؟\r\n شرطی. \r\nI=abs(buy-sell)/total\r\n از فیلد \r\nside\r\n مشتق می‌شود که در داده‌های خام Bybit وجود دارد \r\n، و مکانیزم «تجمیع برچسب/پاسخ قیمت» از مومنتوم/نوسان صرف متمایز است. اما این تنها در صورتی «جدید» است که عدم‌قطعیت نگاشت side حل شود؛ در غیر این صورت، \r\nI\r\n یک نویز ساختاری است که آستانه‌های \r\n0.20\r\n/\r\n0.05\r\n را بی‌معنا می‌کند. ادعای «جدید» بودن باید مشروط به تأیید مستقل نگاشت باشد.\r\n۲) نقص علّی/ریسک/حسابداری:\r\n سه مورد. الف) \r\nE=open*(1+slip)\r\n در حالی که سیگنال از close کندل \r\nt\r\n می‌آید — اگر open کندل \r\nt+1\r\n با گپ بزرگ باز شود، \r\nE\r\n ممکن است از \r\nS\r\n عبور کند و R:R مثبت کاذب بسازد؛ باید \r\nE>S\r\n صریح بررسی شود. ب) «بدون بهبود گپ مطلوب برای target» با «both-hit=stop-first» ناسازگار است: اگر گپ از target بپرد، target اجرا نمی‌شود و stop-first منطقاً بی‌معنا می‌شود؛ باید حالت «گپ فراتر از target» جدا تعریف شود. ج) \r\nqty\r\n شامل \r\n2.5/[E*(1+fee)-S*(1-slip)*(1-fee)]\r\n است — این فرمول ریسک ثابت ۲٫۵ USDT را فرض می‌کند اما با \r\nmin\r\n با سقف ۲۵۰، در صورت کوچک بودن \r\nE-S\r\n ممکن است qty بسیار بزرگ شود؛ باید سقف صریح روی qty اعمال شود.\r\n۳) آیا ناوردایی label-swap برای محاسبه کافی است؟\r\n خیر. ناوردایی فقط نشان می‌دهد \r\nabs(buy-sell)\r\n تحت swap کل global ثابت است. اما اگر نگاشت CSV \r\nper-row\r\n اشتباه باشد (مثلاً \r\nside\r\n در برخی ردیف‌ها برعکس تفسیر شود)، \r\nI\r\n تغییر می‌کند و ناوردایی global آن را نمی‌گیرد. عدم‌قطعیت نگاشت side باید با تأیید مستندات Bybit یا نمونه‌برداری دستی حل شود، نه با فرض ناوردایی \r\n.\r\n۴) یک شرط توقف:\r\n اگر پس از تأیید مستقل نگاشت side، تعداد رویدادهای معتبر در پنجره Aug–Oct 2026 کمتر از ۲۰ باشد، آزمون متوقف شود — نمونه برای هر استنباط آماری ناکافی است و ادامه آن صرفاً بهینه‌سازی روی نویز است.\r\nمحدودیت:\r\n مقاله arXiv:2608.21888 لبه ناخالص ۱۵ دقیقه‌ای ~۱٫۳ bps در برابر هزینه ۵ bps را گزارش می‌کند \r\n؛ این \r\nآزمون ما را تأیید نمی‌کند\r\n — آداپتاسیون ۴ ساعته و حداقل هزینه ۳۰ bps ما کاملاً متفاوت است. هیچ ادعای سودآوری یا تأیید Demo ندارم.\r\n28 web pages",
+      "raw_text": "￼\n￼\nFound 14 web pages\n￼\nحکم: رد می‌شود — به‌عنوان کاندیدای Demo/Paper واجد شرایط نیست؛ فقط به‌عنوان یک آزمون تشخیصی محدود با ریسک بالای شکست قابل ثبت است.\n۱) اطلاعات واقعاً جدید در برابر OHLCV تغییرنام‌یافته؟ شرطی. I=abs(buy-sell)/total از فیلد side مشتق می‌شود که در داده‌های خام Bybit وجود دارد ، و مکانیزم «تجمیع برچسب/پاسخ قیمت» از مومنتوم/نوسان صرف متمایز است. اما این تنها در صورتی «جدید» است که عدم‌قطعیت نگاشت side حل شود؛ در غیر این صورت، I یک نویز ساختاری است که آستانه‌های 0.20/0.05 را بی‌معنا می‌کند. ادعای «جدید» بودن باید مشروط به تأیید مستقل نگاشت باشد.-\n2\n-\n5\n۲) نقص علّی/ریسک/حسابداری: سه مورد. الف) E=open*(1+slip) در حالی که سیگنال از close کندل t می‌آید — اگر open کندل t+1 با گپ بزرگ باز شود، E ممکن است از S عبور کند و R:R مثبت کاذب بسازد؛ باید E>S صریح بررسی شود. ب) «بدون بهبود گپ مطلوب برای target» با «both-hit=stop-first» ناسازگار است: اگر گپ از target بپرد، target اجرا نمی‌شود و stop-first منطقاً بی‌معنا می‌شود؛ باید حالت «گپ فراتر از target» جدا تعریف شود. ج) qty شامل 2.5/[E*(1+fee)-S*(1-slip)*(1-fee)]۲٫۵ است — این فرمول ریسک ثابت  USDT را فرض می‌کند اما با min، در صورت کوچک بودن ۲۵۰ با سقف E-S ممکن است qty بسیار بزرگ شود؛ باید سقف صریح روی qty اعمال شود.\n۳) آیا ناوردایی label-swap برای محاسبه کافی است؟ خیر. ناوردایی فقط نشان می‌دهد abs(buy-sell) تحت swap کل global ثابت است. اما اگر نگاشت CSV per-row اشتباه باشد (مثلاً side،  در برخی ردیف‌ها برعکس تفسیر شود)I تغییر می‌کند و ناوردایی global آن را نمی‌گیرد. عدم‌قطعیت نگاشت side باید با تأیید مستندات Bybit یا نمونه‌برداری دستی حل شود، نه با فرض ناوردایی .-\n5\n۴) یک شرط توقف: اگر پس از تأیید مستقل نگاشت side، تعداد رویدادهای معتبر در پنجره Aug–Oct 2026  باشد، آزمون متوقف شود — نمونه برای هر استنباط آماری ناکافی است و ادامه آن ۲۰کمتر از صرفاً بهینه‌سازی روی نویز است.\nمحدودیت: مقاله arXiv:2608.21888 ۱٫۳ دقیقه‌ای ~۱۵لبه ناخالص  bps ۵در برابر هزینه  bps را گزارش می‌کند ؛ این آزمون ما را تأیید نمی‌کند۳۰ ساعته و حداقل هزینه ۴ — آداپتاسیون  bps ما کاملاً متفاوت است. هیچ ادعای سودآوری یا تأیید Demo ندارم.-\n7\n28 web pages",
+      "tables": [],
+      "captured_at": "2026-10-20T14:10:49.1811531Z",
+      "message_at": null
+    }
+  },
+  "actual_codex_reviews": [
+    {
+      "id": "demo-label-v1-codex-design-20261020",
+      "reviewer": "Codex design agent /root/demo_novelty_inventory",
+      "provider": "codex_internal_agent",
+      "round_id": "8672db1c07e24e33985ba5a6ca9dc346",
+      "verdict": "one_exploratory_hypothesis_not_demo_approval",
+      "text": "Actual independent Codex design contribution, not Claude/Perplexity: publisher-label absolute quote imbalance collapse (.20 event/.05 response), red event then response close above event high, next4h open. Fixed two-bar-low stop,1%-4% entry distance,2R target,6bar time exit,one shared500Spotbook/max250. Both RPI values included. Exact same price-only ablation removes only imbalance gates. Global label swap invariant; no taker-side/absorption assertion. This was selected before new-feature price reads. Coordinator adopted critic's cost-inclusive2.5stop budget and all3cost/passive gate. Positive inspected development would remain insufficient for Demo."
+    },
+    {
+      "id": "demo-label-v1-codex-critic-20261020",
+      "reviewer": "Codex independent critic /root/demo_strategy_critic",
+      "provider": "codex_internal_agent",
+      "round_id": "8672db1c07e24e33985ba5a6ca9dc346",
+      "verdict": "exploratory_only_with_independent_accounting_and_ablation",
+      "text": "Actual independent Codex critique, not an external provider identity: absolute publisher-label concentration contains information absent from OHLCV, but cannot establish aggressor direction or L2 absorption. Requires identical price-only control, cost-inclusive sizing and fixed passive comparison; zero/negative results terminate without retuning. Critic's separately suggested .25/.10 alternative was NOT selected or tested. Critic independently implemented Decimal signal/execution/accounting QA, no producer import, for6active+15passive reports and monthly PnL/gates."
+    },
+    {
+      "id": "demo-label-v1-coordinator-20261020",
+      "reviewer": "Codex coordinator",
+      "provider": "codex",
+      "round_id": "8672db1c07e24e33985ba5a6ca9dc346",
+      "verdict": "bounded_test_running_no_admission",
+      "text": "Fresh DeepSeek answer17 SHA25647345f50b318de40bb2a1cccd748c0c8b144d672820a4666c8982cae74bf2517 rejects Demo admission and accepts only a limited diagnostic; we agree on that limit. Three claimed mechanical defects are already guarded by the frozen rules:1%-4% positive entry-to-stop distance implies E>S; target-gap branch explicitly sells at T before intrabar stop-first; quantity<=250/E explicitly caps notional. Its proposed minimum20trades is not adopted: repository forbids arbitrary minimum counts and this is no statistical qualification claim. Global-side orientation uncertainty cancels algebraically for the defined label feature; arbitrary row-level corrupt labels would remain a source-quality question, not proof that the invariant is invalid. Actual PPL fresh request was unsubmitted because IP-blocked; actual Claude fresh request unsubmitted and observed region-unavailable; no fabricated votes or bypass. Contract committed6f0ea6f before feature reads. Exact4source Git blobs revalidated on Laptop2.9unit+14independent synthetic checks passed before raw feature extraction. Protected Oct19-Jan17 source untouched; Live=false/orders0. Await actual economic result and independent QA."
+    }
+  ],
+  "additional_independent_code_review": {
+    "agent": "/root/demo_novelty_inventory",
+    "scope": "source/contracts only, no prices accessed",
+    "finding": "No concrete result-invalidating bug found. Positive distance implies E>S; min(250/E) caps notional; explicit target_gap branch exists. Signal/execution/gates agree between implementations."
+  },
+  "blocked_providers": {
+    "perplexity": {
+      "fresh_submitted": false,
+      "reason": "observed IP access block"
+    },
+    "claude": {
+      "fresh_submitted": false,
+      "reason": "observed App unavailable in region"
+    }
+  },
+  "no_fabricated_external_votes": true,
+  "no_bypass": true
+}

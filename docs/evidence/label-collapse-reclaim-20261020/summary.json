@@ -1,0 +1,278 @@
+{
+  "decision_gates": {
+    "all_three_costs_positive": true,
+    "stress_beats_capped_passive": false,
+    "stress_beats_no_flow": true,
+    "stress_dd_no_worse_capped_passive": true
+  },
+  "digest": "544ae621cf0b3b8064c7eda9e8651e99e2bb0eb2aa7c0e76274adfdba2610ace",
+  "exploratory_pass": false,
+  "features_digest": "f6dbade5feccf15db5c6ea23b621b40c3c37202b0ef5689430a74bc1e0c4f583",
+  "independent_financial_qa_ready": true,
+  "inputs": {
+    "capture_digest": "edbf345dc3bc1094f7595aebefb191181f8ca878e9dc0f8d6fb19c5562ccbc98",
+    "contract_sha256": "d6553de44193ff05ae5076ceed54e99cc235b3fccb55e4ea1d0655225bd6b33d",
+    "producer_sha256": "38327c4a9da679b444be8b68fd318039ac9e24071009982d5a252ecdf1b04f0e",
+    "source_qa_digest": "1141ba15a6bed8fb5388e2ef390c01dc563cd874916dd89d986dfd768e0ae5f0"
+  },
+  "inspection_classification": "already_inspected_development_not_OOS",
+  "live_enabled": false,
+  "orders": 0,
+  "outcome": "terminal_negative_no_retune",
+  "paper_eligible": false,
+  "protected_prices_read": false,
+  "schema": "nexus.label-collapse-development-result.v1",
+  "books": {
+    "candidate": {
+      "conservative": {
+        "net_pnl_usdt": 3.3099958545946038,
+        "fees_usdt": 0.32432800381622545,
+        "max_close_drawdown_fraction": 0.002823874762068468,
+        "closed_trades": 1,
+        "mean_net_pnl_per_closed_trade": 3.3099958545946038,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 3.3099958545946038,
+          "2026-10": 0
+        }
+      },
+      "severe": {
+        "net_pnl_usdt": 1.8954548820033779,
+        "fees_usdt": 0.6149427576780973,
+        "max_close_drawdown_fraction": 0.0021439882155095402,
+        "closed_trades": 1,
+        "mean_net_pnl_per_closed_trade": 1.8954548820033779,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 1.8954548820033779,
+          "2026-10": 0
+        }
+      },
+      "stress": {
+        "net_pnl_usdt": 2.6482665981154128,
+        "fees_usdt": 0.4315122222897366,
+        "max_close_drawdown_fraction": 0.002506000933503838,
+        "closed_trades": 1,
+        "mean_net_pnl_per_closed_trade": 2.6482665981154128,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 2.6482665981154128,
+          "2026-10": 0
+        }
+      }
+    },
+    "price_only": {
+      "conservative": {
+        "net_pnl_usdt": -1.3127824375993669,
+        "fees_usdt": 6.6855181518886795,
+        "max_close_drawdown_fraction": 0.015740399050471865,
+        "closed_trades": 24,
+        "mean_net_pnl_per_closed_trade": -0.05469926823330695,
+        "monthly_pnl_usdt": {
+          "2026-08": -2.6947155866334356,
+          "2026-09": 4.742237413198438,
+          "2026-10": -3.3603042641643697
+        }
+      },
+      "severe": {
+        "net_pnl_usdt": -12.367020484678164,
+        "fees_usdt": 12.987974031334401,
+        "max_close_drawdown_fraction": 0.0271256354145466,
+        "closed_trades": 24,
+        "mean_net_pnl_per_closed_trade": -0.5152925201949236,
+        "monthly_pnl_usdt": {
+          "2026-08": -5.710316404720118,
+          "2026-09": -1.696989995026854,
+          "2026-10": -4.959714084931193
+        }
+      },
+      "stress": {
+        "net_pnl_usdt": -6.255050860170513,
+        "fees_usdt": 9.022565356736898,
+        "max_close_drawdown_fraction": 0.019106557539687374,
+        "closed_trades": 24,
+        "mean_net_pnl_per_closed_trade": -0.2606271191737714,
+        "monthly_pnl_usdt": {
+          "2026-08": -4.036053984299315,
+          "2026-09": 1.881798069415538,
+          "2026-10": -4.1007949452867365
+        }
+      }
+    }
+  },
+  "passive": {
+    "conservative": {
+      "BTCUSDT": {
+        "net_pnl_usdt": 150.90081280654545,
+        "fees_usdt": 1.1510528646722167,
+        "max_close_drawdown_fraction": 0.07472983138542832,
+        "monthly_pnl_usdt": {
+          "2026-08": 123.85360581572559,
+          "2026-09": 39.97608126570992,
+          "2026-10": -12.928874274890063
+        }
+      },
+      "ETHUSDT": {
+        "net_pnl_usdt": 145.09127301576814,
+        "fees_usdt": 1.1452375095262934,
+        "max_close_drawdown_fraction": 0.15779747774747932,
+        "monthly_pnl_usdt": {
+          "2026-08": 161.45339870054227,
+          "2026-09": 58.38647598396085,
+          "2026-10": -74.74860166873498
+        }
+      },
+      "capped_50_50": {
+        "net_pnl_usdt": 74.0720194770339,
+        "fees_usdt": 0.574646666143177,
+        "max_close_drawdown_fraction": 0.06713236615069207,
+        "monthly_pnl_usdt": {
+          "2026-08": 71.39807788019607,
+          "2026-09": 24.615229951730043,
+          "2026-10": -21.941288354892208
+        }
+      },
+      "cash": {
+        "net_pnl_usdt": 0,
+        "fees_usdt": 0,
+        "max_close_drawdown_fraction": 0,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 0,
+          "2026-10": 0
+        }
+      },
+      "full_50_50": {
+        "net_pnl_usdt": 147.9960429111568,
+        "fees_usdt": 1.1481451870992552,
+        "max_close_drawdown_fraction": 0.11392172106271536,
+        "monthly_pnl_usdt": {
+          "2026-08": 142.65350225813393,
+          "2026-09": 49.181278624835386,
+          "2026-10": -43.83873797181252
+        }
+      }
+    },
+    "severe": {
+      "BTCUSDT": {
+        "net_pnl_usdt": 147.65442374126383,
+        "fees_usdt": 2.870076837481777,
+        "max_close_drawdown_fraction": 0.07472983138542821,
+        "monthly_pnl_usdt": {
+          "2026-08": 122.2981718457246,
+          "2026-09": 39.87641019831767,
+          "2026-10": -14.52015830277844
+        }
+      },
+      "ETHUSDT": {
+        "net_pnl_usdt": 141.8738592199593,
+        "fees_usdt": 2.8555892071025673,
+        "max_close_drawdown_fraction": 0.15779747774747943,
+        "monthly_pnl_usdt": {
+          "2026-08": 159.80421838592974,
+          "2026-09": 58.240902876283826,
+          "2026-10": -76.17126204225428
+        }
+      },
+      "capped_50_50": {
+        "net_pnl_usdt": 72.56302591715644,
+        "fees_usdt": 1.4349950524239512,
+        "max_close_drawdown_fraction": 0.06714625171380417,
+        "monthly_pnl_usdt": {
+          "2026-08": 70.70191155180828,
+          "2026-09": 24.59065158932208,
+          "2026-10": -22.72953722397392
+        }
+      },
+      "cash": {
+        "net_pnl_usdt": 0,
+        "fees_usdt": 0,
+        "max_close_drawdown_fraction": 0,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 0,
+          "2026-10": 0
+        }
+      },
+      "full_50_50": {
+        "net_pnl_usdt": 144.76414148061156,
+        "fees_usdt": 2.8628330222921723,
+        "max_close_drawdown_fraction": 0.11392172106271525,
+        "monthly_pnl_usdt": {
+          "2026-08": 141.0511951158271,
+          "2026-09": 49.05865653730075,
+          "2026-10": -45.345710172516306
+        }
+      }
+    },
+    "stress": {
+      "BTCUSDT": {
+        "net_pnl_usdt": 149.60031070765456,
+        "fees_usdt": 1.7247409474277058,
+        "max_close_drawdown_fraction": 0.07472983138542821,
+        "monthly_pnl_usdt": {
+          "2026-08": 123.23068658875013,
+          "2026-09": 39.93616505875468,
+          "2026-10": -13.566540939850256
+        }
+      },
+      "ETHUSDT": {
+        "net_pnl_usdt": 143.80237839768358,
+        "fees_usdt": 1.716030984017634,
+        "max_close_drawdown_fraction": 0.15779747774747943,
+        "monthly_pnl_usdt": {
+          "2026-08": 160.79293599589857,
+          "2026-09": 58.328176956518064,
+          "2026-10": -75.31873455473306
+        }
+      },
+      "capped_50_50": {
+        "net_pnl_usdt": 73.46069828474901,
+        "fees_usdt": 0.861483272335627,
+        "max_close_drawdown_fraction": 0.06713239373677726,
+        "monthly_pnl_usdt": {
+          "2026-08": 71.11241450463149,
+          "2026-09": 24.602934632073925,
+          "2026-10": -22.2546508519564
+        }
+      },
+      "cash": {
+        "net_pnl_usdt": 0,
+        "fees_usdt": 0,
+        "max_close_drawdown_fraction": 0,
+        "monthly_pnl_usdt": {
+          "2026-08": 0,
+          "2026-09": 0,
+          "2026-10": 0
+        }
+      },
+      "full_50_50": {
+        "net_pnl_usdt": 146.70134455266907,
+        "fees_usdt": 1.7203859657226699,
+        "max_close_drawdown_fraction": 0.11392172106271525,
+        "monthly_pnl_usdt": {
+          "2026-08": 142.0118112923244,
+          "2026-09": 49.132171007636316,
+          "2026-10": -44.442637747291656
+        }
+      }
+    }
+  },
+  "independent_qa": {
+    "schema": "nexus.label-collapse-independent-decimal-qa.v1",
+    "verified": true,
+    "bars_checked": 948,
+    "reports_checked": 21,
+    "decision_gates": {
+      "all_three_costs_positive": true,
+      "stress_beats_no_flow": true,
+      "stress_beats_capped_passive": false,
+      "stress_dd_no_worse_capped_passive": true
+    },
+    "exploratory_pass": false,
+    "outcome": "terminal_negative_no_retune",
+    "paper_eligible": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}
