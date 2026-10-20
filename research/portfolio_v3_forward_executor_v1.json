@@ -1,0 +1,65 @@
+{
+  "automatic_strategy_promotion": false,
+  "books": [
+    "existing_dual_rotation_unmodified",
+    "existing_dual_rotation_dd20",
+    "passive_BTC_Spot",
+    "passive_ETH_Spot",
+    "passive_50_50_BTC_ETH",
+    "cash_only"
+  ],
+  "candidate_id": "b4e4a2c33304aec1",
+  "code_and_contract_sha256_lf": {
+    "bybit_portfolio_search_v3.py": "1f086b5958a59c19657dea5b642a888d9039d6db2fd088893f7870dd7f549688",
+    "research/portfolio_existing_engine_shared500_calibration_v1.json": "a620495f086bae7863ac74cf74c4bcb06071004be39fe8b83ec41a5dc4b88710",
+    "research/portfolio_v3_fixed_source_handoff_20261019.json": "8547412a0c6c4500848ca5773bec2f0226094ea075fa4f87dfc4dc3e24bc872e",
+    "research/portfolio_v3_forward_bybit_source_freeze_20261018.json": "99d70217e1ce05fe6429c075e04e7b6f99e042d61947216e51f06493732baed4",
+    "research/portfolio_v3_forward_independent_qa.py": "ec3abf0439c893ace272bfe84f1adddc60beb9827c9cc49d6594d3f671bc5422",
+    "research/portfolio_v3_forward_raw_source_policy_v1.json": "4ed30c9315c053f43db8f2b09c69db15ef6a6bd3400ea821ae45cf311326d3b1",
+    "research/portfolio_v3_warmup_context_v1.json": "7b39ce59333a4a506cbbd75a4d06852cc60978c4b83c290afe6b0b84a81d73a5",
+    "scripts/nexus_bybit_official_spot_raw_4h_adapter.py": "978294ba83531f817de916fc6bf21cfb6145ac3191eb1a26e9803efa3e1628e2",
+    "scripts/nexus_bybit_official_spot_warmup_qa.py": "5b9a2c5261d2ca844cd11807c7e518a65ce211cec7401cd5e828e7f6dbf1b5f0",
+    "scripts/nexus_portfolio_v3_forward_raw_source.py": "f6c818e5faca35d048473ecbd18c4ea8fc54e07025710a423345769cd3cf1e0f",
+    "scripts/nexus_portfolio_v3_forward_source_preflight.py": "3d7b360cd1c7b684609d61a5833cc0ec11723a66d131a2fc4dae763ea58e9ada",
+    "scripts/nexus_portfolio_v3_warmup_context.py": "21141d0364f2c6c053ec81629a909a8901eb0ca6a86ebc3463c9524fe7958af7"
+  },
+  "cost_profiles": {
+    "conservative": {
+      "fee_bps": 10,
+      "initial_cash": 500,
+      "slippage_bps": 5
+    },
+    "severe": {
+      "fee_bps": 25,
+      "initial_cash": 500,
+      "slippage_bps": 15
+    },
+    "stress": {
+      "fee_bps": 15,
+      "initial_cash": 500,
+      "slippage_bps": 10
+    }
+  },
+  "economic_interpretation": "fixed_90_day_falsification_only_not_edge_proof",
+  "expected_complete_market_rows": 9048,
+  "expected_future_bars_per_symbol": 540,
+  "first_period_execution": "original_period_row1_prior_target_no_imported_positions",
+  "full_horizon_required_before_any_source_or_result_io": true,
+  "global_review_anchor_utc": "2022-12-01T00:00:00Z",
+  "historical_context_digest": "bd3b57243c7ac5c6ed017b8840df77f4d1bec519a1449e964bb3b4e27e6bc3d3",
+  "independent_worker_lease_proof_still_required": true,
+  "live_enabled": false,
+  "new_manager_dispatch_authorized": false,
+  "orders": 0,
+  "original_engine_only": true,
+  "paper_eligible": false,
+  "passive_50_50_semantics": "buy_at_original_first_eligible_open_then_hold_without_rebalance",
+  "period": {
+    "end": "2027-01-17",
+    "start": "2026-10-19"
+  },
+  "qa_implementation": "separate_signal_reference_and_decimal_execution_reconstruction",
+  "review_bars": 42,
+  "review_base_main_sha": "76e111c0fb39e4e1f7422644906c5118b02b5ddd",
+  "schema": "nexus.portfolio-v3-fixed-forward-executor-contract.v1"
+}
