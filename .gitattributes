@@ -76,3 +76,10 @@ research/nexus_mean_reversion_40_m2_regime_diagnostic_v1.py text eol=lf
 research/mean_reversion_40_m2_momentum30_entry_v1.json text eol=lf
 research/nexus_mean_reversion_40_m2_momentum30_entry_v1.py text eol=lf
 tests/test_nexus_mean_reversion_40_m2_momentum30_entry_v1.py text eol=lf
+
+# October MR40 fixed-policy/source receipts require stable LF bytes on Windows.
+research/mean_reversion_40_m2_momentum30_october_followup_v1.json text eol=lf
+scripts/nexus_mr40_october_followup_intake_v1.py text eol=lf
+tests/test_nexus_mr40_october_followup_intake_v1.py text eol=lf
+research/nexus_mr40_momentum30_october_followup_v1.py text eol=lf
+tests/test_nexus_mr40_momentum30_october_followup_v1.py text eol=lf

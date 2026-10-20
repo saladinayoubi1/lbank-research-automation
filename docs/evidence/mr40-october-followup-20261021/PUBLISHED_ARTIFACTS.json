@@ -1,0 +1,250 @@
+{
+  "schema": "nexus.mr40-october-published-artifacts.v1",
+  "bundle": {
+    "path": "NEXUS_MR40_October_Followup_20261021.zip",
+    "bytes": 925534,
+    "sha256": "22b7580cd5ecb73c55ef279846841178e360377faf75ff681de88577ee958730",
+    "git_blob": "8160a6ef5671cb60feaaf2f2386e873a666125e8"
+  },
+  "members": 40,
+  "inventory": [
+    {
+      "path": "MR40_MOMENTUM30_OCTOBER_20261021_FA.md",
+      "bytes": 13504,
+      "sha256": "9e6f105e68638446e9c43a373638bc62069fe26b15ff6229e5cdd39bc6bdb291",
+      "git_blob": "31c2e5b7e8ecacb9890f460090fc69e3885005bf"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2085,
+      "sha256": "198abbde47b9dce13bfc9f832f67ea16c842a9758045601ee1a9998699b615bf",
+      "git_blob": "403e63c9b6247e5fc5c5ad1bf08ddc5f199b8521"
+    },
+    {
+      "path": "october_input_extension.json",
+      "bytes": 17280,
+      "sha256": "2d4577ea8cc3b896f57e50e3030e3d131acfd7827a0d1869efe45b9f0b03d0c8",
+      "git_blob": "1df6695d2045866d8b074a428d3e2fd9de570a46"
+    },
+    {
+      "path": "recorded_results/closed_positions.csv",
+      "bytes": 13165,
+      "sha256": "5fbe9c03fd7c9856bb03addc94a15c5b539298e138c17e0c10d71670ce1e0a26",
+      "git_blob": "b8cda51718397d82725c724475987bdf241c6ae5"
+    },
+    {
+      "path": "recorded_results/entry_admissions.csv",
+      "bytes": 3229,
+      "sha256": "770239be027fac3241b75785c846983cae24ba28065637ad3f75ad29ae5c8eca",
+      "git_blob": "77ee090d51cfed2b190689a52483716a56be5742"
+    },
+    {
+      "path": "recorded_results/equity_curve.csv",
+      "bytes": 414422,
+      "sha256": "e5d1ff49ca9f6ad4b301d8d9cd7f1baa8c683b396384b05dd490296b92b83fd5",
+      "git_blob": "037b76230865b7b0ad915aa89bd32e56650a70d4"
+    },
+    {
+      "path": "recorded_results/fills.csv",
+      "bytes": 34544,
+      "sha256": "f796300e6f82b1edfcfd5ab1d7042ce837ac5dc2cbb4b952d15856865d668ee0",
+      "git_blob": "47aba4056c20bbe919d91a6c9dc0b72451dfbb23"
+    },
+    {
+      "path": "recorded_results/monthly_attribution.csv",
+      "bytes": 4114,
+      "sha256": "ef3c92556dd7aec6f0d8207bed2ed81084155a95ba82091fb2cc25241af2697a",
+      "git_blob": "4156be28461029e9b47f598fbdf013730c1180f6"
+    },
+    {
+      "path": "recorded_results/results.json",
+      "bytes": 102436,
+      "sha256": "3d6883df30f1c82dd18df74f61c2add09d9c9dcc55aa9bccbd0e51126ffdebac",
+      "git_blob": "8175f6eea8fe65fac5d35c0291e6de6793604384"
+    },
+    {
+      "path": "recorded_results/summary.csv",
+      "bytes": 7204,
+      "sha256": "b6afa308b26644a89578fd8f0ae76f7b57ca5cec265913a47831ebb2d9f5b55e",
+      "git_blob": "a5d93c72789cae3bc58236007675d5efae72c022"
+    },
+    {
+      "path": "research/nexus_mr40_momentum30_october_followup_v1.py",
+      "bytes": 10159,
+      "sha256": "ef656c61219909e4eabfe3c6f522769e57d65c57f447dab3add636f0baa356c9",
+      "git_blob": "fc67eadaa08c49f1ca0d7a4fc264b005850f89b9"
+    },
+    {
+      "path": "scripts/nexus_mr40_october_followup_intake_v1.py",
+      "bytes": 8773,
+      "sha256": "eb2a0d05729c54e057ea2eeecd2ff62a111f9fb500a70823d960cf68372c1a03",
+      "git_blob": "5de2d6d09db7e966145835152dfb4efdf2585190"
+    },
+    {
+      "path": "source_manifest.json",
+      "bytes": 12752,
+      "sha256": "68b086fe2cb307df304527ec6b55bc1d97cab10c9c7c66d4240f34065ddace09",
+      "git_blob": "b6c3ee3ba623437adbcdf51c468cb51768f8d309"
+    },
+    {
+      "path": "study_contract.json",
+      "bytes": 3524,
+      "sha256": "5e900e2ec44b9f31ea44e007ce4d05701129e49323bb214412c4507259115978",
+      "git_blob": "a845de9391e63cdb91a9c5009548c83502758e0e"
+    },
+    {
+      "path": "tests-executed.txt",
+      "bytes": 1594,
+      "sha256": "be39873e56eda6cc690121ffdf1310332717983632d7b6dfe03767cf3908ecc1",
+      "git_blob": "ce9ae782a4a7c5968254721e5abff03a0d581c2f"
+    },
+    {
+      "path": "tests/test_nexus_mr40_momentum30_october_followup_v1.py",
+      "bytes": 1545,
+      "sha256": "5c97ee9f48e724e473e104f5621c7c44770192c61cb8f59064854c1367cfe703",
+      "git_blob": "68339d87c91cd1b9494a25813e8a8282378a9561"
+    },
+    {
+      "path": "tests/test_nexus_mr40_october_followup_intake_v1.py",
+      "bytes": 2699,
+      "sha256": "0ccc5819562f44e4a2be9fdba0dd0a7d8a207939f05446d4bcbb2183f9efb610",
+      "git_blob": "316bef40617b7a45e41bf57767f6e7dbd8f7d5e0"
+    },
+    {
+      "path": "verify_replay.py",
+      "bytes": 2560,
+      "sha256": "ce45db31541b7f945e84ceff66fefc7e6efc64f37a93242e831798af5dc07cce",
+      "git_blob": "847cb430f89f3e5c68bb7d8ad05aa49b9d41371c"
+    },
+    {
+      "path": "frozen/INVENTORY.json",
+      "bytes": 4725,
+      "sha256": "62866b0574500c4bd67293f5c6bf99dd2b180d3866845ff46bd8ffa93201075d",
+      "git_blob": "06a762a8d123d8c986792643607bd53f6a542242"
+    },
+    {
+      "path": "frozen/MR40_MOMENTUM30_ENTRY_20261021_FA.md",
+      "bytes": 14911,
+      "sha256": "beca2324f0147c0fb9019faa1b92301adf58c8d98fab902c27fb7adc2b143df7",
+      "git_blob": "b7873cae1bac1bf11c47020aabc7c659c8df2767"
+    },
+    {
+      "path": "frozen/README.md",
+      "bytes": 1852,
+      "sha256": "1cf80b8b7406640ad9c3c4ab9f4c04696a76c0de764adc0d3816185ad30ae301",
+      "git_blob": "0e407a71140b7d47b6719d57c2d784981352311b"
+    },
+    {
+      "path": "frozen/baseline/prepared_inputs.json",
+      "bytes": 612908,
+      "sha256": "f901e1ec23bab5370ef2c83671c23e355875a103a3c4cbdb93fc8051c5c3cdc0",
+      "git_blob": "777f8f6588ffd136699efd9e91afc7534ded7c32"
+    },
+    {
+      "path": "frozen/baseline/recorded_results/equity_curve.csv",
+      "bytes": 2650937,
+      "sha256": "f3e0a2e9275b4e10eb6953065e1ab706731cb1ea5feb41c86928ad780ee0e6d9",
+      "git_blob": "16b46134bbaf588cc5d155f005051e98eea1e2ff"
+    },
+    {
+      "path": "frozen/baseline/recorded_results/results.json",
+      "bytes": 488957,
+      "sha256": "33d53dd81e68f59abca2d3a83adffee5e31fd24ab04feae53e05baf9aaa45fd3",
+      "git_blob": "991d932ef2004a1eb861471c16e4a6475787ad9f"
+    },
+    {
+      "path": "frozen/baseline/research/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+      "git_blob": "146892aab7eca58b56db67c0ee56f70b9e7e3f3c"
+    },
+    {
+      "path": "frozen/baseline/study_contract.json",
+      "bytes": 4488,
+      "sha256": "cca66ab10c161cb907d7de256e69f788dffc44e906791ce1833faf5d33dc550f",
+      "git_blob": "7c3010df3d360090def297a05ebe87460d047977"
+    },
+    {
+      "path": "frozen/recorded_results/closed_positions.csv",
+      "bytes": 37662,
+      "sha256": "261b9ab365bd67d60f267f4b08eb4a2688dce4adf8973a3d8e0cf4af0313bf2d",
+      "git_blob": "e7ef3a26b6dce144d2ea2eddd68b9accd1c4845d"
+    },
+    {
+      "path": "frozen/recorded_results/entry_admissions.csv",
+      "bytes": 32947,
+      "sha256": "dbd6d5673942a16aa766b581e0a10447b8f4eb41894370ee339b1d80ed0bf010",
+      "git_blob": "6e36975c0aaa196a6eddd3313e627ed31d79018a"
+    },
+    {
+      "path": "frozen/recorded_results/equity_curve.csv",
+      "bytes": 2645152,
+      "sha256": "b51d47a8192f232d2c90a9b069e4e64c1b2202882cd405c797d8e1d15fdb8fc6",
+      "git_blob": "be4b63ae55912aaf147a94fc1938a8374235d4f3"
+    },
+    {
+      "path": "frozen/recorded_results/fills.csv",
+      "bytes": 100426,
+      "sha256": "8bdb28d811d1158c91512cad091167aa0f4404f824c5c7ced9a78913725b8c3b",
+      "git_blob": "68f4dddb82db461caf19d2f843da399fca6e6d36"
+    },
+    {
+      "path": "frozen/recorded_results/monthly_attribution.csv",
+      "bytes": 21304,
+      "sha256": "88e5b14edc1c61c26546e576970d5e675fd67d99041ba963a8743995f023faa4",
+      "git_blob": "4169bcfad788d58649280f71dbc416f6dfeb595c"
+    },
+    {
+      "path": "frozen/recorded_results/results.json",
+      "bytes": 292864,
+      "sha256": "dc8a7622a0aae5397a6f342f17f0f4537c5b5633695847b74d4f7db753b0cce7",
+      "git_blob": "edba4a1be3cd31f0964846a27898a44ecb8b3843"
+    },
+    {
+      "path": "frozen/recorded_results/summary.csv",
+      "bytes": 11133,
+      "sha256": "d01516f45e5942c6aeaf2b276695355b134cee5b36bb3e5f71d373ec7c573402",
+      "git_blob": "0309f634aa9c3347b278d0677102ae62e4770ff5"
+    },
+    {
+      "path": "frozen/research/nexus_mean_reversion_40_m2_momentum30_entry_v1.py",
+      "bytes": 12405,
+      "sha256": "d899e9dd991695959c230426b50ebdb4bab2eca8c5f413ea3c471d957c1f69bb",
+      "git_blob": "d71e8e13b5a1fa7984580546cec016f28d4e10ba"
+    },
+    {
+      "path": "frozen/research/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+      "git_blob": "146892aab7eca58b56db67c0ee56f70b9e7e3f3c"
+    },
+    {
+      "path": "frozen/study_contract.json",
+      "bytes": 2997,
+      "sha256": "153957458cbc5c3256bf0ea7909db6071cac587f7a765477d06d1f242383de50",
+      "git_blob": "a1a8776f9fe93a670e54b04484feeccc021a8b21"
+    },
+    {
+      "path": "frozen/tests-executed.txt",
+      "bytes": 2160,
+      "sha256": "e25c4f62acebe85a1d4f72635dbd950973d41d577a384607f22c3e8b7b1bff9e",
+      "git_blob": "5053c022eafe30469f405f96e055e91ab353df0f"
+    },
+    {
+      "path": "frozen/tests/test_nexus_mean_reversion_40_m2_momentum30_entry_v1.py",
+      "bytes": 4871,
+      "sha256": "26e2ed8724a6e8d853eb2051efc2b6a8d9a3f314aa62f076e2697349595ac803",
+      "git_blob": "59f0a36bf423884d0d82bab439b9b1e0d9a5bf05"
+    },
+    {
+      "path": "frozen/verify_replay.py",
+      "bytes": 2588,
+      "sha256": "d65fefcfd783e2d11f9c799b75ea924b9c1a452d902e3f63add410be07e1e115",
+      "git_blob": "51f4e2fe9b7baab2f00a23bbd6e2cd41973eeee7"
+    }
+  ],
+  "offline_replay": "PASS",
+  "tests": 13,
+  "calculations": 16,
+  "exact_csv_files": 6
+}
