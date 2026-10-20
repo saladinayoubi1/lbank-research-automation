@@ -1,0 +1,37 @@
+test_closed_horizon_precedes_all_input_io_and_output_creation (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_closed_horizon_precedes_all_input_io_and_output_creation) ... ok
+test_fixed_contract_rejects_edited_contract_and_executable (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_fixed_contract_rejects_edited_contract_and_executable) ... ok
+test_full_matrix_and_independent_qa_without_original_functions (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_full_matrix_and_independent_qa_without_original_functions) ... /workspace/scratch/fc7956c74c8c/portfolio-forward-executor-20261020/bybit_portfolio_search_v3.py:175: RuntimeWarning: All-NaN slice encountered
+  score = np.nanmedian(np.stack(normalized, axis=2), axis=2)
+ok
+test_historical_receipt_must_be_the_pinned_preparation (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_historical_receipt_must_be_the_pinned_preparation) ... ok
+test_join_preserves_prefix_and_rejects_missing_shifted_or_invalid_tail (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_join_preserves_prefix_and_rejects_missing_shifted_or_invalid_tail) ... ok
+test_output_is_write_once (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_output_is_write_once) ... /workspace/scratch/fc7956c74c8c/portfolio-forward-executor-20261020/bybit_portfolio_search_v3.py:175: RuntimeWarning: All-NaN slice encountered
+  score = np.nanmedian(np.stack(normalized, axis=2), axis=2)
+ok
+test_rehashed_fill_and_mark_corruption_reaches_independent_rejection (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_rehashed_fill_and_mark_corruption_reaches_independent_rejection) ... /workspace/scratch/fc7956c74c8c/portfolio-forward-executor-20261020/bybit_portfolio_search_v3.py:175: RuntimeWarning: All-NaN slice encountered
+  score = np.nanmedian(np.stack(normalized, axis=2), axis=2)
+ok
+test_rehashed_incomplete_or_extra_matrix_and_cost_substitution_fail (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_rehashed_incomplete_or_extra_matrix_and_cost_substitution_fail) ... /workspace/scratch/fc7956c74c8c/portfolio-forward-executor-20261020/bybit_portfolio_search_v3.py:175: RuntimeWarning: All-NaN slice encountered
+  score = np.nanmedian(np.stack(normalized, axis=2), axis=2)
+ok
+test_rehashed_target_and_global_phase_mutation_fail (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_rehashed_target_and_global_phase_mutation_fail) ... /workspace/scratch/fc7956c74c8c/portfolio-forward-executor-20261020/bybit_portfolio_search_v3.py:175: RuntimeWarning: All-NaN slice encountered
+  score = np.nanmedian(np.stack(normalized, axis=2), axis=2)
+ok
+test_source_consumer_rechecks_all_days_and_rejects_rehashed_bar_authority (test_nexus_portfolio_v3_forward_executor.ForwardExecutorTests.test_source_consumer_rechecks_all_days_and_rejects_rehashed_bar_authority) ... ok
+test_cash_only_has_no_execution_and_no_average_position (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_cash_only_has_no_execution_and_no_average_position) ... ok
+test_guarded_gap_exit_uses_next_open_and_never_reenters (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_guarded_gap_exit_uses_next_open_and_never_reenters) ... ok
+test_last_bar_trigger_has_only_terminal_close_available (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_last_bar_trigger_has_only_terminal_close_available) ... ok
+test_metric_and_cost_or_schedule_substitutions_rejected (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_metric_and_cost_or_schedule_substitutions_rejected) ... ok
+test_peer_switch_sells_before_buy_and_first_execution_is_next_open (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_peer_switch_sells_before_buy_and_first_execution_is_next_open) ... ok
+test_public_audit_requires_the_full_fixed_horizon (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_public_audit_requires_the_full_fixed_horizon) ... ok
+test_shared_book_partials_and_position_fifo_counts_are_distinct (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_shared_book_partials_and_position_fifo_counts_are_distinct) ... ok
+test_source_fill_and_mark_corruptions_rejected (test_portfolio_v3_forward_independent_qa.IndependentMoneyTests.test_source_fill_and_mark_corruptions_rejected) ... ok
+test_reference_matches_original_on_variable_artificial_prices (test_portfolio_v3_forward_independent_qa.IndependentSignalTests.test_reference_matches_original_on_variable_artificial_prices) ... ok
+test_shifted_or_broken_global_grid_rejected (test_portfolio_v3_forward_independent_qa.IndependentSignalTests.test_shifted_or_broken_global_grid_rejected) ... ok
+test_suffix_mutation_does_not_change_earlier_targets (test_portfolio_v3_forward_independent_qa.IndependentSignalTests.test_suffix_mutation_does_not_change_earlier_targets) ... ok
+test_ties_keep_btc_and_flat_context_stays_cash (test_portfolio_v3_forward_independent_qa.IndependentSignalTests.test_ties_keep_btc_and_flat_context_stays_cash) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 7.115s
+
+OK
