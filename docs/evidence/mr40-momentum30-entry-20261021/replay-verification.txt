@@ -1,0 +1,20 @@
+test_accepted_episode_ignores_later_negative_momentum (__main__.MomentumAdmissionTests.test_accepted_episode_ignores_later_negative_momentum) ... ok
+test_equality_is_admitted_with_exactly_180_intervals (__main__.MomentumAdmissionTests.test_equality_is_admitted_with_exactly_180_intervals) ... ok
+test_exact_baseline_engine_bytes (__main__.MomentumAdmissionTests.test_exact_baseline_engine_bytes) ... ok
+test_extra_latency_cannot_use_later_execution_bar_context (__main__.MomentumAdmissionTests.test_extra_latency_cannot_use_later_execution_bar_context) ... ok
+test_independent_decimal_interval_scan_and_cash_ledger (__main__.MomentumAdmissionTests.test_independent_decimal_interval_scan_and_cash_ledger) ... ok
+test_invalid_targets_and_ranges_rejected (__main__.MomentumAdmissionTests.test_invalid_targets_and_ranges_rejected) ... ok
+test_missing_history_rejects_entire_episode (__main__.MomentumAdmissionTests.test_missing_history_rejects_entire_episode) ... ok
+test_negative_entry_has_no_late_entry_on_recovery (__main__.MomentumAdmissionTests.test_negative_entry_has_no_late_entry_on_recovery) ... ok
+test_next_open_execution_and_signal_availability (__main__.MomentumAdmissionTests.test_next_open_execution_and_signal_availability) ... ok
+test_no_hidden_time_cap (__main__.MomentumAdmissionTests.test_no_hidden_time_cap) ... ok
+test_prefix_and_future_price_independence (__main__.MomentumAdmissionTests.test_prefix_and_future_price_independence) ... ok
+test_rejected_episode_rearms_after_original_flat (__main__.MomentumAdmissionTests.test_rejected_episode_rearms_after_original_flat) ... ok
+test_terminal_close_keeps_original_reason (__main__.MomentumAdmissionTests.test_terminal_close_keeps_original_reason) ... ok
+test_warm_start_checks_last_known_decision_as_fresh_admission (__main__.MomentumAdmissionTests.test_warm_start_checks_last_known_decision_as_fresh_admission) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.014s
+
+OK
+{"baseline_curve_replays": 24, "cases": 24, "exact_csv_files": ["summary.csv", "fills.csv", "closed_positions.csv", "equity_curve.csv", "monthly_attribution.csv", "entry_admissions.csv"], "inventory_members": 20, "orders": 0, "recorded_digest": "959832aa111ba6bbab7a899547a7d4e031a0f3cd0a283de30397635f1ba5f118", "semantic_replay": "PASS", "tests": 14}
