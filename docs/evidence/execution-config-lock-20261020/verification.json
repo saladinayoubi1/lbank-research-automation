@@ -1,0 +1,46 @@
+{
+  "baseline_config_canonical_sha256": "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4",
+  "changed_configuration_rejected_before_market_source_import": true,
+  "device": "Laptop2 / DESKTOP-F4SA4VL",
+  "external_reviews": [
+    {
+      "answer_sha256": "6df97ba6c1a771510007f34a7c518acebf35fa35fa9aad86602174ccd1232bd9",
+      "provider": "deepseek",
+      "status": "completed"
+    },
+    {
+      "answer_sha256": "d449924e9c2ff8573c9f9897d231c88f31de15eb2fbede581941343f209ced00",
+      "provider": "perplexity",
+      "status": "captured_stable_direct_ui"
+    }
+  ],
+  "formal_independent_paper_qa_complete": false,
+  "live_enabled": false,
+  "local_unit_test_methods_passed": 19,
+  "new_configuration_corruption_subcases": 70,
+  "new_economic_backtest_runs": 0,
+  "new_result_matrix_corruption_subcases": 10,
+  "orders": 0,
+  "original_contract_and_result_rewritten": false,
+  "original_falsification_decision_unchanged": "REJECT_FIXED_HYPOTHESIS_NO_RETUNE",
+  "original_result_digest": "1ad241bf96ee678ee67d7ff1a0311820df98ac6a7fffd5e11f1b1f66204dfe37",
+  "paper_eligible": false,
+  "physical_native_exit": 0,
+  "physical_receipt": {
+    "native_exit": 0,
+    "observed_at_utc": "2026-10-20T02:06:58.1636750Z",
+    "source_hashes": {
+      "scripts\\nexus_portfolio_risk_cadence_diagnostic.py": "177f7c1688aa682de3776bcfad84bb81fab38c07caf81a80c4a56c609ec9d309",
+      "tests\\test_nexus_portfolio_risk_cadence_diagnostic.py": "1a243c4ba966416f77d60d0165d8a25e09dcef87c455e2127ae8b212cdeb13bb"
+    },
+    "stderr_log_sha256": "fdc0f8c5e2935b3ded78873e88824fca605d27c7e86dad466fd31abf9ce9611c"
+  },
+  "physical_snapshot": "E:\\NEXUS-QA\\execution-config-lock-20261020-1110123d",
+  "physical_unit_test_methods_passed": 19,
+  "schema": "nexus.fixed-execution-config-integrity-review.v1",
+  "source_hashes_lf": {
+    "scripts/nexus_portfolio_risk_cadence_diagnostic.py": "177f7c1688aa682de3776bcfad84bb81fab38c07caf81a80c4a56c609ec9d309",
+    "tests/test_nexus_portfolio_risk_cadence_diagnostic.py": "1a243c4ba966416f77d60d0165d8a25e09dcef87c455e2127ae8b212cdeb13bb"
+  },
+  "source_main_commit": "d59601e689ec02623ba6087fcc651ab42ddcd7fe"
+}

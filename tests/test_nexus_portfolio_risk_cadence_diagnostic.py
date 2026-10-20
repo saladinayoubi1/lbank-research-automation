@@ -1,8 +1,10 @@
 """Causal target timing and independent wallet tests; no market optimization."""
 import copy
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -38,6 +40,101 @@ def accounting_sample():
 
 
 class RiskCadenceTests(unittest.TestCase):
+    def test_reviewed_config_is_locked_but_json_formatting_is_not(self):
+        original = study.checked_baseline_config(study.BASELINE_CONFIG)
+        self.assertEqual(set(original["execution"]), {"conservative", "stress", "severe"})
+        self.assertTrue(all(p["initial_cash"] == 500 for p in original["execution"].values()))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.json"
+            path.write_bytes(b"\xef\xbb\xbf" + json.dumps(original, sort_keys=True).encode() + b"\r\n")
+            self.assertEqual(study.checked_baseline_config(path), original)
+
+    def test_changed_costs_balances_authorities_and_profile_sets_fail_closed(self):
+        original = study.checked_baseline_config(study.BASELINE_CONFIG)
+        cases = []
+        for name in ("conservative", "stress", "severe"):
+            for field in ("initial_cash", "fee_bps", "slippage_bps"):
+                changed = copy.deepcopy(original)
+                changed["execution"][name][field] += 1
+                cases.append((name + "/" + field, changed))
+            for field in ("initial_cash", "fee_bps", "slippage_bps"):
+                for invalid in (True, None, "500", -1, float("nan"), float("inf")):
+                    changed = copy.deepcopy(original)
+                    changed["execution"][name][field] = invalid
+                    cases.append((name + "/invalid/" + field + "/" + repr(invalid), changed))
+            changed = copy.deepcopy(original)
+            del changed["execution"][name]
+            cases.append(("missing/" + name, changed))
+        changed = copy.deepcopy(original)
+        changed["execution"]["extra"] = copy.deepcopy(changed["execution"]["stress"])
+        cases.append(("extra_profile", changed))
+        changed = copy.deepcopy(original)
+        changed["execution"]["renamed"] = changed["execution"].pop("severe")
+        cases.append(("renamed_profile", changed))
+        changed = copy.deepcopy(original)
+        changed["live_trading_authority"] = True
+        cases.append(("authority", changed))
+        changed = copy.deepcopy(original)
+        changed["candidate"]["params"]["target_vol"] = .4
+        cases.append(("candidate", changed))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.json"
+            for name, changed in cases:
+                with self.subTest(case=name):
+                    path.write_text(json.dumps(changed), encoding="utf-8")
+                    with self.assertRaises(study.CadenceError):
+                        study.checked_baseline_config(path)
+
+    def test_config_drift_is_rejected_before_price_read_or_output_creation(self):
+        config = json.loads(study.BASELINE_CONFIG.read_text())
+        config["execution"]["stress"]["initial_cash"] = 1000
+        config["execution"]["severe"]["fee_bps"] = 0
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "config.json"
+            path.write_text(json.dumps(config))
+            with (mock.patch.object(study, "BASELINE_CONFIG", path),
+                  mock.patch.object(engine, "load_market") as reader):
+                with self.assertRaises(study.CadenceError):
+                    study.run(root / "unread_archive", study.DEFAULT_CONTRACT, root / "uncreated_output")
+                reader.assert_not_called()
+            self.assertFalse((root / "uncreated_output").exists())
+
+    def test_falsification_preserves_recorded_decision_and_rejects_incomplete_matrix(self):
+        result = json.loads(Path("docs/evidence/joint-ai-risk-cadence-20261019/result.json").read_text())
+        original = result["results"]
+        self.assertEqual(study.falsification(original), result["falsification"])
+        cases = [("empty", {})]
+        for kind in ("empty_costs", "missing_cost_everywhere", "extra_cost", "renamed_cost",
+                     "missing_period", "extra_period", "missing_book", "extra_book", "missing_passive_cost"):
+            changed = copy.deepcopy(original)
+            if kind == "empty_costs":
+                changed["continuous"]["daily_target_ratchet"] = {}
+            elif kind == "missing_cost_everywhere":
+                for books in changed.values():
+                    for profiles in books.values():
+                        del profiles["stress"]
+            elif kind == "extra_cost":
+                changed["continuous"]["baseline"]["extra"] = {}
+            elif kind == "renamed_cost":
+                profiles = changed["continuous"]["daily_target_ratchet"]
+                profiles["renamed"] = profiles.pop("severe")
+            elif kind == "missing_period":
+                del changed["2026_04_to_2026_08"]
+            elif kind == "extra_period":
+                changed["extra"] = changed["continuous"]
+            elif kind == "missing_book":
+                del changed["continuous"]["baseline_times_075"]
+            elif kind == "extra_book":
+                changed["continuous"]["extra"] = {}
+            else:
+                del changed["2023_09_to_2024_03"]["passive_BTC"]["stress"]
+            cases.append((kind, changed))
+        for name, changed in cases:
+            with self.subTest(case=name):
+                with self.assertRaises(study.CadenceError):
+                    study.falsification(changed)
+
     def test_observer_binds_header_and_every_mark_to_period(self):
         market, trace, metrics, profile, period, reductions = accounting_sample()
         self.assertTrue(study.verify_trace(market, trace, metrics, profile, period,
