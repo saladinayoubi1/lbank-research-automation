@@ -20,8 +20,11 @@ SOURCE_COMMIT = "7383788754e1f7bef8e70e7df0c765b40e49e6ff"
 ENGINE_SHA256_LF = "1f086b5958a59c19657dea5b642a888d9039d6db2fd088893f7870dd7f549688"
 VERIFIER_SHA256_LF = "8848a9afaf034338923ce51de1fedb51912a02f32eefccdaef8e5b88891e09cb"
 CONTRACT_SHA256 = "f909e7dc8beb34bac0efe13cbb9c8dc128996d42b305089ecae25d7cd39604bf"
+BASELINE_CONFIG_SHA256 = "0d59b4c956ceec492c4c9b2f92062871f7603a9bb60f69a2e435a971597bc1e4"
 DEFAULT_CONTRACT = Path("research/portfolio_risk_cadence_diagnostic_v1.json")
 BASELINE_CONFIG = Path("research/portfolio_existing_engine_shared500_calibration_v1.json")
+COST_PROFILE_NAMES = ("conservative", "stress", "severe")
+BOOK_NAMES = ("baseline", "daily_target_ratchet", "baseline_times_075", "passive_BTC")
 SYMBOLS = ["btc_usdt", "eth_usdt"]
 PERIODS = {
     "continuous": {"start": "2023-09-01", "end": "2026-08-01"},
@@ -46,6 +49,18 @@ def digest(obj: Any) -> str:
 
 def source_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def checked_baseline_config(path: Path) -> dict[str, Any]:
+    """Bind the full reviewed candidate, costs, shared balance and authorities."""
+    try:
+        config = json.loads(path.read_text(encoding="utf-8-sig"))
+        fingerprint = digest(config)
+    except (OSError, UnicodeError, TypeError, ValueError) as exc:
+        raise CadenceError("Invalid fixed baseline configuration") from exc
+    if fingerprint != BASELINE_CONFIG_SHA256:
+        raise CadenceError("Fixed baseline candidate, execution or authority changed")
+    return config
 
 
 def validate_market(market: dict[str, Any]) -> None:
@@ -213,9 +228,16 @@ def verify_trace(market: dict[str, Any], trace: dict[str, Any], metrics: dict[st
 
 
 def falsification(results: dict[str, Any]) -> dict[str, Any]:
-    profiles = results["continuous"]["daily_target_ratchet"]
+    if type(results) is not dict or set(results) != set(PERIODS):
+        raise CadenceError("Fixed reporting periods are incomplete or changed")
+    for books in results.values():
+        if type(books) is not dict or set(books) != set(BOOK_NAMES):
+            raise CadenceError("Fixed comparison books are incomplete or changed")
+        for profiles in books.values():
+            if type(profiles) is not dict or set(profiles) != set(COST_PROFILE_NAMES):
+                raise CadenceError("All three fixed execution profiles are required")
     decisions = {}
-    for profile in profiles:
+    for profile in COST_PROFILE_NAMES:
         base = results["continuous"]["baseline"][profile]
         cand = results["continuous"]["daily_target_ratchet"][profile]
         fixed = results["continuous"]["baseline_times_075"][profile]
@@ -239,6 +261,8 @@ def falsification(results: dict[str, Any]) -> dict[str, Any]:
 
 
 def run(archive_root: Path, contract_path: Path, output_dir: Path) -> dict[str, Any]:
+    # Reject changed execution inputs before importing any market-source path.
+    config = checked_baseline_config(BASELINE_CONFIG)
     # Import the established source authenticator; no new trust-in-manifest path.
     from scripts import nexus_strategy_finder_shared_cash_eval as source_guard
     if source_hash(Path(engine.__file__)) != ENGINE_SHA256_LF:
@@ -253,7 +277,6 @@ def run(archive_root: Path, contract_path: Path, output_dir: Path) -> dict[str, 
     if (digest(contract) != CONTRACT_SHA256
             or lock != {"contract_sha256": CONTRACT_SHA256, "source_commit": SOURCE_COMMIT}):
         raise CadenceError("Fixed one-candidate contract lock mismatch")
-    config = json.loads(BASELINE_CONFIG.read_text(encoding="utf-8-sig"))
     candidate = config["candidate"]
     if engine.candidate_id(candidate["family"], candidate["params"]) != "b4e4a2c33304aec1":
         raise CadenceError("Frozen original baseline changed")
@@ -281,7 +304,7 @@ def run(archive_root: Path, contract_path: Path, output_dir: Path) -> dict[str, 
                                                rebalance_mask=schedule, fill_trace=trace)
                 qa = verify_trace(market, trace, metrics, profile, period,
                                   reductions if name == "daily_target_ratchet" else np.zeros_like(reductions))
-                metrics["net_pnl_usdt"] = 500 * metrics["total_return"]
+                metrics["net_pnl_usdt"] = profile["initial_cash"] * metrics["total_return"]
                 metrics["qa"] = qa
                 results[period_name][name][profile_name] = metrics
                 if period_name == "continuous" and profile_name == "conservative":
@@ -295,6 +318,8 @@ def run(archive_root: Path, contract_path: Path, output_dir: Path) -> dict[str, 
         "engine_sha256_lf": source_hash(Path(engine.__file__)),
         "script_sha256_lf": source_hash(Path(__file__)),
         "contract_sha256": digest(contract), "contract": contract,
+        "baseline_config_sha256": digest(config),
+        "execution_profiles": config["execution"],
         "source_history_preinspected": True, "source_4h_rows_per_asset": len(baseline),
         "candidate_count": 1, "parameter_search": False,
         "daily_target_reduction_events_full_source": int(reductions.sum()),
