@@ -1,0 +1,47 @@
+{
+  "schema": "nexus.mr40-momentum30-entry-study.v1",
+  "study_id": "mr40-momentum30-entry-20261021",
+  "base_strategy": "mean_reversion_40_m2",
+  "candidate_strategy": "mean_reversion_40_m2_momentum30_entry_v1",
+  "parent_commit": "a7bc008c08b804fe4aadace4a956ee5549b7ae49",
+  "base_engine_sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+  "input_digest": "fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe",
+  "baseline_result_digest": "44ea00e4528ccbe3e420bd999152a36b58450565f8a45bb9489a3c79fe4b4514",
+  "hypothesis_origin": "Post-hoc descriptive grouping of the already-seen original 81-trade ledger; not an independent hypothesis or untouched test.",
+  "single_change": {
+    "kind": "entry qualification only; no cap40 or new exit",
+    "lookback_four_hour_intervals": 180,
+    "threshold_previous_30d_return_pct": 0,
+    "comparison": "closed price at decision t >= closed price at t-180; equality allowed",
+    "episode_policy": "At the first eligible decision of each original long target episode, allow or reject the entire episode. A rejected episode stays flat until original target resets to zero; no late entry and no reentry.",
+    "exit_policy": "Once admitted, retain original long/flat target until its original z>=0 exit, even if 30d return later turns negative.",
+    "warm_start": "Account and episode admission state restart at each cohort boundary. First known decision is start_index-lag; inherited original long state is checked there as a fresh possible account entry.",
+    "cold_july": "Original MR targets remain month-only with original first-open skip; only the momentum feature uses available prior closed history.",
+    "missing_context": "Reject entry if fewer than 180 preceding intervals are available.",
+    "execution": "Signal-close decision; next-open fill at lag1, or one additional bar at lag2. Momentum is evaluated at the signal decision, never on a later execution bar.",
+    "base_parameters": {
+      "lookback": 40,
+      "entry_z": -2,
+      "exit_z": 0
+    },
+    "sizing": "Unchanged all-cash long/flat, 10000 USDT independently per cohort/profile."
+  },
+  "evaluation": {
+    "cohorts": "All six pinned baseline cohorts, including cold and warm July; all already seen.",
+    "profiles": "normal 10 fee/5 slippage bps; stress 25/15; zero-cost diagnostic; additional4h latency at normal costs",
+    "primary_comparison": "Paired 42-month normal and stress net PnL and maximum close drawdown; report continuous August-September separately.",
+    "all_results_reported": true,
+    "parameter_search": false,
+    "other_lookbacks_or_thresholds": false,
+    "minimum_trade_count_gate": false,
+    "prospective": false,
+    "independent_economic_qualification": false
+  },
+  "prior_related_trial": "cap40 timing exit was tested once and rejected; this study does not include that change.",
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}

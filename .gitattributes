@@ -71,3 +71,8 @@ research/nexus_mean_reversion_40_m2_time_cap_v1.py text eol=lf
 research/mean_reversion_40_m2_time_cap_v1.json text eol=lf
 tests/test_nexus_mean_reversion_40_m2_time_cap_v1.py text eol=lf
 research/nexus_mean_reversion_40_m2_regime_diagnostic_v1.py text eol=lf
+
+# Momentum30 MR40 experiment also binds exact source and policy bytes.
+research/mean_reversion_40_m2_momentum30_entry_v1.json text eol=lf
+research/nexus_mean_reversion_40_m2_momentum30_entry_v1.py text eol=lf
+tests/test_nexus_mean_reversion_40_m2_momentum30_entry_v1.py text eol=lf
