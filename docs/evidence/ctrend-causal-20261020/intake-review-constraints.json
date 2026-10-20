@@ -1,0 +1,279 @@
+{
+  "schema": "nexus.ctrend-real-source-intake-independent-constraints.v1",
+  "status": "REVIEW_CONSTRAINTS_NOT_SOURCE_CERTIFICATION",
+  "review_scope": {
+    "only_file_written": "docs/evidence/ctrend-causal-20261020/intake-review-constraints.json",
+    "source_price_payloads_read": false,
+    "market_labels_read": false,
+    "financial_backtest_run": false,
+    "remote_environment_changes": false,
+    "real_orders": 0
+  },
+  "source_bound_implementation_sha256": {
+    "research/ctrend_causal_h_technical_v1.json": "4cfc7bf473f47c2e46175cf2075aefeb4fc2619af5d93753af795cbf88fba5d9",
+    "research/nexus_ctrend_causal_pipeline_v1.py": "d64cf0c04068c365bdd7152c182daa021ae203afcf94d097fa00590a0e8650b9",
+    "research/nexus_ctrend_causal_features_v1.py": "98166eaea2c134f334c13b27ffcf3a3f64196b2c6c225d3b82ac02c441f34157",
+    "research/nexus_ctrend_causal_wallet_v1.py": "5d1c90fb10ff5273dbde074897c43eea7030d5bbe7ac0d8a4c3ed2f6595cc78d"
+  },
+  "vendor_readme_evidence": {
+    "archive_sha256": "76671b6e018e1862ebfe1142ed6942ab40b9b9653f90087f50803e810ebb41ec",
+    "readme": "original/0_readme.txt",
+    "readme_facts": {
+      "artificial_data_is_technical_only": 19,
+      "CMC_reader_follows_artificial_generator": 21
+    },
+    "original_csv_names_verified_in_b01ReadData": {
+      "close_cmc.csv": 23,
+      "low_cmc.csv": 24,
+      "high_cmc.csv": 25,
+      "open_cmc.csv": 26,
+      "market_cap_cmc.csv": 55,
+      "volume_cmc.csv": 65
+    },
+    "reader": "original/b01ReadData.m",
+    "matrix_schema": "First row contains numeric asset IDs; first column contains dates. Verify the date vector in ALL six files, not only close_cmc.csv.",
+    "additional_metadata_file": "MetaData.mat",
+    "metadata_fields": [
+      "vID",
+      "cCoinType",
+      "vStableCoin",
+      "cName",
+      "cSymbol"
+    ],
+    "metadata_line": 75,
+    "volume_definition": "Publisher reader explicitly describes volume_cmc as volume in dollars.",
+    "not_proven": [
+      "Presence of the six real CMC CSVs",
+      "Historical original-publication vintages",
+      "Historical Bybit listing or lot constraints",
+      "Point-in-time stablecoin classification"
+    ]
+  },
+  "stage_boundary": {
+    "current_pipeline_accepts_real_data": false,
+    "permitted_intake_result": "Source inventory, metadata, identity crosswalk and provenance gaps; not numerical financial scoring.",
+    "real_source_adapter_requires_separate_review": true,
+    "intake_completion_implies_financial_authority": false,
+    "financial_backtest_allowed": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "orders": 0,
+    "historical_reuse_classification": "Previously inspected prices remain inspected historical development; new features do not turn them into virgin OOS."
+  },
+  "protected_scope_preflight": {
+    "start_inclusive_ms": 1792368000000,
+    "end_exclusive_ms": 1800144000000,
+    "canonical_entities": [
+      "Bitcoin",
+      "Ethereum"
+    ],
+    "known_cmc_ids": [
+      1,
+      1027
+    ],
+    "known_bybit_symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "assertions": [
+      "Resolve product and economic-asset identity BEFORE opening or acquiring a price-bearing payload.",
+      "If an affected entity intersects [start_inclusive_ms,end_exclusive_ms), reject acquisition, loading, aggregation, feature calculation, labels and scoring.",
+      "Do not use unbounded latest ticker/quote/listings endpoints during metadata intake.",
+      "Unknown asset identity or unknown payload coverage is not permission to bypass this preflight.",
+      "A metadata-only instruments or ID-map response is not permission to fetch its current prices."
+    ]
+  },
+  "minimal_file_or_response_manifest": {
+    "required_fields": [
+      "record_id",
+      "provider",
+      "origin_or_endpoint",
+      "sanitized_request_parameters",
+      "product_category",
+      "content_class",
+      "schema_version",
+      "source_dataset_version_or_unknown",
+      "coverage_start_ms",
+      "coverage_end_exclusive_ms",
+      "acquired_at_ms",
+      "provider_response_time_ms_or_unknown",
+      "http_status_or_local_origin",
+      "provider_success_code_or_not_applicable",
+      "byte_count",
+      "content_sha256",
+      "asset_identity_manifest_sha256",
+      "revision_class",
+      "permitted_use_basis"
+    ],
+    "content_class_enum": [
+      "identity_metadata",
+      "instrument_rules_metadata",
+      "price_bars",
+      "return_labels"
+    ],
+    "revision_class_enum": [
+      "contemporaneous_immutable_snapshot",
+      "dated_publisher_record",
+      "restated_historical_observed_now",
+      "unknown"
+    ],
+    "assertions": [
+      "No tokens, credentials, authorization headers or account secrets in manifests.",
+      "Hash immutable raw bytes and preserve the raw-to-normalized transform/version chain.",
+      "HTTP success plus provider-level success must both pass; HTML/403/error JSON must not be parsed as data.",
+      "A current acquisition timestamp or server processing timestamp is not the original publication time of a historical observation.",
+      "Unknown vintage remains explicit; do not backdate available_at to a bar close or a fabricated ingestion time."
+    ]
+  },
+  "stable_asset_crosswalk": {
+    "required_fields": [
+      "canonical_asset_id",
+      "cmc_id",
+      "chain_or_native_identity",
+      "contract_address_or_native_marker",
+      "bybit_product_category",
+      "bybit_symbol_id_if_present",
+      "bybit_symbol",
+      "base_coin",
+      "quote_coin",
+      "effective_from_ms",
+      "effective_to_exclusive_ms_or_open",
+      "known_from_ms",
+      "known_until_exclusive_ms_or_open",
+      "identity_evidence_sha256",
+      "unit_conversion_policy"
+    ],
+    "assertions": [
+      "CMC numeric ID is the primary vendor identity; ticker/name equality is not an identity join.",
+      "Require Bybit category=spot and the reviewed quote currency; do not merge a same-named derivative instrument.",
+      "Crosswalk intervals must be nonoverlapping and cover the observation/execution time without ambiguous aliases.",
+      "Rebrands, contract migrations, wrapped assets, symbol reuse and redenominations need explicit effective-dated identity and unit evidence.",
+      "Keep symbolId when supplied but do not infer undocumented permanent Spot identity semantics from a derivatives example.",
+      "Current active/inactive/untracked ID maps aid identity discovery; they do not prove historical tradability or historical universe membership."
+    ]
+  },
+  "historical_universe_and_caps": {
+    "required_fields": [
+      "asset_id",
+      "valid_from_ms",
+      "valid_to_exclusive_ms_or_open",
+      "known_from_ms",
+      "status",
+      "stablecoin_flag",
+      "venue_spot_eligible",
+      "eligibility_evidence_sha256",
+      "cap_currency",
+      "cap_observation_end_ms",
+      "cap_available_at_ms",
+      "cap_vintage_sha256"
+    ],
+    "assertions": [
+      "Include dead/delisted/renamed assets in the source inventory; never derive old cohorts solely from today's online pairs or largest survivors.",
+      "CMC date_added/first_historical_data/last_historical_data describe CMC records, not Bybit trading start/end or source publication vintages.",
+      "A current instrument response proves current metadata at its observation time; historical status/constraints need dated evidence.",
+      "Freeze stablecoin classification as known at the decision, rather than applying today's tags retrospectively.",
+      "Require cap currency and definition, including circulating versus fully diluted capitalization; do not replace historical cap with today's value.",
+      "Preserve unavailable observations and explicit reasons; no global future-completeness intersection, survivor renormalization or automatic missing-asset substitution."
+    ]
+  },
+  "bar_feature_label_clock_contract": {
+    "time_unit": "integer UTC epoch milliseconds",
+    "required_bar_fields": [
+      "asset_id",
+      "source_venue_or_global_aggregate",
+      "product_category",
+      "interval_start_ms",
+      "interval_end_ms",
+      "source_available_at_ms_or_unknown",
+      "first_observed_at_ms",
+      "price_currency",
+      "volume_unit",
+      "volume_scope",
+      "source_vintage_sha256"
+    ],
+    "assertions": [
+      "Use explicit start/end intervals. Convert a documented candle start timestamp to its close boundary; do not reinterpret it as a close.",
+      "Daily inputs must follow the contiguous UTC-midnight close grid; sort and deduplicate provider pages, preserving gap reasons.",
+      "Only fully closed bars and source information available by the snapshot decision may enter that snapshot.",
+      "Freeze whether features use global CMC OHLCV or Bybit-local Spot OHLCV. A change is a disclosed derivative, not numerical replication.",
+      "Declare base-quantity volume versus quote-notional turnover and USD versus USDT. Do not substitute fields by matching the name volume.",
+      "A modeled conservative availability lag can be disclosed as an assumption; it is not proof of an unrevised historical vendor vintage.",
+      "Materialize immutable historical feature snapshots independently at their own decision times; later revisions cannot backfill them.",
+      "Require 200 consecutive valid daily observations at an eligible endpoint and 52 consecutive fully closed Liu-style calendar feature/label pairs.",
+      "Bind each label to ordered asset IDs, its feature-snapshot hash and the next weekly interval; mask unreleased labels only after feature eligibility/ranks are fixed.",
+      "Label source may legitimately differ from the feature provider; preserve its separate identity and raw provenance hash.",
+      "Training label_end <= current_feature_time <= decision; execution source_event > decision and observed_at >= source_event."
+    ]
+  },
+  "lot_order_fee_contract": {
+    "required_fields": [
+      "asset_id",
+      "bybit_symbol",
+      "category",
+      "order_type",
+      "market_unit",
+      "is_leverage",
+      "spec_as_of_ms",
+      "spec_valid_until_ms_or_point_only",
+      "rules_vintage_sha256",
+      "base_precision",
+      "quote_precision",
+      "tick_size",
+      "min_order_amount",
+      "max_order_quantity_for_selected_order_type",
+      "fee_rate_scenario",
+      "fee_currency_buy",
+      "fee_currency_sell",
+      "gross_order_quantity_basis",
+      "net_received_quantity_basis",
+      "partial_fill_or_cancel_policy"
+    ],
+    "assertions": [
+      "Use Spot schema and evidence for that vintage. Do not copy derivative qtyStep or launchTime into Spot fields.",
+      "Do not unconditionally enforce current deprecated minOrderQty. Current Spot minOrderAmt and the selected order-type maximum need their documented semantics.",
+      "Specify whether market qty is base quantity or quote value; never rely on a market-buy default.",
+      "Document how basePrecision/quotePrecision/tickSize become quantity/amount/price increments; reject unverified translations.",
+      "Point-snapshot rules require spec_as_of == execution observation. Any validity interval is an explicit caller policy, not proof the exchange never changed its rules.",
+      "Historical lot/fee changes require effective-dated evidence; current rules cannot certify past execution.",
+      "Root's frozen cost scenarios remain stress assumptions, not authenticated account fee rates.",
+      "Reconcile fees in the actual purchased-asset currency and distinguish gross submitted quantity from net inventory received.",
+      "Current generic PaperWallet buy fees are quote-cash deductions; this is valid declared synthetic bookkeeping but not the documented purchased-asset Spot-fee adapter.",
+      "Require tested max-order, quantity-unit, fee-currency and partial-fill/cancel behavior before venue feasibility is claimed.",
+      "At 500 USDT, every planned delta must pass its own lot/min/max rules atomically; do not discard small holdings or redistribute them to force feasibility."
+    ]
+  },
+  "failure_disposition": {
+    "unknown_historical_vintage": "Keep as retrospective observed-now source; do not certify as contemporaneously known.",
+    "missing_identity_or_historical_rules": "Intake incomplete for venue feasibility; not proof the strategy is economically bad or the 500-USDT account impossible.",
+    "current_metadata_only": "Current metadata ready; historical universe/lot/cap facts remain unresolved.",
+    "minimum_cross_section": "The fixed 25-asset cohort and five assets per quintile are formation requirements, not a newly added minimum trade-count gate.",
+    "next_bounded_action": "Locate the six original real CSVs and metadata, record coverage/IDs/vintage first, reconcile the identity crosswalk and historical rule gaps; enable no real-data model route merely because native synthetic tests pass."
+  },
+  "primary_documentation": [
+    {
+      "url": "https://coinmarketcap.com/api/documentation/guides/standards-and-conventions",
+      "verified_fact": "CMC IDs preferred; symbols can collide or change; returned timestamps are UTC."
+    },
+    {
+      "url": "https://coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency",
+      "verified_fact": "ID map defaults to active; inactive/untracked options and coverage metadata exist. These are not historical Bybit membership facts."
+    },
+    {
+      "url": "https://bybit-exchange.github.io/docs/v5/market/instrument",
+      "verified_fact": "Current online instrument schema has Spot-specific precision/amount/type-dependent maximum fields; it is not a historical instrument archive."
+    },
+    {
+      "url": "https://bybit-exchange.github.io/docs/v5/market/kline",
+      "verified_fact": "Explicit category needed to avoid the linear default; returned startTime is a candle start and an unclosed close is a live last trade."
+    },
+    {
+      "url": "https://bybit-exchange.github.io/docs/v5/order/create-order",
+      "verified_fact": "Spot market-buy quantity defaults to value; explicit marketUnit distinguishes base and quote units."
+    },
+    {
+      "url": "https://www.bybit.com/en/help-center/article/Bybit-Spot-Fees-Explained",
+      "verified_fact": "Spot fee unit follows the purchased cryptocurrency; buys reduce received base and sells reduce received quote."
+    }
+  ]
+}

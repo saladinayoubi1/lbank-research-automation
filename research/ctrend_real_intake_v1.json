@@ -1,0 +1,97 @@
+{
+  "protocol_id": "ctrend_real_intake_v1",
+  "parent_technical_protocol": "ctrend_causal_h_technical_v1",
+  "frozen_parent_code_commit": "4c722cf0c6e00d6176fd7ea22ddc1d97ece282fd",
+  "stage": "metadata_intake_only",
+  "candidate": "CTREND-Causal-H",
+  "real_data_routing_enabled": false,
+  "purpose": "Freeze provenance and venue semantics before acquiring price-bearing inputs; this is not an economic preregistration or source certificate.",
+  "metadata_requests": {
+    "bybit": "https://api.bybit.com/v5/market/instruments-info?category=spot",
+    "coinmarketcap_documented_not_yet_acquired": "https://pro-api.coinmarketcap.com/public-api/v1/cryptocurrency/map",
+    "query_contract": "Explicit Spot category; explicit CMC listing_status; no credentials, duplicate parameters, price/quote/latest-listings endpoints or silently assumed full coverage.",
+    "protected_price_fetching": false
+  },
+  "historical_collection_envelope": {
+    "start_inclusive_utc": "2021-01-01T00:00:00Z",
+    "end_exclusive_utc": "2026-10-19T00:00:00Z",
+    "start_inclusive_ms": 1609459200000,
+    "end_exclusive_ms": 1792368000000,
+    "price_acquisition_allowed_now": false,
+    "economic_train_test_split": null,
+    "selection_basis": "Fixed historical envelope before inspecting candidate economic outcomes; no prices acquired at this stage.",
+    "range_is_not_a_claim_of_venue_coverage": true
+  },
+  "protected_study": {
+    "start_inclusive_ms": 1792368000000,
+    "end_exclusive_ms": 1800144000000,
+    "start_inclusive_utc": "2026-10-19T00:00:00Z",
+    "end_exclusive_utc": "2027-01-17T00:00:00Z",
+    "assets": [
+      "CMC:1",
+      "CMC:1027"
+    ],
+    "operation": "No price acquisition, loading, features, labels or scoring in protected interval; this intake additionally denies ALL price/return requests."
+  },
+  "source_requirements": {
+    "original_files": [
+      "close_cmc.csv",
+      "low_cmc.csv",
+      "high_cmc.csv",
+      "open_cmc.csv",
+      "market_cap_cmc.csv",
+      "volume_cmc.csv",
+      "MetaData.mat"
+    ],
+    "alignment": "Verify dates and numeric asset IDs across every matrix, not only the close vector.",
+    "alternatives": "A documented alternative real source requires an explicit versioned derivative/provenance mapping; do not claim original-paper replication.",
+    "volume": "Original volume is global dollar-notional. Freeze source, base versus quote-notional units and USD versus USDT; no silent substitution.",
+    "raw_provenance": [
+      "immutable_raw_bytes_sha256",
+      "provider_endpoint_or_local_origin",
+      "sanitized_query",
+      "source_schema_version",
+      "capture_time",
+      "event_coverage",
+      "documented_release_time_or_explicit_unknown",
+      "revision_or_vintage_class",
+      "permitted_use_basis"
+    ],
+    "authenticity": "Hashes prove integrity, not availability at a historic decision. Acquired-now/restated history stays labelled as such."
+  },
+  "asset_mapping": {
+    "primary_identity": "Numeric CMC ID or explicitly versioned alternative provider ID, plus chain/contract or native-asset evidence",
+    "venue": "Bybit Spot, USDT quote",
+    "join": "Effective-dated, evidence-backed crosswalk; symbol/name match alone is insufficient",
+    "history": "Current active/inactive map or current Trading status cannot establish old listing, delisting, stablecoin classification or lot constraints. Keep delisted assets and unresolved entries; no hindsight survivor filter."
+  },
+  "venue_execution_contract": {
+    "source_docs": "https://bybit-exchange.github.io/docs/v5/market/instrument",
+    "spot_quantity_increment": "basePrecision; validate semantics for observed schema/vintage, never copy derivative qtyStep unconditionally",
+    "spot_notional_minimum": "minOrderAmt; current Spot minOrderQty is deprecated",
+    "spot_order_units": "Explicit marketUnit and order_type; market-buy defaults to quote value, never infer base-quantity semantics",
+    "order_limits": "Selected order-type maximum quantity, base/quote increments, price tick, partial-fill/cancel behavior and rules validity need dedicated adapter tests",
+    "fees": "Bybit fee is charged in purchased asset: a buy reduces received base inventory, a sell reduces received quote. Fee rate remains a frozen scenario unless account evidence establishes it.",
+    "existing_wallet_limit": "Frozen technical v1 uses a generic quote-cash buy fee and full assumed fills. It is not a complete Bybit Spot adapter; native test success does not certify venue fidelity.",
+    "historical_rules": "Require effective-dated, independently evidenced rules; no backdating current metadata or inventing valid_until."
+  },
+  "observed_source_status": {
+    "bybit_mainnet_public_metadata": "HTTP403 on Laptop2, one request; no proxy/region/domain workaround attempted",
+    "raw_filenames": "No matching originals in scratch inventory or the bounded Laptop2 E:/NEXUS-QA and F:/NEXUS-Tools/ChatCLI filename inventory; not a claim about all user storage.",
+    "coinmarketcap_keyless_map": "Official documentation verified; no response acquired and no actual historical source authenticated."
+  },
+  "admission": {
+    "financial_backtest_allowed": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "real_orders": 0,
+    "schedule_created": false
+  },
+  "next_evidence_gate": [
+    "Obtain a permitted real source package and its provenance/coverage/IDs without protected prices",
+    "Validate historical economic-asset/Bybit-Spot identity and release/rule vintages",
+    "Implement and test exact purchased-asset fee, order units, limits and partial-fill adapter before venue feasibility",
+    "Freeze separate economic development/evaluation protocol before any price-bearing load"
+  ]
+}

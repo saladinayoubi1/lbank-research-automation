@@ -1,0 +1,95 @@
+{
+  "schema": "nexus.ctrend-causal-native-full-proof.v1",
+  "recorded_at_utc": "2026-10-20T16:25:14.843010+00:00",
+  "parent_code_commit": "4c722cf0c6e00d6176fd7ea22ddc1d97ece282fd",
+  "source_hashes_match_frozen_inputs": true,
+  "pip_check": {
+    "exit_code": 0,
+    "output": "No broken requirements found."
+  },
+  "new_environment": {
+    "prefix": "E:\\NEXUS-QA\\ctrend-causal-full-20261020\\venv",
+    "executable": "E:\\NEXUS-QA\\ctrend-causal-full-20261020\\venv\\Scripts\\python.exe",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "sklearn": "1.8.0",
+    "numpy_file": "E:\\NEXUS-QA\\ctrend-causal-full-20261020\\venv\\Lib\\site-packages\\numpy\\__init__.py",
+    "scipy_file": "E:\\NEXUS-QA\\ctrend-causal-full-20261020\\venv\\Lib\\site-packages\\scipy\\__init__.py",
+    "sklearn_file": "E:\\NEXUS-QA\\ctrend-causal-full-20261020\\venv\\Lib\\site-packages\\sklearn\\__init__.py"
+  },
+  "existing_qa_environment_after": {
+    "prefix": "E:\\NEXUS-QA\\pytest-env",
+    "numpy": "2.5.3"
+  },
+  "baseline_numpy_preserved": true,
+  "thread_limits": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "packages": [
+    {
+      "name": "numpy",
+      "version": "2.3.5",
+      "wheel_url": "https://files.pythonhosted.org/packages/2d/57/8aeaf160312f7f489dea47ab61e430b5cb051f59a98ae68b7133ce8fa06a/numpy-2.3.5-cp312-cp312-win_amd64.whl",
+      "archive_info": {
+        "hash": "sha256=86945f2ee6d10cdfd67bcb4069c1662dd711f7e2a4343db5cecec06b87cf31aa",
+        "hashes": {
+          "sha256": "86945f2ee6d10cdfd67bcb4069c1662dd711f7e2a4343db5cecec06b87cf31aa"
+        }
+      }
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.0",
+      "wheel_url": "https://files.pythonhosted.org/packages/92/ce/672ed546f96d5d41ae78c4b9b02006cedd0b3d6f2bf5bb76ea455c320c28/scipy-1.17.0-cp312-cp312-win_amd64.whl",
+      "archive_info": {
+        "hash": "sha256=0937a0b0d8d593a198cededd4c439a0ea216a3f36653901ea1f3e4be949056f8",
+        "hashes": {
+          "sha256": "0937a0b0d8d593a198cededd4c439a0ea216a3f36653901ea1f3e4be949056f8"
+        }
+      }
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.8.0",
+      "wheel_url": "https://files.pythonhosted.org/packages/9f/c4/0ab22726a04ede56f689476b760f98f8f46607caecff993017ac1b64aa5d/scikit_learn-1.8.0-cp312-cp312-win_amd64.whl",
+      "archive_info": {
+        "hash": "sha256=35c007dedb2ffe38fe3ee7d201ebac4a2deccd2408e8621d53067733e3c74809",
+        "hashes": {
+          "sha256": "35c007dedb2ffe38fe3ee7d201ebac4a2deccd2408e8621d53067733e3c74809"
+        }
+      }
+    },
+    {
+      "name": "joblib",
+      "version": "1.5.3",
+      "wheel_url": "https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl",
+      "archive_info": {
+        "hash": "sha256=5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713",
+        "hashes": {
+          "sha256": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713"
+        }
+      }
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "wheel_url": "https://files.pythonhosted.org/packages/32/d5/f9a850d79b0851d1d4ef6456097579a9005b31fea68726a4ae5f2d82ddd9/threadpoolctl-3.6.0-py3-none-any.whl",
+      "archive_info": {
+        "hash": "sha256=43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb",
+        "hashes": {
+          "sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb"
+        }
+      }
+    }
+  ],
+  "test_process_exit_code": 0,
+  "test_report_sha256": "0f3e2224b98082b31f217b6026e39bc5d6223d967ccb31c835db92a296717afb",
+  "tests_run": 49,
+  "success": true,
+  "real_orders": 0,
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "paper_writer_enabled": false
+}

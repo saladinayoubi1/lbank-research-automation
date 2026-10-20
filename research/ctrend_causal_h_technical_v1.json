@@ -1,0 +1,114 @@
+{
+  "protocol_id": "ctrend_causal_h_technical_v1",
+  "created_at_utc": "2026-10-20T15:53:32.344Z",
+  "stage": "synthetic_implementation_validation_only",
+  "source_archive_sha256": "76671b6e018e1862ebfe1142ed6942ab40b9b9653f90087f50803e810ebb41ec",
+  "predecessor_audit_pr": 2765,
+  "feature_names": [
+    "sma_3d",
+    "sma_5d",
+    "sma_10d",
+    "sma_20d",
+    "sma_50d",
+    "sma_100d",
+    "sma_200d",
+    "macd",
+    "macd_diff_signal",
+    "volsma_3d",
+    "volsma_5d",
+    "volsma_10d",
+    "volsma_20d",
+    "volsma_50d",
+    "volsma_100d",
+    "volsma_200d",
+    "volmacd",
+    "volmacd_diff_signal",
+    "rsi",
+    "stochRSI",
+    "stochK",
+    "stochD",
+    "boll_low",
+    "boll_mid",
+    "boll_high",
+    "boll_width",
+    "cci",
+    "chaikin"
+  ],
+  "clocks": {
+    "unit": "UTC_epoch_milliseconds",
+    "daily_bar_close": "Known close boundary; available_at cannot precede close and must be <=snapshot decision",
+    "snapshots": "Independently materialized as of each decision; no later backfill into old snapshots",
+    "weekly_bins": "Liu-style fixed Jan1-anchored weeks1..51 of7days;week52endsJan1nextyear;onlyfullyclosedbins",
+    "execution": "Separate quote observed strictly after decision, never a retrospective same-bar open",
+    "training": "52 prior feature/label periods with feature_time<label_end<=decision"
+  },
+  "learning": {
+    "features": 28,
+    "univariate_fm_window_weeks": 52,
+    "univariate_min_assets": 10,
+    "elastic_net_l1_ratio": 0.5,
+    "lambda_count": 200,
+    "lambda_ratio": 0.0001,
+    "loss": "Capitalization-weighted training MSE; corrected AIC selects lambda",
+    "selection": "Positive combination coefficients; equal-average their univariate forecasts",
+    "ranks": "As-of feature/cap/eligibility mask only; tiedrank, constant cross-section maps0",
+    "formation": "Exact/Hazen quintiles, minimum25 eligible assets and5 ineachquintile; highquintile normalizedlaggedcaps",
+    "targets": "Missing historical labels filter fitting only; future target unavailable is absent from inference API"
+  },
+  "features": {
+    "daily_prices": "Validated positive OHLC, close and open inside low/high; nonnegative volume",
+    "history": "200 consecutive valid daily observations before a feature endpoint is eligible",
+    "return_outlier_censoring": false,
+    "indicator_definitions": "Source-style SMA/EMA/PPO/PVO/stochastic/Bollinger/CCI/Chaikin; explicit Wilder14 RSI; no claim of bitwise MATLAB parity"
+  },
+  "accounting": {
+    "mode": "Isolated paper simulation only; no exchange API/writer integration",
+    "initial_cash_usdt": "500",
+    "position_direction": "long/cash",
+    "precision_digits": 50,
+    "trade_execution": "Sell then buy using adverse per-side slippage and fee on executed notional",
+    "target_sizing": "Fee/slippage-inclusive continuous NAV fixed point, then floor quantity to lot grid; cash residual retained",
+    "minimum_orders": "Atomic block; no silent removal or redistribution",
+    "missing_held_mark": "Fail closed; preserve wallet and withhold NAV, never renormalize surviving positions",
+    "drawdown": "1-NAV/running_peak including initial cash and first loss",
+    "terminal_exit": "Explicit cash target only, with normal order constraints",
+    "spec_validity": "Point snapshot by default; optional explicit valid_until; no implicit24hTTL",
+    "cost_profiles": {
+      "conservative": {
+        "fee_rate": "0.001",
+        "slippage_rate": "0.0005"
+      },
+      "stress": {
+        "fee_rate": "0.0015",
+        "slippage_rate": "0.001"
+      },
+      "severe": {
+        "fee_rate": "0.0025",
+        "slippage_rate": "0.0015"
+      }
+    }
+  },
+  "changes_from_published_replication": [
+    "Outcome-independent feature/rank/inference/formation",
+    "Week-scoped resampling with fixed calendar endpoints",
+    "Holdings/cash/fee/slippage accounting and quantity/minimum-order constraints",
+    "True NAV drawdown",
+    "Explicit snapshot provenance and warmup policy",
+    "Portable Python solver and defined RSI/constant-rank behavior"
+  ],
+  "admission": {
+    "live": false,
+    "real_orders": 0,
+    "paper_writer_enabled": false,
+    "demo_admitted": false,
+    "financial_backtest_allowed": false,
+    "reason": "Only synthetic implementation checks authorized in this stage; real point-in-time inputs and separate financial preregistration remain required"
+  },
+  "untouched": {
+    "original_vendor_files": true,
+    "protected_btc_eth_future_study": true,
+    "prior_terminal_negative_protocols": true,
+    "current_laptop_installs_and_journals": true,
+    "new_monitor_or_schedule": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "nexus.ctrend-native-source-verification.v1",
+  "full_native_tests": 49,
+  "native_duration_seconds": 97.76500000000124,
+  "tested_code_commit": "4c722cf0c6e00d6176fd7ea22ddc1d97ece282fd",
+  "frozen_files_match": true,
+  "native_report_bytes_preserved": true,
+  "raw_windows_report_sha256": "0f3e2224b98082b31f217b6026e39bc5d6223d967ccb31c835db92a296717afb",
+  "report_format": "Raw Windows CRLF bytes preserved via base64 transfer; not silently normalized",
+  "baseline_qa_numpy_preserved": true,
+  "old_version": "2.5.3",
+  "new_isolated_version": "2.3.5",
+  "package_check_success": true,
+  "real_data_source_certified": false,
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "orders": 0
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "nexus.ctrend-native-intake-review-resolution.v1",
+  "native_full_parent_commit": "4c722cf0c6e00d6176fd7ea22ddc1d97ece282fd",
+  "native_full_tests_passed": 49,
+  "frozen_code_unchanged": true,
+  "new_guard_tests_native_passed": 10,
+  "new_guard_author": "internal/demo_novelty_inventory",
+  "root_guard_review_corrections": [
+    "Do not report full CMC status coverage for an omitted provider parameter that defaults to active",
+    "Reject explicit nested market-cap fields as obvious financial payload",
+    "Mark requested coverage as caller annotation only; update synthetic Spot fixture to basePrecision/quotePrecision"
+  ],
+  "independent_source_review": "intake-review-constraints.json",
+  "scope": "Guard is pure and not a complete security/schema or source-authenticity validator",
+  "real_source_certified": false,
+  "remaining_requirements": [
+    "Permitted source provenance and historical asset/rule/release evidence",
+    "Exact purchased-asset fee and complete Spot execution adapter",
+    "Separate economic preregistration before any financial data path"
+  ],
+  "financial_backtest_allowed": false,
+  "demo_admitted": false,
+  "live_enabled": false,
+  "orders": 0
+}

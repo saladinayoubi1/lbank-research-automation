@@ -1,0 +1,35 @@
+{
+  "schema": "nexus.ctrend-causal-synthetic-validation.v1",
+  "started_at_utc": "2026-10-20T16:07:12.840607+00:00",
+  "duration_seconds": 18.156999999999243,
+  "subset": "features-wallet",
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "scipy": null,
+    "scikit-learn": null
+  },
+  "discovered": 28,
+  "tests_run": 28,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "success": true,
+  "evidence_class": "synthetic",
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "paper_writer_enabled": false,
+  "live_enabled": false,
+  "real_orders": 0,
+  "protected_future_data_read": false,
+  "sha256": {
+    "research/ctrend_causal_h_technical_v1.json": "4cfc7bf473f47c2e46175cf2075aefeb4fc2619af5d93753af795cbf88fba5d9",
+    "research/nexus_ctrend_causal_features_v1.py": "98166eaea2c134f334c13b27ffcf3a3f64196b2c6c225d3b82ac02c441f34157",
+    "research/nexus_ctrend_causal_wallet_v1.py": "5d1c90fb10ff5273dbde074897c43eea7030d5bbe7ac0d8a4c3ed2f6595cc78d",
+    "research/run_ctrend_causal_validation_v1.py": "51e197003dda7c71366a86a87fc8450f2388a5dcec56283c9653e82fee3b8ab2",
+    "tests/test_nexus_ctrend_causal_features_v1.py": "d85ed010bc374ef831a3422c32c0f4514aa164501d62b7ddbe7c90c6a29d06f4",
+    "tests/test_nexus_ctrend_causal_wallet_v1.py": "140d394441f8ccc7801ea87e1212aa8365c75e77278867bcff4f4a736b49589f"
+  },
+  "test_output": "test_delayed_bar_is_not_backfilled_into_old_decision (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_delayed_bar_is_not_backfilled_into_old_decision) ... ok\ntest_extreme_return_is_not_censored_and_200_valid_days_are_required (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_extreme_return_is_not_censored_and_200_valid_days_are_required) ... ok\ntest_full_snapshot_has_28_features_and_week_local_provenance (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_full_snapshot_has_28_features_and_week_local_provenance) ... ok\ntest_inputs_are_copied_and_future_invalid_ohlc_is_invisible (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_inputs_are_copied_and_future_invalid_ohlc_is_invisible) ... ok\ntest_missing_endpoint_falls_back_only_inside_current_week (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_missing_endpoint_falls_back_only_inside_current_week) ... ok\ntest_partial_calendar_interval_is_rejected (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_partial_calendar_interval_is_rejected) ... ok\ntest_sma200_and_bollinger_have_independent_arithmetic_oracles (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_sma200_and_bollinger_have_independent_arithmetic_oracles) ... ok\ntest_unsigned_epoch_overflow_and_boolean_clocks_are_rejected (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_unsigned_epoch_overflow_and_boolean_clocks_are_rejected) ... ok\ntest_valid_future_mutations_and_extension_cannot_change_snapshot (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_valid_future_mutations_and_extension_cannot_change_snapshot) ... ok\ntest_year_end_bins_are_known_without_future_rows (test_nexus_ctrend_causal_features_v1.CausalFeatureTests.test_year_end_bins_are_known_without_future_rows) ... ok\ntest_cash_and_public_snapshots (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_cash_and_public_snapshots) ... ok\ntest_changed_lot_step_does_not_hide_unsellable_dust (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_changed_lot_step_does_not_hide_unsellable_dust) ... ok\ntest_clock_allows_coherent_same_timestamp_but_rejects_conflict (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_clock_allows_coherent_same_timestamp_but_rejects_conflict) ... ok\ntest_fee_and_adverse_slippage_paid_on_entry (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_fee_and_adverse_slippage_paid_on_entry) ... ok\ntest_first_loss_is_included (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_first_loss_is_included) ... ok\ntest_floor_rounding_leaves_cash (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_floor_rounding_leaves_cash) ... ok\ntest_fractional_cash_target_reserves_all_costs (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_fractional_cash_target_reserves_all_costs) ... ok\ntest_held_drift_requires_rebalance_even_when_targets_unchanged (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_held_drift_requires_rebalance_even_when_targets_unchanged) ... ok\ntest_invalid_numbers_and_leverage_are_atomic (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_invalid_numbers_and_leverage_are_atomic) ... ok\ntest_liquidation_occurs_only_on_explicit_empty_target (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_liquidation_occurs_only_on_explicit_empty_target) ... ok\ntest_missing_held_mark_never_renormalizes_survivors (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_missing_held_mark_never_renormalizes_survivors) ... ok\ntest_one_invalid_buy_prevents_every_planned_sale (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_one_invalid_buy_prevents_every_planned_sale) ... ok\ntest_positive_target_rounding_to_zero_blocks_whole_batch (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_positive_target_rounding_to_zero_blocks_whole_batch) ... ok\ntest_sells_fund_buys_without_borrowing (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_sells_fund_buys_without_borrowing) ... ok\ntest_snapshot_expiry_future_and_explicit_validity (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_snapshot_expiry_future_and_explicit_validity) ... ok\ntest_target_equal_to_drifted_weights_needs_no_trades (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_target_equal_to_drifted_weights_needs_no_trades) ... ok\ntest_tiny_delta_is_rejected_instead_of_omitted (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_tiny_delta_is_rejected_instead_of_omitted) ... ok\ntest_true_compounded_drawdown_is_nineteen_percent (test_nexus_ctrend_causal_wallet_v1.WalletTests.test_true_compounded_drawdown_is_nineteen_percent) ... ok\n\n----------------------------------------------------------------------\nRan 28 tests in 18.134s\n\nOK\n"
+}

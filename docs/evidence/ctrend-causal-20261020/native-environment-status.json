@@ -1,0 +1,19 @@
+{
+  "schema": "nexus.ctrend-causal-isolated-environment.v1",
+  "started_at_utc": "2026-10-20T16:18:23.634439+00:00",
+  "root": "E:\\NEXUS-QA\\ctrend-causal-full-20261020",
+  "active_env_modified": false,
+  "pins": {
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0"
+  },
+  "package_index": "https://pypi.org/simple",
+  "binary_wheels_only": true,
+  "scope": "synthetic_research",
+  "pip_exit_code": 0,
+  "status": "READY_FOR_SYNTHETIC_TESTS",
+  "pip_install_report_sha256": "81869313749d447e5775bc6482a31680d69eba19ef8600135fc3dca89a9ab5be"
+}
