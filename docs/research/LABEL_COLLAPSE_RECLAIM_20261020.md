@@ -1,61 +1,86 @@
-# One fixed Demo-research candidate: label concentration collapse and price reclaim
+# Label concentration collapse and price reclaim: terminal negative
 
-The owner asked for a concrete strategy with two AIs and the real AI Room. This branch registers **one new-input hypothesis**, implements its bounded historical diagnostic, and preserves the original portfolio study. It does not admit a strategy to Demo, change the Paper writer, or enable orders.
+**The one preregistered system was tested and rejected by its fixed passive-benchmark gate. It is not Demo/Paper eligible.** It produced one positive closed trade, but stress net was only +2.648267USDT versus +73.460698 for the required capped passive comparator. Lower drawdown does not replace the failed return condition.
 
-The contract was committed at `6f0ea6f036da8c3d6a60b79a501c359419ce6848` before opening raw prices for the new feature. The selected parameters are the design agent's .20/.05 proposal. The critic's .25/.10 alternative is not tested. Results cannot cause threshold changes.
+The owner requested a concrete strategy with two AIs and the actual AI Room. Contract `6f0ea6f036da8c3d6a60b79a501c359419ce6848` was committed before new-feature price reads. The .20/.05 design was selected once; the critic's .25/.10 alternative was not tested. No thresholds changed after results.
 
-| Item | Fixed rule |
+## Fixed system
+
+| Item | Rule |
 |---|---|
-| Instruments and capital | Bybit Spot BTCUSDT/ETHUSDT, long/cash, one shared500USDT book and one position |
-| New input | Absolute quote-notional concentration of literal CSV buy/sell labels, including both RPI values |
-| Event | Previous completed4h candle red; absolute imbalance >=.20 |
-| Response | Next completed4h candle closes above event high; absolute imbalance <=.05 |
-| Entry | First trade/open in following4h candle, adverse slippage; BTC first on simultaneous eligible signals |
-| Stop | Lower of the two signal lows; actual entry-to-stop distance must be1%-4% |
-| Size | Gross<=250USDT; calculated ordinary stop loss including fees/slippage<=2.5USDT; cash constraint |
+| Instruments/book | Bybit Spot BTCUSDT/ETHUSDT, long/cash, shared500USDT and one position |
+| New feature | Absolute quote-notional imbalance of literal CSV buy/sell labels; both RPI values included |
+| Event/response | Previous completed4h bar red with imbalance>=.20; following completed4h close above event high with imbalance<=.05 |
+| Entry | First trade/open in next4h bar; adverse slippage; BTC first if both eligible |
+| Stop/sizing | Lower of two signal lows; actual entry-to-stop distance1%-4%; entrygross<=250USDT, ordinary stop loss including costs<=2.5USDT and available-cash constraint |
 | Target/time |2R price distance or open six bars after entry; no trailing/additions |
-| Ambiguity | Opening stop gap first, opening target gap at target without favorable improvement, then time exit; intrabar both-hit uses stop first |
-| Reentry/end | No entry in an exit bar; final permitted historical close liquidates positions |
+| Execution | Opening stop gap first, opening target gap at target without favorable improvement, then time exit; intrabar both-hit stop first |
+| Reentry/terminal | No entry in exit bar; liquidate at last permitted historical close |
 | Per-side fee/slippage |10/5bps conservative;15/10stress;25/15severe |
 
-The exact CSV-to-API taker-side mapping remains unresolved. [Bybit REST](https://bybit-exchange.github.io/docs/v5/market/recent-trade) and [WebSocket](https://bybit-exchange.github.io/docs/v5/websocket/public/trade) define their API side fields as taker side; they do not explicitly establish the archived six-column CSV mapping. The chosen absolute feature is invariant to swapping all buy/sell labels and makes no aggressor-direction or L2 absorption claim. This algebra does not certify arbitrary source labeling errors.
+The no-flow ablation removes only the two imbalance conditions. It preserves all price, stop, time, selection and cash rules. The capped passive comparator invests125USDT gross per asset at inception and retains the remaining cash after fees;250 is an **initial entry-gross cap**, not a continuously rebalanced exposure ceiling.
 
-## Study and falsification
+## Actual historical result
 
-This separate research protocol uses only the already retained158 official daily raw files,70,815,420trades and9484h bars from Aug1 through Oct18,2026. These are inspected development observations, never untouched/OOS evidence. The old warmup purpose is not retrospectively changed. No download or Oct19-Jan17 protected source read is authorized.
+Aug1–Oct18,2026 is **already-inspected development history**, not OOS or untouched validation.158 previously retained official files contain70,815,420trades and9484h bars. No source download or Oct19-Jan17 protected price read occurred.
 
-The no-flow control removes only the two concentration conditions. It retains every price, risk, execution and sizing rule. All three cost profiles report candidate/control outcomes and passive BTC, ETH, full50/50, capped250-gross50/50 and cash. One fixed exploratory pass requires positive candidate net in all costs, stress net exceeding both control and capped passive, and stress close-mark drawdown no worse than capped passive. Zero trades or a failed gate is terminal for this contract without retuning. A pass remains insufficient for Demo admission.
+| Book | Costs | Closed trades | Net USDT | Fees USDT | Maximum4h close-mark DD |
+|---|---|---:|---:|---:|---:|
+| candidate | conservative | 1 | +3.309996 | 0.324328 | 0.282387% |
+| candidate | stress | 1 | +2.648267 | 0.431512 | 0.250600% |
+| candidate | severe | 1 | +1.895455 | 0.614943 | 0.214399% |
+| price_only | conservative | 24 | -1.312782 | 6.685518 | 1.574040% |
+| price_only | stress | 24 | -6.255051 | 9.022565 | 1.910656% |
+| price_only | severe | 24 | -12.367020 | 12.987974 | 2.712564% |
 
-[Kitron and Wengrowicz,2026](https://arxiv.org/abs/2608.21888) report a15-minute reversal effect with about1.3bps gross edge versus5bps round-trip benchmark cost. That finding is a reason to respect cost barriers; it does not establish this4h adaptation or clear our approximate30/50/80bps round-trip assumptions.
+Mean net per closed trade equals the candidate net because it has one trade. The price-only means are -0.054699,-0.260627 and -0.515293USDT under conservative/stress/severe respectively. All candidate PnL occurred in September; August and October were flat. Full monthly results, fills, execution references and close marks are retained in the packet.
 
-## Actual AI contributions
+| Passive book | Conservative net | Stress net | Severe net | Stress close-mark DD |
+|---|---:|---:|---:|---:|
+| BTCUSDT | +150.900813 | +149.600311 | +147.654424 | 7.472983% |
+| ETHUSDT | +145.091273 | +143.802378 | +141.873859 | 15.779748% |
+| full_50_50 | +147.996043 | +146.701345 | +144.764141 | 11.392172% |
+| capped_50_50 | +74.072019 | +73.460698 | +72.563026 | 6.713239% |
+| cash | +0.000000 | +0.000000 | +0.000000 | 0.000000% |
 
-- DeepSeek supplied two fresh real UI answers, including the current exact-system critique in AI Room round `8672db1c07e24e33985ba5a6ca9dc346`, answer SHA256 `47345f50b318de40bb2a1cccd748c0c8b144d672820a4666c8982cae74bf2517`. It rejects Demo admission and permits only a limited diagnostic.
-- Codex design agent `/root/demo_novelty_inventory` supplied the selected fixed design before new-feature price reads.
-- Independent Codex critic `/root/demo_strategy_critic` required ablation/cost-inclusive risk and independently implemented Decimal signal/accounting verification without importing the producer.
-- Perplexity was IP-blocked and Claude region-unavailable. Their fresh requests were not submitted; neither supplies an approval/vote. No circumvention was attempted.
+| Prespecified gate | Outcome |
+|---|---|
+| Candidate net>0 under all three costs | Pass |
+| Stress net>identical no-flow control | Pass |
+| Stress net>capped passive50/50 | **Fail** |
+| Stress close-mark DD<=capped passive50/50 | Pass |
 
-DeepSeek's mechanical objections are evaluated against the actual contract: positive1%-4% stop distance already implies E>S; an opening target-gap branch already exists; quantity<=250/E already caps notional. Its arbitrary minimum20trades is not adopted, consistent with repository guidance against arbitrary trade-count gates. Statistical sufficiency and untouched validation remain separate unresolved admission requirements.
+The exact contract is terminal without retuning. Rejection follows the recorded financial gate, not an arbitrary minimum trade count. One profitable trade and the losing24-trade ablation do not establish statistically reliable alpha or incremental prediction. No broad impossibility claim about other strategies follows.
 
-## Verification and current native checkpoint
+## Verification and evidence
 
-On Laptop2 DESKTOP-F4SA4VL, the exact four contract/producer/independent-QA/crosscheck Git blobs were reproduced before processing. Native Python3.12.10 is the existing `E:\NEXUS-QA\pytest-env\Scripts\python.exe`.
+Native Laptop2 DESKTOP-F4SA4VL used the existing Python3.12.10 environment. The four executable/contract Git blobs at source commit `2ea3d19d465fd075e6c7a23bb6e41b1ff6dee06f` matched before execution and their SHA256 identities still matched afterward.
 
--9 execution unit checks passed.
--14 independent synthetic integration/corruption checks passed, including stop-first, gap loss exceeding budget, target-gap pricing, exact time exit, terminal/last-bar entry, global label swap, altered fill/cash/quantity/timestamps, missing cost and fabricated months.
-- Latest verified native phase: **features**, started2026-10-20T14:18:19Z. At that checkpoint no economic result or independent financial receipt had been produced.
-- One bounded native process validates hashes of all158 raw files/receipts, compares pandas quote aggregates against a separate all-row scalar csv/Decimal implementation, and cross-checks948 OHLCV bars against the retained independent source QA. Per-day digest-bound checkpoints permit resume without retuning or a new source acquisition.
-- If features finish within the480-second bounded stage, the one-shot runner proceeds to all21 financial reports and independent Decimal QA, then saves a SHA256-checked compressed evidence packet. No monitor, schedule, watchdog or persistent runner is installed.
+- 9 execution unit checks and14 independent synthetic/corruption checks passed.
+- All158 raw files and receipts matched the pinned capture. Vectorized quote aggregation matched a separate scalar csv/Decimal implementation over every raw row. All948 OHLCV bars matched the retained independent source QA.
+- Independently authored Decimal replay, with no producer import, verified all6active and15passive reports,9954close marks, signals, fills, cash, fees, drawdown, monthly PnL and exact decision gates.
+- The initial480-second bounded feature stage checkpointed147files. One180-second continuation reused those exact-source checkpoints and completed11newfiles in58.969seconds. It did not repeat execution tests or retune a rule. Final state was `completed_verified` at2026-10-20T14:28:13.676591Z.
+- The20-entry compressed packet was decoded, every original byte count/SHA256 checked against native files, and its persisted Git blob reproduced exactly.
 
-Final native evidence will supersede this checkpoint only when the actual result and independent QA are retrieved. Main strategy/runtime, Laptop1 install/profile/journal, original frozen future study, Live=false and orders0 remain unchanged.
+Packet bytes:338717; SHA256 `4fdcea89d7069931f21a13d57180cc5e7696e977141b8d78a892c6d2fde030a7`; Git blob `254ddb602d1d17b1aed2a1c566ba313f302ffc35`. Result canonical digest: `544ae621cf0b3b8064c7eda9e8651e99e2bb0eb2aa7c0e76274adfdba2610ace`.
 
-## Source and reproduction
+Evidence:
+- [summary](../evidence/label-collapse-reclaim-20261020/summary.json)
+- [full compressed native packet](../evidence/label-collapse-reclaim-20261020/evidence-packet.json)
+- [packet validation](../evidence/label-collapse-reclaim-20261020/packet-validation.json)
+- [real AI Room consultation](../evidence/label-collapse-reclaim-20261020/ai-room-review.json)
+- [earlier pre-economic checkpoint](../evidence/label-collapse-reclaim-20261020/pre-economic-native-checkpoint.json)
 
-Files:
-- `research/label_collapse_reclaim_4h_v1.json`
-- `scripts/nexus_label_collapse_research.py`
-- `research/label_collapse_independent_qa.py`
-- `research/label_collapse_synthetic_crosscheck.py`
-- `research/label_collapse_native_run.py`
+Each packet entry decodes with `zlib.decompress(base64.b64decode(entry["zlib_base64"]))`; verify the resulting bytes and SHA256. The packet contains original features, financial results, independent QA, logs and receipts. Same-input arithmetic verification is not independent exchange/provider attestation or an authenticated Manager worker lease.
 
-The native runner checks the four executable/contract Git blobs at source commit `2ea3d19d465fd075e6c7a23bb6e41b1ff6dee06f`. Its own later additive registration does not change those blobs. Compressed packet entries decode with `zlib.decompress(base64.b64decode(entry["zlib_base64"]))`; verify each resulting byte count and SHA256 before use.
+## Actual AI contributions and source interpretation
+
+DeepSeek supplied two fresh UI answers in the real room, including exact-system round `8672db1c07e24e33985ba5a6ca9dc346`, answer SHA256 `47345f50b318de40bb2a1cccd748c0c8b144d672820a4666c8982cae74bf2517`. It rejected Demo admission and accepted only a limited diagnostic. Codex agent `/root/demo_novelty_inventory` supplied the fixed design and reviewed implementation. Separate critic `/root/demo_strategy_critic` required ablation/cost-inclusive risk, authored independent Decimal QA and confirmed the final gate failure. Their identities are explicitly recorded; they are not Claude/Perplexity. Those providers' fresh requests were unsubmitted because actual access was blocked. No circumvention or fabricated vote occurred.
+
+DeepSeek's three alleged mechanical omissions were checked: the positive1%-4% stop distance implies E>S, quantity<=250/E caps notional, and an explicit opening target-gap branch exists. Its suggested arbitrary20-trade minimum was not adopted.
+
+[Bybit REST](https://bybit-exchange.github.io/docs/v5/market/recent-trade) and [WebSocket](https://bybit-exchange.github.io/docs/v5/websocket/public/trade) define their API side fields as taker side. Exact six-column historical CSV mapping remains unresolved. The tested absolute publisher-label feature is globally label-swap invariant; no taker-direction/L2 absorption claim is made. This algebra does not certify arbitrary row-level label errors.
+
+[Kitron and Wengrowicz,2026](https://arxiv.org/abs/2608.21888) report about1.3bps gross15-minute reversal edge versus5bps round-trip benchmark cost. Their research does not validate this4h adaptation or clear our approximate30/50/80bps round-trip assumptions.
+
+The original dual-rotation system and protected Oct19-Jan17 study, Laptop1 Paper install/profile/journal and existing closed hypotheses are unchanged. No new monitor, schedule, watchdog, real order or Demo admission was created. Live=false;orders=0.
