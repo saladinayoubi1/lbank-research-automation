@@ -1,0 +1,52 @@
+{
+  "schema": "nexus.ctrend-causal-model-independent-review.v1",
+  "scope": "Read-only code review plus self-authored synthetic clock mutations; no economic backtest, market data, vendor execution or external requests.",
+  "reviewed_model_sha256": "a193e062c1e004e3bc4320dc1352206faa8d24fcedfe4717b65d3ed916ea748f",
+  "reviewed_contract_sha256": "4cfc7bf473f47c2e46175cf2075aefeb4fc2619af5d93753af795cbf88fba5d9",
+  "status": "ONE_SCOPED_CLOCK_BINDING_GUARD_REQUIRED",
+  "checks": {
+    "outcome_independent_ranking": "No issue found: rank snapshot has no label argument; historical missing labels filter fitting after snapshot ranks.",
+    "weighted_fama_macbeth": "No issue found: per-week capitalization-weighted least squares, coefficients averaged over the fixed 52-row window.",
+    "scaling_and_AICc": "No issue found: training-only weighted means/scales, weighted residual MSE, 200-point fixed path; nonzero slope DF convention explicitly disclosed.",
+    "positive_forecast_combination": "No issue found: positive selected coefficients gate equal-average univariate current forecasts.",
+    "portfolio_failure": "No issue found: insufficient cohort, tied empty quintiles and unavailable learned signal raise rather than substitute a cash return."
+  },
+  "findings": [
+    {
+      "id": "CURRENT_SNAPSHOT_TRAINING_BINDING",
+      "path": "research/nexus_ctrend_causal_model_v1.py",
+      "line": 223,
+      "fact": "Clock validation allows current_feature_time earlier than all fitted feature/label periods.",
+      "synthetic_witness": {
+        "accepted": true,
+        "current_feature_time": 0,
+        "oldest_training_feature_time": 1501814400000,
+        "latest_label_time": 1533264000000,
+        "decision_time": 1533264000000
+      },
+      "limitation": "This does not demonstrate unknown future-at-decision leakage: every historical label still precedes the decision. It fails to bind the claimed prior training window to the current snapshot.",
+      "minimal_action": "Model owner should require latest historical label <= current_feature_time and add a regression test; no model mutation performed by this reviewer."
+    }
+  ],
+  "controller_boundary": {
+    "responsibility": "Controller must bind feature/label snapshots to consecutive fully closed Jan1-anchored Liu calendar weeks, then bind current snapshot to those rows.",
+    "low_level_numeric_witness": {
+      "accepted": true,
+      "history_rows_used": 52,
+      "feature_span_ms": 51
+    },
+    "interpretation": "Low-level numerical model accepts abstract chronological rows. Full calendar verification belongs to the controller; this is not independently classified as a model defect."
+  },
+  "admission": {
+    "financial_backtest": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "real_orders": 0
+  },
+  "limits": [
+    "No numerical MATLAB parity claim.",
+    "No economic or predictive edge conclusion.",
+    "No point-in-time source/vintage attestation."
+  ]
+}

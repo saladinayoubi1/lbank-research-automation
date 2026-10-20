@@ -1,0 +1,36 @@
+{
+  "schema": "nexus.ctrend-causal-review-resolution.v1",
+  "reviewers": [
+    "internal/demo_strategy_critic",
+    "internal/demo_novelty_inventory"
+  ],
+  "model_finding": {
+    "id": "CURRENT_SNAPSHOT_TRAINING_BINDING",
+    "status": "FIXED_AND_TESTED",
+    "final_model_sha256": "5c565507d7571d3ebedce314178660cebeb936795d907a222d56a69e33ece09a",
+    "guard": "Every historical feature_time < label_time <= current_feature_time <= decision_time",
+    "regression_test": "CausalModelTests.test_current_snapshot_cannot_precede_known_training_label_end",
+    "original_finding_retained_in": "model-independent-review.json"
+  },
+  "controller_features_review": {
+    "reviewer": "internal/demo_strategy_critic",
+    "scope": "Read-only complete wrapper/features code review; no market execution",
+    "material_findings": [],
+    "checks": [
+      "Exactly52consecutive fullyclosed Jan1 calendar intervals; final label ends at current feature period",
+      "Asset/source/snapshot-hash binding before fitting",
+      "Unreleased historical labels masked after as-of snapshot eligibility",
+      "Quote event strictly after decision and no backwards event clocks",
+      "Synthetic-only inputs; real, Demo and live admission disabled"
+    ],
+    "subject_sha256": {
+      "research/nexus_ctrend_causal_pipeline_v1.py": "d64cf0c04068c365bdd7152c182daa021ae203afcf94d097fa00590a0e8650b9",
+      "research/nexus_ctrend_causal_features_v1.py": "98166eaea2c134f334c13b27ffcf3a3f64196b2c6c225d3b82ac02c441f34157"
+    }
+  },
+  "wallet_independent_review": "wallet-independent-review.json",
+  "limits": [
+    "Reviews do not establish authentic point-in-time market input availability",
+    "No economic or MATLAB-numerical-replication conclusion"
+  ]
+}

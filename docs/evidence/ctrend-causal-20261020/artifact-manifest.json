@@ -1,0 +1,145 @@
+{
+  "schema": "nexus.ctrend-causal-artifact-manifest.v1",
+  "created_at_utc": "2026-10-20T16:12:57.228941+00:00",
+  "base_commit": "e9f506cc45114bd143477aa8776d4329ec8c7900",
+  "branch": "nexus/ctrend-causal-h-20261020-76671b6e",
+  "scope": "synthetic_technical_only",
+  "manifest_excludes_itself": true,
+  "files": [
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ai-room-request.json",
+      "bytes": 6255,
+      "sha256": "b7a0de25e019adf2b9dd296e21c217a80f775bdc80ce579950c2bab7e75b9f10",
+      "git_blob_sha1": "171870fd440d3bc2ec854e6bb36397733ea88c36"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ai-room-review.json",
+      "bytes": 25289,
+      "sha256": "3e8639bd33e9264bb42c64f8347a6c07aed2c6f8b81fe395de4be52a4923504b",
+      "git_blob_sha1": "757a17ebd2cf87ad755010a5d9cf40e2b0003b0c"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/coordinator-readback.json",
+      "bytes": 2747,
+      "sha256": "bf05a62ed0f26af3e17b4a1188e9be2bdf55ff6b6e14488333f806ac0053833e",
+      "git_blob_sha1": "e4da4e91967dee6f75e062b481b1a0f10efe91f4"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/coordinator-review.json",
+      "bytes": 2553,
+      "sha256": "7ece5dadb7b5b4b5974df7dcb8706d5910a44189914b804d484a1f29efc2f981",
+      "git_blob_sha1": "402fe8a49f92944300f3613c5fd748bace26eabe"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/laptop2-validation.json",
+      "bytes": 6079,
+      "sha256": "eb5cab428e91407975c2a958ebf79043c034283e31bf63104e2436028ae0de1e",
+      "git_blob_sha1": "049abe8ebdef0b9eebbc736b553d5549c6db7ed3"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/local-validation.json",
+      "bytes": 10130,
+      "sha256": "1f20646e9c843c97ca4e2b0bbf78d5edcf292a2cd289e8b44640ddb4f09ae10a",
+      "git_blob_sha1": "6d55da9faa320bf7f5aa6c8a148b2b0e9289a142"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/model-independent-review.json",
+      "bytes": 3009,
+      "sha256": "64f345e0e9ce2f32659f85a3c38538fe17b86c124444e74b23e2edb65998a240",
+      "git_blob_sha1": "ca779909e7a40c712267aedfdd6129dcd5ffdbe4"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/review-resolution.json",
+      "bytes": 1745,
+      "sha256": "559bb946f876391fd71354977faabc2a0b3f2f08d6774c243d1cbed65c3d1b6e",
+      "git_blob_sha1": "0b5fb416e2508cf25bcdf8a3c8ba06cc64312966"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/wallet-independent-review.json",
+      "bytes": 1895,
+      "sha256": "52cff2a9dad9037e1298521ad6c08c6abb96343246dc3007d1f1d4c178ffb809",
+      "git_blob_sha1": "56058718a0535a436ad90f249729e2391d234309"
+    },
+    {
+      "path": "docs/research/CTREND_CAUSAL_H_TECHNICAL_20261020_FA.md",
+      "bytes": 7825,
+      "sha256": "664273fbfe7ecc477061ac6a4105ef4e7d6f20d06d7855a7bee101bd0106c9fc",
+      "git_blob_sha1": "0cd19f4d03dad4987daaef71dd93e63eaa1316b9"
+    },
+    {
+      "path": "research/ctrend_causal_h_technical_v1.json",
+      "bytes": 4614,
+      "sha256": "4cfc7bf473f47c2e46175cf2075aefeb4fc2619af5d93753af795cbf88fba5d9",
+      "git_blob_sha1": "1ca7c86a38424c0f43d2b9208f9f89694199423a"
+    },
+    {
+      "path": "research/nexus_ctrend_causal_features_v1.py",
+      "bytes": 13711,
+      "sha256": "98166eaea2c134f334c13b27ffcf3a3f64196b2c6c225d3b82ac02c441f34157",
+      "git_blob_sha1": "4e9c695b5078333ed2d559ce915195b31d4662b6"
+    },
+    {
+      "path": "research/nexus_ctrend_causal_model_v1.py",
+      "bytes": 15912,
+      "sha256": "5c565507d7571d3ebedce314178660cebeb936795d907a222d56a69e33ece09a",
+      "git_blob_sha1": "241108ab6b938e6c0713ca3a0aaf9ba4806611c7"
+    },
+    {
+      "path": "research/nexus_ctrend_causal_pipeline_v1.py",
+      "bytes": 11942,
+      "sha256": "d64cf0c04068c365bdd7152c182daa021ae203afcf94d097fa00590a0e8650b9",
+      "git_blob_sha1": "06698a975ed1880a1b778acfb19cf606f26c4490"
+    },
+    {
+      "path": "research/nexus_ctrend_causal_wallet_v1.py",
+      "bytes": 14398,
+      "sha256": "5d1c90fb10ff5273dbde074897c43eea7030d5bbe7ac0d8a4c3ed2f6595cc78d",
+      "git_blob_sha1": "a98148aff2fa999b07fa445ad1386ff4eb20aaa8"
+    },
+    {
+      "path": "research/run_ctrend_causal_validation_v1.py",
+      "bytes": 2822,
+      "sha256": "51e197003dda7c71366a86a87fc8450f2388a5dcec56283c9653e82fee3b8ab2",
+      "git_blob_sha1": "2780d860cf55b90ee43a9d4be16ca4566012870e"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_features_v1.py",
+      "bytes": 6779,
+      "sha256": "d85ed010bc374ef831a3422c32c0f4514aa164501d62b7ddbe7c90c6a29d06f4",
+      "git_blob_sha1": "b039c8b2fb2510221b8c8abfa6984b1ea073fee7"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_model_v1.py",
+      "bytes": 8894,
+      "sha256": "448ab945e29038b344d355fc9e59cf10793306a214c43e776068684ebdfb65f2",
+      "git_blob_sha1": "8e36b5dce7d76c716f9e3736ac4b88282170916e"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_pipeline_v1.py",
+      "bytes": 9111,
+      "sha256": "99ac83e3f2fcbbe0542acefe23d0e62db227095c7864fc4ab614ef33a792bd10",
+      "git_blob_sha1": "3c1595eb8664ba7d6208ee83b8ee8bee09883863"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_wallet_v1.py",
+      "bytes": 10604,
+      "sha256": "140d394441f8ccc7801ea87e1212aa8365c75e77278867bcff4f4a736b49589f",
+      "git_blob_sha1": "b89c3c251e5d248d6486ff15435e4bc8c915112e"
+    }
+  ],
+  "validation": {
+    "local_full": 49,
+    "laptop2_features_wallet": 28,
+    "local_all_passed": true,
+    "native_subset_all_passed": true,
+    "native_full_model_executed": false
+  },
+  "admission": {
+    "financial_backtest_allowed": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "real_orders": 0,
+    "protected_future_data_read": false
+  }
+}
