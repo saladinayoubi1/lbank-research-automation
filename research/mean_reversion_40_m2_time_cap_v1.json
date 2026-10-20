@@ -1,0 +1,36 @@
+{
+  "schema": "nexus.mean-reversion-40-m2-time-cap-diagnostic.v1",
+  "study_id": "mr40-time-cap-20261021",
+  "base_strategy": "mean_reversion_40_m2",
+  "candidate_strategy": "mean_reversion_40_m2_cap40_v1",
+  "base_source_commit": "d5c570a50ee0ad51430c93521cad11b1c2485e16",
+  "base_engine_sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+  "input_digest": "fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe",
+  "baseline_result_digest": "44ea00e4528ccbe3e420bd999152a36b58450565f8a45bb9489a3c79fe4b4514",
+  "hypothesis": "An oversold exposure episode should expire after the existing 40-bar signal lookback; prolonged non-reverting episodes caused concentrated losses.",
+  "policy": {
+    "maximum_signal_episode_bars": 40,
+    "maximum_normal_hold_hours": 160,
+    "exit_decision": "at the close after 40 active target bars; execute at next open",
+    "entry_rearm": "after expiry remain flat until original mean-reversion target resets to zero; no immediate reentry while same oversold episode persists",
+    "sizing": "unchanged all-cash long/flat",
+    "entry_parameters": "unchanged lookback 40 / entry z -2 / exit z 0",
+    "costs_and_latency": "all four preregistered baseline profiles unchanged",
+    "warm_start": "same start/account rules as baseline; episode age follows known history"
+  },
+  "evaluation": {
+    "cohorts": "all six baseline cohorts; all are already seen",
+    "classification": "exploratory paired diagnostic, not pristine OOS, not prospective",
+    "parameter_search": false,
+    "additional_trials_in_this_study": false,
+    "all_results_reported": true,
+    "independent_economic_qualification": false,
+    "minimum_trade_count_gate": false
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}

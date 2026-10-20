@@ -1,0 +1,17 @@
+test_accounting_and_no_phantom_orders_after_expiry (__main__.TimeCapTests.test_accounting_and_no_phantom_orders_after_expiry) ... ok
+test_baseline_engine_bytes_match_reviewed_dependency (__main__.TimeCapTests.test_baseline_engine_bytes_match_reviewed_dependency) ... ok
+test_exactly_forty_active_targets_then_expiry (__main__.TimeCapTests.test_exactly_forty_active_targets_then_expiry) ... ok
+test_expiry_signal_sells_at_next_open_after_160_hours (__main__.TimeCapTests.test_expiry_signal_sells_at_next_open_after_160_hours) ... ok
+test_extra_latency_still_limits_actual_episode_length (__main__.TimeCapTests.test_extra_latency_still_limits_actual_episode_length) ... ok
+test_forced_end_is_not_relabelled_as_time_exit (__main__.TimeCapTests.test_forced_end_is_not_relabelled_as_time_exit) ... ok
+test_mean_exit_rearms_next_oversold_episode (__main__.TimeCapTests.test_mean_exit_rearms_next_oversold_episode) ... ok
+test_mean_exit_takes_priority_on_expiry_boundary (__main__.TimeCapTests.test_mean_exit_takes_priority_on_expiry_boundary) ... ok
+test_no_reentry_during_same_oversold_episode (__main__.TimeCapTests.test_no_reentry_during_same_oversold_episode) ... ok
+test_nonbinary_targets_rejected (__main__.TimeCapTests.test_nonbinary_targets_rejected) ... ok
+test_prefix_causality (__main__.TimeCapTests.test_prefix_causality) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.014s
+
+OK
+{"cap_regressions": 11, "csv_byte_equality": ["summary.csv", "fills.csv", "closed_positions.csv", "equity_curve.csv", "monthly_attribution.csv"], "ignored_replay_metadata": ["executed_utc", "physical_worker", "result_digest"], "integrity_members": 19, "orders": 0, "recorded_result_digest": "c3fd7abbd94ed7a5e938fcbf001f9be144da10f0322c23437f7b43b4e3948a4e", "replayed_cases": 24, "research_only": true, "semantic_results": "PASS"}
