@@ -1,0 +1,73 @@
+{
+  "schema": "nexus.ctrend-ci-scientific-isolation.v1",
+  "created_at_utc": "2026-10-20T17:01:08.039989+00:00",
+  "parent_commit": "ab96751f938783948de0350fb776bd462f8a7831",
+  "failed_workflow_run": 39459931157,
+  "observed_failure": "test_actual_committed_source_request_only_approves_one_frozen_research_system: economic supporting code or dependency locks changed after freeze",
+  "root_cause": "Adding scientific extras to requirements-dev.lock changed support_source_sha256 for an existing frozen research request.",
+  "resolution": {
+    "requirements_dev_restored_git_blob": "fe9aae1700d509caf2ea7ab6b85929b983e5762f",
+    "separate_scientific_lock": "research/requirements-ctrend-causal-v1.lock",
+    "existing_workflow": ".github/workflows/research-evidence-refresh.yml",
+    "existing_job": "validate",
+    "new_science_steps_trigger": "pull_request only",
+    "new_jobs_or_permissions_or_schedules": false,
+    "general_pytest_missing_extras_behavior": "Only two optional scientific test modules raise unittest.SkipTest when find_spec(scipy/sklearn) is None; installed-but-broken imports still fail.",
+    "dedicated_ci_requires": "49 causal and 10 intake guard tests, each exact count, zero skips/failures/errors/expected failures; nonzero exit otherwise.",
+    "old_frozen_request_or_support_code_or_test_changed": false,
+    "protected_control_plane_paths_changed": false,
+    "model_feature_wallet_pipeline_algorithms_changed": false
+  },
+  "local_validation": {
+    "causal": {
+      "run": 49,
+      "skipped": 0,
+      "success": true
+    },
+    "intake_guard": {
+      "run": 10,
+      "skipped": 0,
+      "success": true
+    },
+    "validation_gate_regressions": {
+      "run": 4,
+      "success": true
+    },
+    "existing_workflow_boundary_checks": {
+      "run": 2,
+      "success": true
+    },
+    "missing_science_probe": {
+      "run": 30,
+      "skipped": 2,
+      "success": false,
+      "exit_code": 1,
+      "expected_rejection": true
+    },
+    "workflow_yaml_parsed": true
+  },
+  "historical_evidence": {
+    "artifact_manifest_v2_resolves_at_commit": "555c9950a1f7c2320ceec87035b9a7bf7d6e8fbe",
+    "ci_collection_diagnosis_resolves_at_commit": "ab96751f938783948de0350fb776bd462f8a7831",
+    "native_49_proof": "Historical native execution remains valid for its recorded source hashes; no fresh native execution of changed runner/import guards is claimed."
+  },
+  "bybit_data_status": {
+    "laptop2_metadata_probe_utc": "2026-10-20T16:51:56.1465905Z",
+    "url": "https://api.bybit.com/v5/market/instruments-info?category=spot",
+    "http_status": 403,
+    "historical_archive_workflow_run": 39459931363,
+    "historical_archive_interval": "2022-12-01 through 2023-01-31",
+    "archives_complete": 4,
+    "units_complete": 2,
+    "remaining_units": 0,
+    "current_dataset_integrity_ok": true,
+    "artifact_id": 12281544498,
+    "complete_ctrend_real_inputs_certified": false
+  },
+  "hosted_ci_success_claimed": false,
+  "financial_backtest": false,
+  "demo_admitted": false,
+  "live_enabled": false,
+  "real_orders": 0,
+  "protected_future_data_read": false
+}

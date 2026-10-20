@@ -5,9 +5,19 @@ information about cryptocurrency returns and cannot qualify a strategy.
 """
 from dataclasses import replace
 from decimal import Decimal, localcontext
+import importlib.util
 import json
 from pathlib import Path
 import unittest
+
+missing = [name for name in ("scipy", "sklearn")
+           if importlib.util.find_spec(name) is None]
+if missing:
+    raise unittest.SkipTest(
+        "CTREND scientific extras absent: " + ", ".join(missing)
+        + "; Research Evidence Refresh installs the separate locked environment"
+    )
+
 import numpy as np
 from scipy.stats import rankdata
 from research.nexus_ctrend_causal_features_v1 import feature_snapshot, latest_closed_period, DAY_MS

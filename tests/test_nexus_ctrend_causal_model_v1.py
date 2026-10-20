@@ -1,6 +1,15 @@
 """Synthetic mathematical/causality checks; no market data or vendor execution."""
+import importlib.util
 import unittest
 from unittest import mock
+
+missing = [name for name in ("scipy", "sklearn")
+           if importlib.util.find_spec(name) is None]
+if missing:
+    raise unittest.SkipTest(
+        "CTREND scientific extras absent: " + ", ".join(missing)
+        + "; Research Evidence Refresh installs the separate locked environment"
+    )
 
 import numpy as np
 from scipy.stats import rankdata

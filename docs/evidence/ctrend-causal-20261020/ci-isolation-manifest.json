@@ -1,0 +1,85 @@
+{
+  "schema": "nexus.ctrend-ci-isolation-manifest.v1",
+  "parent_commit": "ab96751f938783948de0350fb776bd462f8a7831",
+  "excludes_itself": true,
+  "files": [
+    {
+      "path": "requirements-dev.lock",
+      "bytes": 171,
+      "sha256": "25e2d4fb1e171eaad16d2045244a0cbbf4c37e35ece44760ef1a3d859bc0a942",
+      "git_blob_sha1": "fe9aae1700d509caf2ea7ab6b85929b983e5762f"
+    },
+    {
+      "path": ".github/workflows/research-evidence-refresh.yml",
+      "bytes": 6633,
+      "sha256": "0085a95da3d02bfecbc8714ede751fcaaf04bd13183f9d22cb0197ca2493b397",
+      "git_blob_sha1": "d8bcabe88b60d949677ad5a41f72a3921408f670"
+    },
+    {
+      "path": "research/requirements-ctrend-causal-v1.lock",
+      "bytes": 217,
+      "sha256": "9b067e5e6e42da780e52633960912590328dfc95b49b615c6ee9513b7d0f11c5",
+      "git_blob_sha1": "299f7d246287d9a40725c6d56a8f1f5e868b0d51"
+    },
+    {
+      "path": "research/run_ctrend_causal_validation_v1.py",
+      "bytes": 3133,
+      "sha256": "c729672b6e8c29e3665ad17fa1eaebc28dba39ac2104648b39bbd24d887249a1",
+      "git_blob_sha1": "c53cfff70972a4db94fed863fa7d89a63311d5bb"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_model_v1.py",
+      "bytes": 9213,
+      "sha256": "bb3b04b3f80625f8ea38bed037bea8c9b58591e549895d090dbaf7cd14bcf19c",
+      "git_blob_sha1": "a728d9be3db8e1b2c629cb03198efa27013d7be0"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_causal_pipeline_v1.py",
+      "bytes": 9431,
+      "sha256": "2270cd543c33cbcf053fb009367e302774522fa9b7606358412de14bc88077df",
+      "git_blob_sha1": "3e6b67cd8729abf0bbe86bd792adc50c7a7a7754"
+    },
+    {
+      "path": "tests/test_nexus_ctrend_validation_gate_v1.py",
+      "bytes": 2745,
+      "sha256": "1e64765fc01c34178696b026c158d707957f9cf11138e962ddf12b4379e52983",
+      "git_blob_sha1": "27d245d5ebbb43d0e1a12d8ce22861c11a5d736b"
+    },
+    {
+      "path": "docs/research/CTREND_CAUSAL_H_TECHNICAL_20261020_FA.md",
+      "bytes": 15310,
+      "sha256": "3bcaaf2840afce1099ca9e347351b456eede5c6d56eb14b4fb357debf96318ee",
+      "git_blob_sha1": "9a658418b825a1ea70cd16a16f762489c919da8e"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ci-isolation-local-validation.json",
+      "bytes": 10766,
+      "sha256": "8086f1fc2e1ba71233891f18f6fbf40473d05f66d61908c2b988288437c70c60",
+      "git_blob_sha1": "4fb30db4cfa3d1f8f65c5298797e343a908fe638"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ci-isolation-guard-validation.json",
+      "bytes": 4500,
+      "sha256": "25d008c4568276c7048836166cf91fb7f3cf00761a44c2aa4e0c274af22ff812",
+      "git_blob_sha1": "e7f96fa4ac5284936d8ad1c26fc892f33cb36210"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ci-isolation-missing-science-validation.json",
+      "bytes": 7672,
+      "sha256": "8fedab4b9ec536acddada99f5c174fde26d2e726b46b080864eaf7470f22878c",
+      "git_blob_sha1": "a639639cf47590bd5e05d651f246e41b568e8ddf"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ci-scientific-isolation-resolution.json",
+      "bytes": 3099,
+      "sha256": "174b551ec81a25b48d40f56742ede270ff9929e28b42eb32ff0cb1fc5f6346a5",
+      "git_blob_sha1": "aa085d96760c648a197ad6d3291ffe9b48e70317"
+    },
+    {
+      "path": "docs/evidence/ctrend-causal-20261020/ci-isolation-independent-review.json",
+      "bytes": 830,
+      "sha256": "f07f945f8e44bb24a2d73b372f35b4a65868f886b25684683ee36c1fbe1f0f6c",
+      "git_blob_sha1": "a2bf04c009a49ac623885f832369a28d5cdab537"
+    }
+  ]
+}
