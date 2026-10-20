@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-20T15:12:44.477Z",
+  "candidate": "CTREND: published high-quintile H long portfolio",
+  "disposition": "source_intake_blocked_on_original_code_receipt",
+  "source_content_received": false,
+  "original_code_sha256": null,
+  "source_code_audit_completed": false,
+  "original_paper": {
+    "doi": "10.1017/S0022109024000747",
+    "url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/4C1509ACBA33D5DCAF0AC24379148178/S0022109024000747a.pdf/trend_factor_for_the_cross_section_of_cryptocurrency_returns.pdf",
+    "license": "CC BY 4.0",
+    "full_text_read": true
+  },
+  "original_replication": {
+    "doi": "10.7910/DVN/NTIVT8",
+    "canonical_url": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/NTIVT8",
+    "observed_ui_version": "1.1",
+    "observed_file_count": 68,
+    "observed_license": "CC0 1.0",
+    "inventory_is_not_source_content": true,
+    "observed_key_files": [
+      {
+        "path": "0_readme.txt",
+        "file_id": 10886188
+      },
+      {
+        "path": "setup.m",
+        "file_id": 10886159
+      },
+      {
+        "path": "b01ReadData.m",
+        "file_id": 10886190
+      },
+      {
+        "path": "b02CalculateIndicators.m",
+        "file_id": 10886204
+      },
+      {
+        "path": "b05CreateCTREND.m",
+        "file_id": 10886202
+      },
+      {
+        "path": "b06Table3_UnivariatePortfolioSorts.m",
+        "file_id": 10886199
+      },
+      {
+        "path": "b14Table9_CTRENDPortfoliosAndTransactionCosts.m",
+        "file_id": 10886207
+      },
+      {
+        "path": "Utils/fEstCombinedLasso.m",
+        "file_id": 10886154
+      },
+      {
+        "path": "Utils/fCrossSectTransChars.m",
+        "file_id": 10886178
+      },
+      {
+        "path": "Utils/fCreatePanelFast.m",
+        "file_id": 10886171
+      },
+      {
+        "path": "Utils/fEstFamaMacBethPanel.m",
+        "file_id": 10886217
+      },
+      {
+        "path": "Utils/fEstRegPanelRegression.m",
+        "file_id": 10886175
+      },
+      {
+        "path": "Utils/fBreakevenTC.m",
+        "file_id": 10886157
+      }
+    ],
+    "dependency_closure_verified": false
+  },
+  "paper_contract_only": {
+    "features": 28,
+    "transformation": "Cross-sectional ranks",
+    "forecast_target": "Next-week excess return",
+    "training": "52-week rolling Fama-MacBeth forecasts; capitalization-weighted elastic-net combination; mixing parameter 0.5; corrected-AIC regularization; average forecasts selected with positive combination coefficients",
+    "portfolio": "Weekly capitalization-weighted quintiles; H is separately published from H-L",
+    "physical_stop_required_by_definition": false,
+    "bybit_execution_cash_and_risk_contract_verified": false
+  },
+  "cost_unit_reconciliation": {
+    "status": "arithmetic_and_units_only_no_backtest",
+    "assumption": "Symmetric nominal round-trip input is twice the per-side rate; actual realized cost also depends on traded weights and execution.",
+    "paper_table_9_long": [
+      {
+        "per_side_bps": 30,
+        "nominal_round_trip_bps": 60
+      },
+      {
+        "per_side_bps": 40,
+        "nominal_round_trip_bps": 80
+      },
+      {
+        "per_side_bps": 50,
+        "nominal_round_trip_bps": 100
+      }
+    ],
+    "project": [
+      {
+        "profile": "conservative",
+        "per_side_bps": 15,
+        "nominal_round_trip_bps": 30
+      },
+      {
+        "profile": "stress",
+        "per_side_bps": 25,
+        "nominal_round_trip_bps": 50
+      },
+      {
+        "profile": "severe",
+        "per_side_bps": 40,
+        "nominal_round_trip_bps": 80
+      }
+    ],
+    "interpretation": "Our severe rate matches the paper's middle long rate. No inference about achievable Bybit profit, affordability or capacity.",
+    "cost_implementation_still_unverified": "Printed turnover formula includes weight drift; inspect original cost code and initial/final accounting."
+  },
+  "retrieval_evidence": [
+    {
+      "operation": "Official dataset page",
+      "route": "Cloud browser",
+      "result": "Visible source inventory and CC0 metadata; contents not downloaded"
+    },
+    {
+      "operation": "Selected code bulk Download",
+      "route": "Official UI",
+      "result": "Reached chrome-error://chromewebdata/ with title rserve.dataverse.harvard.edu; browser policy prohibited observing or acting on the internal error page; no completed source artifact confirmed; stopped browser operation"
+    },
+    {
+      "operation": "README public datafile API",
+      "file_id": 10886188,
+      "route": "Laptop2 native read-only urllib",
+      "result": "HTTP 403 Forbidden",
+      "error_body_retained": false
+    },
+    {
+      "operation": "b05 public datafile API",
+      "file_id": 10886202,
+      "route": "Laptop2 native read-only urllib",
+      "result": "HTTP 403 Forbidden",
+      "error_body_retained": false
+    },
+    {
+      "operation": "Exact source filename and DOI mirror search",
+      "route": "Web search",
+      "result": "No verified alternate source found"
+    }
+  ],
+  "blocker_scope": "These route failures establish unavailable source contents in this session, not a missing implementation, an economic rejection, a bot classification or general research/venue failure.",
+  "independent_reviews": [
+    {
+      "reviewer": "/root/demo_novelty_inventory",
+      "kind": "Internal Codex researcher",
+      "decision": "Source intake only; inspect the original dependency chain and target/trimming indices before any financial test"
+    },
+    {
+      "reviewer": "/root/demo_strategy_critic",
+      "kind": "Internal Codex researcher",
+      "decision": "Source intake only; preserve original H membership/weights and verify point-in-time Bybit tradability and minimum-order feasibility"
+    },
+    {
+      "reviewer": "DeepSeek",
+      "kind": "Actual external AI Room provider",
+      "round_id": "5ea36f90a42b4bf99b857e3410f4ad28",
+      "submitted": true,
+      "status": "completed",
+      "answer_index": 21,
+      "answer_sha256": "1ff0725841616dc3ea2afbdb207fc6f43fe3089c2f62c4581aa3d01a24a5e206",
+      "decision": "Original published H leg acknowledged; code questions remain unknowns; no Demo admission"
+    }
+  ],
+  "necessary_next_checks": [
+    "Receive original README, setup, main preprocessing/features/model/cost scripts and all directly called helpers; hash original bytes before changing anything.",
+    "Audit training and selection indices against future targets; distinguish baseline from robustness alternatives.",
+    "Locate return trimming and prove it cannot censor realized evaluation outcomes or decide membership using future returns.",
+    "Reconcile exact timestamps with the paper's stated 423 weekly observations.",
+    "Verify point-in-time universe, market-cap weights, delisting treatment, and data availability/licensing.",
+    "Verify drift, entry/exit turnover, initial/final trading costs and executable cash accounting.",
+    "Compute order feasibility from original weights and valid Bybit quantity/notional filters with 500 USDT capital; changing members/weights is a separate adaptation.",
+    "Compare actual learned behavior with the scoped historical mechanism ledger before asserting semantic novelty."
+  ],
+  "required_user_artifact": "Original CC0 code bundle (.m files plus README), obtained from the canonical replication record and attached to this conversation. No market-price download is needed for the first code audit.",
+  "capital_feasibility": {
+    "wallet_usdt": 500,
+    "venue": "Bybit Spot",
+    "minimum_order_is_not_wallet_size": true,
+    "minimum_required_capital_computable_now": false,
+    "reason": "Original portfolio weights and applicable venue filters are unavailable."
+  },
+  "invariants": {
+    "live": false,
+    "real_orders": 0,
+    "financial_backtest_started": false,
+    "demo_admitted": false,
+    "paper_enabled": false,
+    "price_data_acquired_in_this_stage": false,
+    "protected_future_study_touched": false,
+    "closed_negative_hypotheses_reopened": false,
+    "universal_ohlcv_ban": false,
+    "new_monitor_or_schedule_created": false,
+    "author_contacted": false
+  },
+  "semantic_review_scope": {
+    "main_sha": "76e111c0fb39e4e1f7422644906c5118b02b5ddd",
+    "novelty": "Provisional; source content and behavior not yet compared",
+    "economic_result": "Not measured; published historical returns are not our performance"
+  }
+}
