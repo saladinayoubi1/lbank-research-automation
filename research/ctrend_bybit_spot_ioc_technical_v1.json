@@ -1,0 +1,57 @@
+{
+  "protocol_id": "ctrend_bybit_spot_ioc_technical_v1",
+  "parent_commit": "c0d61611d6f71794b13ec83ee059396b2291cb60",
+  "scope": "synthetic_venue_accounting_only",
+  "model_membership_weights_and_parent_wallet_changed": false,
+  "cash_reference_usdt": "500",
+  "venue": "Bybit Spot, USDT quote, long/cash, no borrowing",
+  "supported_orders": [
+    "Market IOC Buy: explicit baseCoin or quoteCoin quantity",
+    "Market IOC Sell: explicit baseCoin quantity",
+    "Limit IOC Buy/Sell: base quantity and explicit tick-aligned limit"
+  ],
+  "unsupported": [
+    "quoteCoin-quantity Sell", "GTC/FOK/PostOnly/RPI", "margin/shorting",
+    "live exchange routing", "automatic CTREND execution", "later target rebalancing"
+  ],
+  "source_requirements": {
+    "documentation_verified_on": "2026-10-20",
+    "instrument": "https://bybit-exchange.github.io/docs/v5/market/instrument",
+    "orders": "https://bybit-exchange.github.io/docs/v5/order/create-order",
+    "fees": "https://www.bybit.com/en-GB/help-center/article/Bybit-Spot-Fees-Explained",
+    "spot_fields": ["basePrecision", "quotePrecision", "minOrderAmt", "maxMarketOrderQty", "maxLimitOrderQty", "tickSize"],
+    "deprecated_fields_never_used_as_fallbacks": ["minOrderQty", "maxOrderQty", "maxOrderAmt"],
+    "current_metadata": "observed_metadata is inspection-only, point validity at capture, never executable or backdated",
+    "synthetic_rules": "Explicit fixture validity; no claim about historic Bybit specifications"
+  },
+  "accounting": {
+    "buy_fee": "Deduct exact synthetic scenario fee from received base; cash spends gross quote only",
+    "sell_fee": "Deduct exact synthetic scenario fee from received USDT",
+    "partial_fills": "Require supplied typed receipts; only executed gross quantities affect balances; IOC remainder is canceled, no fill inferred from price/acknowledgement",
+    "fee_rounding": "Exact decimal scenario arithmetic; real exchange fee rounding/discount rules not certified",
+    "quantity_grid": "Validate requested amount in its explicit unit; retain net base-fee dust without rounding holdings",
+    "notional_submission_rule": "Conservative synthetic minOrderAmt test using quantity times min(reference, explicit bound), or requested quote spend; not a claim about exchange instantaneous valuation",
+    "quote_buy_maximum": "Actual cumulative base receipts must not exceed maxMarketOrderQty; no unavailable liquidity or base conversion is invented",
+    "price_bounds": "Explicit caller bound; no order book or matching-engine model",
+    "nav_identity": "postNAV=preNAV-fee_marked_at_reference-price_impact_at_reference; buy base fee is valued at reference, not the fill price",
+    "risk": "Chronological initial/pre/post NAV peak and drawdown, including entry cost",
+    "rollback": "Invalid packet changes no account state; earlier independently settled orders are not rolled back",
+    "initial_allocation": "Pure helper consumes already mapped weights into floor-rounded quote budgets. It blocks unaffordable selected members, retains residual cash and never redistributes. Later rebalancing is outside scope."
+  },
+  "input_gate": {
+    "original_inputs": ["close_cmc.csv", "low_cmc.csv", "high_cmc.csv", "open_cmc.csv", "market_cap_cmc.csv", "volume_cmc.csv", "MetaData.mat"],
+    "historical_envelope": "[2021-01-01T00:00:00Z,2026-10-19T00:00:00Z)",
+    "prices_or_returns_loaded": false,
+    "historical_id_universe_cap_and_rule_vintages_certified": false,
+    "prospective_btc_eth_study_unchanged": true,
+    "only_new_public_probe": "CMC metadata ID-map sample, explicit active/inactive/untracked, no prices"
+  },
+  "admission": {
+    "financial_backtest": false,
+    "demo_admitted": false,
+    "paper_writer_enabled": false,
+    "live_enabled": false,
+    "real_orders": 0,
+    "new_schedule_or_monitor": false
+  }
+}
