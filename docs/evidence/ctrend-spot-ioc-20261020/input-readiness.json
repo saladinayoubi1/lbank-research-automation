@@ -1,0 +1,76 @@
+{
+  "schema": "nexus.ctrend-spot-input-readiness.v1",
+  "source_audit_commit": "c0d61611d6f71794b13ec83ee059396b2291cb60",
+  "original_archive_sha256": "76671b6e018e1862ebfe1142ed6942ab40b9b9653f90087f50803e810ebb41ec",
+  "archive_inventory_count": 68,
+  "required_original_inputs": [
+    "close_cmc.csv",
+    "low_cmc.csv",
+    "high_cmc.csv",
+    "open_cmc.csv",
+    "market_cap_cmc.csv",
+    "volume_cmc.csv",
+    "MetaData.mat"
+  ],
+  "original_inputs_present_in_audited_archive": [],
+  "original_inputs_missing_from_audited_archive": [
+    "close_cmc.csv",
+    "low_cmc.csv",
+    "high_cmc.csv",
+    "open_cmc.csv",
+    "market_cap_cmc.csv",
+    "volume_cmc.csv",
+    "MetaData.mat"
+  ],
+  "library_filename_search": {
+    "result": "No matches returned for exact expected filenames; simpler cmc search also returned no matches",
+    "not_proof_of_global_absence": true
+  },
+  "laptop2_bounded_filename_inventory": {
+    "checked_at_utc": "2026-10-20T18:55:57.6372217Z",
+    "roots": [
+      "E:\\NEXUS-QA",
+      "F:\\NEXUS-Tools\\ChatCLI"
+    ],
+    "expected_files_found": [],
+    "enumeration_error_count": 0,
+    "scope": "Filename inventory of these two roots only, not all user storage"
+  },
+  "bybit_metadata_probe": {
+    "checked_at_utc": "2026-10-20T18:45:23.3857279Z",
+    "url": "https://api.bybit.com/v5/market/instruments-info?category=spot",
+    "http_status": 403,
+    "repeated_or_bypassed_in_this_implementation": false
+  },
+  "official_replication_page": {
+    "url": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/NTIVT8",
+    "web_result": "JavaScript verification wall; no bypass attempted; source contents not acquired by this route"
+  },
+  "unverified_requirements": [
+    "aligned daily OHLCV/capitalization matrices and numeric IDs",
+    "release/revision vintage for each source",
+    "dated Bybit asset/listing/delisting crosswalk",
+    "historical min/max/precision rules",
+    "exact venue fee rounding and actual fill/liquidity evidence"
+  ],
+  "readiness": "BLOCKED_ORIGINAL_PANEL_AND_HISTORICAL_VINTAGES",
+  "financial_backtest_allowed": false,
+  "demo_admitted": false,
+  "paper_writer_enabled": false,
+  "live_enabled": false,
+  "real_orders": 0,
+  "price_inputs_loaded": false,
+  "protected_future_data_read": false,
+  "next_input_action": "Supply a permitted original seven-file input package with provenance, or separately preregister and evidence a versioned alternative provider panel. Do not replace missing CMC global USD volume/caps with current Bybit spot volume.",
+  "cmc_metadata_sample": {
+    "checked_at_utc": "2026-10-20T19:00:08.642648+00:00",
+    "http_status": 200,
+    "provider_error_code": 0,
+    "sample_count": 5,
+    "all_statuses_requested": true,
+    "raw_sha256": "b9b88eb65dcf024d8e80404b07fdbf869393b3dbc2f896fcda4cf215a6460043",
+    "complete_universe_certified": false,
+    "historical_vintage_certified": false,
+    "prices_requested": false
+  }
+}
