@@ -1,5 +1,5 @@
 from __future__ import annotations
-import sys,unittest
+import sys,unittest,hashlib
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"research"))
 import nexus_mean_reversion_40_m2_time_cap_v1 as c
@@ -8,6 +8,10 @@ def prices(n):
     start=b.ms("2026-01-01")
     return [[start+i*b.STEP,"100","102","98","100","1"] for i in range(n)]
 class TimeCapTests(unittest.TestCase):
+    def test_baseline_engine_bytes_match_reviewed_dependency(self):
+        self.assertEqual(len(c.BASE_ENGINE_SHA),64)
+        self.assertEqual(hashlib.sha256(Path(b.__file__).read_bytes()).hexdigest(),c.BASE_ENGINE_SHA)
+
     def test_exactly_forty_active_targets_then_expiry(self):
         out,event=c.cap40([0]*3+[1]*80)
         self.assertEqual(out[3:43],[1]*40);self.assertEqual(out[43:],[0]*40)
