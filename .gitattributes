@@ -88,3 +88,11 @@ tests/test_nexus_mr40_momentum30_october_followup_v1.py text eol=lf
 research/mean_reversion_40_m2_robustness_v1.json text eol=lf
 research/nexus_mr40_fixed_path_robustness_v1.py text eol=lf
 tests/test_nexus_mr40_fixed_path_robustness_v1.py text eol=lf
+
+# Byte-stable MR40 frozen-path audit evidence.
+docs/research/MR40_FIXED_PATH_ROBUSTNESS_20261021_FA.md text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.json text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.csv text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.py text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.txt text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.md text eol=lf
