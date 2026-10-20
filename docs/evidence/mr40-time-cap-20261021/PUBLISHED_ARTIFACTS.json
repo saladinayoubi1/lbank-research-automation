@@ -1,0 +1,140 @@
+{
+  "schema": "nexus.mr40-cap40-published-artifacts.v1",
+  "bundle": {
+    "path": "NEXUS_MR40_TimeCap40_Diagnostic_20261021.zip",
+    "bytes": 961832,
+    "sha256": "0897d135d17d20ade081ad501ef41e5c6d943379b75a42df807828cd856c7ae7",
+    "git_blob": "9c099310c0c869f63cd4272ca6581d777980aa45"
+  },
+  "members": 20,
+  "files": [
+    {
+      "path": "MR40_TIME_CAP_20261021_FA.md",
+      "bytes": 17177,
+      "sha256": "f29178ad8f9211248b63c488044a5e01e50db0a574758916eb337cec401e2109",
+      "git_blob": "4d13fa28ec88bdc1fd5228c73c11591a1f27a238"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2710,
+      "sha256": "f6447dd19aa6a105c6e50eb0d4663029efa9d9d98fab2835f3c3e96492b3053d",
+      "git_blob": "78f48a9b4882b1314969e6082d4d4824cf1ec28c"
+    },
+    {
+      "path": "baseline/prepared_inputs.json",
+      "bytes": 612908,
+      "sha256": "f901e1ec23bab5370ef2c83671c23e355875a103a3c4cbdb93fc8051c5c3cdc0",
+      "git_blob": "777f8f6588ffd136699efd9e91afc7534ded7c32"
+    },
+    {
+      "path": "baseline/recorded_results/equity_curve.csv",
+      "bytes": 2650937,
+      "sha256": "f3e0a2e9275b4e10eb6953065e1ab706731cb1ea5feb41c86928ad780ee0e6d9",
+      "git_blob": "16b46134bbaf588cc5d155f005051e98eea1e2ff"
+    },
+    {
+      "path": "baseline/recorded_results/results.json",
+      "bytes": 488957,
+      "sha256": "33d53dd81e68f59abca2d3a83adffee5e31fd24ab04feae53e05baf9aaa45fd3",
+      "git_blob": "991d932ef2004a1eb861471c16e4a6475787ad9f"
+    },
+    {
+      "path": "baseline/research/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+      "git_blob": "146892aab7eca58b56db67c0ee56f70b9e7e3f3c"
+    },
+    {
+      "path": "baseline/study_contract.json",
+      "bytes": 4488,
+      "sha256": "cca66ab10c161cb907d7de256e69f788dffc44e906791ce1833faf5d33dc550f",
+      "git_blob": "7c3010df3d360090def297a05ebe87460d047977"
+    },
+    {
+      "path": "recorded_results/closed_positions.csv",
+      "bytes": 71586,
+      "sha256": "90b6722bcc525eb775ce63c6a0b87a5fda8a084228b4a2a4efc44d7103f43255",
+      "git_blob": "f25c49b213709c3fd4301a4d7ed87cbddd3ac034"
+    },
+    {
+      "path": "recorded_results/equity_curve.csv",
+      "bytes": 2643624,
+      "sha256": "dfa8b0f2b48d27f4dd93b4a6ed507cce0c896134e43dda4047fa4d12dda4c0fc",
+      "git_blob": "34fb47196ef4cbc69c06ea6eed9f4960c9867a25"
+    },
+    {
+      "path": "recorded_results/fills.csv",
+      "bytes": 187019,
+      "sha256": "0cc8a9df819997cdf165a23619afc6ab1b1b27c0eef64f1a5e5f1d5b3ecfc92f",
+      "git_blob": "45ffcd2b5eecf9ff37a92b3cff67512d1efbe8e0"
+    },
+    {
+      "path": "recorded_results/monthly_attribution.csv",
+      "bytes": 22790,
+      "sha256": "692ed7abb010d530175750e0d86fd0cac04c805fdb7071e6d55c155828d533e6",
+      "git_blob": "13543138717815bc8adc5d614e37759ca349f92b"
+    },
+    {
+      "path": "recorded_results/results.json",
+      "bytes": 493756,
+      "sha256": "d297c3c8869d9c15e112d8caa3ccddbe0fca9d60c42396beae3dd0e8ae2d7789",
+      "git_blob": "910fcd97c1dee0df075243162a93a3780f855704"
+    },
+    {
+      "path": "recorded_results/summary.csv",
+      "bytes": 11131,
+      "sha256": "87c5fa588f6e19d25ea0614cd4eddd04dd1dedcd30bc99521838016a9fbc2e48",
+      "git_blob": "fc12fb640289900a8584d9f148e956e73c29c368"
+    },
+    {
+      "path": "research/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+      "git_blob": "146892aab7eca58b56db67c0ee56f70b9e7e3f3c"
+    },
+    {
+      "path": "research/nexus_mean_reversion_40_m2_time_cap_v1.py",
+      "bytes": 12623,
+      "sha256": "818710384d5158e7896af35385ae3041c803bb0b45311767a846a1f3ec15c782",
+      "git_blob": "58a922d645f72a6783e58881f0af865c7c94aac6"
+    },
+    {
+      "path": "study_contract.json",
+      "bytes": 1839,
+      "sha256": "ec572390008efab95bfed8908dad1b4f704eebd20bd83b0b5b968162080466e2",
+      "git_blob": "9f17bc75402a1a91920ce64761dd8194d6ece541"
+    },
+    {
+      "path": "tests-executed.txt",
+      "bytes": 1625,
+      "sha256": "4f33dc08d75c7bcec43fa67ee1931eb58d2c6b8ec407ce827c12531fc627b6a0",
+      "git_blob": "e2ed5faa9dead43eb95fcb84bdf6504192863151"
+    },
+    {
+      "path": "tests/test_nexus_mean_reversion_40_m2_time_cap_v1.py",
+      "bytes": 3520,
+      "sha256": "62e18b4638c170bdefb3f96f61d5b4f0524161d94fa85a9e227e71e800dd48c1",
+      "git_blob": "0a20626ebe461dba393101a19dc0ffa49dbb21da"
+    },
+    {
+      "path": "verify_replay.py",
+      "bytes": 2692,
+      "sha256": "32d483a68f31c6a6952b36e6260f52b4648c073438d58c08c3847c9a72f3e7ef",
+      "git_blob": "830ca55a0aace51418e4e2eb5a186fea14a4e3d5"
+    }
+  ],
+  "bundle_replay_verification": {
+    "status": "PASS",
+    "same_frozen_zip": true,
+    "cap_regressions": 11,
+    "cases": 24,
+    "byte_equal_csv_files": 5,
+    "semantic_results": "PASS",
+    "log": {
+      "path": "replay-verification.txt",
+      "bytes": 1866,
+      "sha256": "7bba9613f54dc688057fcb53eebde01c18d4d0bd5f72340a63e63aa2696428d9",
+      "git_blob": "9853698f258e93fe7d421301978430212e26539c"
+    }
+  }
+}

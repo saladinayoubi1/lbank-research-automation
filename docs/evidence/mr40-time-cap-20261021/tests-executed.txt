@@ -1,0 +1,21 @@
+[Reading 16 new lines (total: 16 lines)]
+
+test_accounting_and_no_phantom_orders_after_expiry (__main__.TimeCapTests.test_accounting_and_no_phantom_orders_after_expiry) ... ok
+test_baseline_engine_bytes_match_reviewed_dependency (__main__.TimeCapTests.test_baseline_engine_bytes_match_reviewed_dependency) ... ok
+test_exactly_forty_active_targets_then_expiry (__main__.TimeCapTests.test_exactly_forty_active_targets_then_expiry) ... ok
+test_expiry_signal_sells_at_next_open_after_160_hours (__main__.TimeCapTests.test_expiry_signal_sells_at_next_open_after_160_hours) ... ok
+test_extra_latency_still_limits_actual_episode_length (__main__.TimeCapTests.test_extra_latency_still_limits_actual_episode_length) ... ok
+test_forced_end_is_not_relabelled_as_time_exit (__main__.TimeCapTests.test_forced_end_is_not_relabelled_as_time_exit) ... ok
+test_mean_exit_rearms_next_oversold_episode (__main__.TimeCapTests.test_mean_exit_rearms_next_oversold_episode) ... ok
+test_mean_exit_takes_priority_on_expiry_boundary (__main__.TimeCapTests.test_mean_exit_takes_priority_on_expiry_boundary) ... ok
+test_no_reentry_during_same_oversold_episode (__main__.TimeCapTests.test_no_reentry_during_same_oversold_episode) ... ok
+test_nonbinary_targets_rejected (__main__.TimeCapTests.test_nonbinary_targets_rejected) ... ok
+test_prefix_causality (__main__.TimeCapTests.test_prefix_causality) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.010s
+
+OK
+✅ Process completed with exit code 0 (runtime: 1.27s)
+
+[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]
