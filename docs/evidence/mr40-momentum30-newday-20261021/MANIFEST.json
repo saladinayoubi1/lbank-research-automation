@@ -1,0 +1,29 @@
+{
+  "files": {
+    "README.md": {
+      "bytes": 2326,
+      "sha256": "5762c27674fe2d413737ae82342d018bd0c07cc30f96ed1ae2a855ea3b1f244a"
+    },
+    "api_preflight.json": {
+      "bytes": 789,
+      "sha256": "c4beca2ef7f90f760ce75b997fd3f4f1d225578cb22b65a6eb1f613ef95425d8"
+    },
+    "execution.json": {
+      "bytes": 1250,
+      "sha256": "5e485e34bf48a7777f50fa1268a5c77a2a859b84b9b247c565ac7acf634a2ee9"
+    },
+    "independent_qa.json": {
+      "bytes": 1107,
+      "sha256": "dfb9a4e41463f391da53d24792221f0c2357f6577a2abec254c6c681a935762f"
+    },
+    "results.json": {
+      "bytes": 77069,
+      "sha256": "23adc7591fb93aa5aadde2b2bf7b612b466c3f4a1851222a1a170570b831b44e"
+    },
+    "tests-executed.txt": {
+      "bytes": 628,
+      "sha256": "ee580b29403f672117f2c5abd782a2919957b0775cc9da17a6c9e079cb3cbf2f"
+    }
+  },
+  "schema": "nexus.mr40-newday-evidence-manifest.v1"
+}
