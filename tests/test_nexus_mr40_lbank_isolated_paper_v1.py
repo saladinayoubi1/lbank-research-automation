@@ -139,7 +139,9 @@ class IsolatedMR40PaperTests(unittest.TestCase):
 
     def test_missing_state_never_resets_an_existing_activation_to_500(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp);(root/"activation.json").write_text('{}')
+            # macOS exposes its temporary directory through /var -> /private/var.
+            # Use the real fixture path so the writer reaches the account guard.
+            root=Path(tmp).resolve();(root/"activation.json").write_text('{}')
             with mock.patch.object(paper,"sources",return_value=(self.code,book,sim)):
                 with self.assertRaisesRegex(ValueError,"no_capital_reset"):
                     paper.run_once(ROOT,root,self.source,self.manifest)
@@ -147,7 +149,7 @@ class IsolatedMR40PaperTests(unittest.TestCase):
 
     def test_owner_stop_performs_no_public_request(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp);(root/"STOP").write_text('owner request')
+            root=Path(tmp).resolve();(root/"STOP").write_text('owner request')
             with mock.patch.object(paper,"sources",return_value=(self.code,book,sim)), mock.patch.object(book,"fetch") as fetch:
                 result=paper.run_once(ROOT,root,self.source,self.manifest)
             self.assertEqual(result["status"],"stopped_by_owner")
