@@ -1,0 +1,6 @@
+Linux Python 3.12.14
+python -m unittest tests/test_nexus_mr40_lbank_exact30_v1.py tests/test_nexus_mr40_momentum30_newday_v1.py -q
+Ran 7 tests: OK
+
+Windows physical execution: one real public history request; 672 signal Decimal checks, 3 causal prefix checks, 4 accounts checked against independent Decimal accounting at both capital sizes.
+Linux recorded-response replay: canonical result exactly equals native result digest 5875aad65693586d2e054628bca20503d659c493a72ce898151fe9bd028dd7c2.

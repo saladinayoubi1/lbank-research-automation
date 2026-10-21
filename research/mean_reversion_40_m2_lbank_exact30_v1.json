@@ -1,0 +1,24 @@
+{
+  "schema": "nexus.mr40-lbank-exact30-study.v1",
+  "strategy": "mean_reversion_40_m2_momentum30_entry_v1",
+  "control": "mean_reversion_40_m2",
+  "provider": "LBank",
+  "market": "spot",
+  "symbol": "btc_usdt",
+  "timeframe": "hour4",
+  "history_start_utc": "2026-07-01T00:00:00+00:00",
+  "window_start_utc": "2026-09-21T00:00:00+00:00",
+  "window_end_exclusive_utc": "2026-10-21T00:00:00+00:00",
+  "window_policy": "Same 180 closed bars as the latest Bybit study; fixed before LBank history acquisition. No window or parameter search.",
+  "warmup_policy": "82 days before evaluation, requiring a synchronizing MR40 threshold before the first evaluated decision and a full 180-bar momentum history. Gate and cash reset at evaluation boundary, matching the Bybit fresh-account study.",
+  "capital_usdt": [10000, 500],
+  "profiles": [
+    {"id": "normal", "fee_bps": 10, "slippage_bps": 5},
+    {"id": "stress", "fee_bps": 25, "slippage_bps": 15}
+  ],
+  "costs_are_assumptions_not_verified_exchange_tariffs": true,
+  "parameters": {"lookback": 40, "entry_z": -2, "exit_z": 0, "momentum_intervals": 180},
+  "execution_model": "All-cash spot long/flat; previous closed-bar decision, next open; terminal liquidation explicitly tagged; no leverage.",
+  "classification": "RETROSPECTIVE_CROSS_VENUE_RESEARCH_NOT_INDEPENDENT_ECONOMIC_QUALIFICATION",
+  "authority": {"research_only": true, "live_enabled": false, "exchange_orders": 0, "actual_demo_started": false, "owner_paper_mutation": false, "scheduling": false}
+}

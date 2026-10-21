@@ -1,3 +1,10 @@
+# Fixed LBank research replay retains pinned source and raw receipt bytes.
+research/nexus_mr40_lbank_exact30_v1.py text eol=lf
+research/mean_reversion_40_m2_lbank_exact30_v1.json text eol=lf
+tests/test_nexus_mr40_lbank_exact30_v1.py text eol=lf
+docs/research/LBANK_MR40_EXACT30_20261021_FA.md text eol=lf
+docs/evidence/lbank-mr40-exact30-20261021/lbank_kline_response.json -text
+
 # Fixed latest-day MR40 research inputs must retain their registered bytes.
 research/nexus_mr40_momentum30_newday_v1.py text eol=lf
 research/mean_reversion_40_m2_momentum30_newday_v1.json text eol=lf

@@ -1,0 +1,25 @@
+{
+  "schema": "nexus.research-evidence-files.v1",
+  "files": {
+    "independent_qa.json": {
+      "bytes": 1312,
+      "sha256": "ee52052b7973442d443f59da5e0e8d48b8c6f86008775a8c15062a1e84aa368c"
+    },
+    "lbank_kline_response.json": {
+      "bytes": 39437,
+      "sha256": "e889b690efc92ef41a0d0301cf7efa5ad34b4269dd35d8061f80a3eb0f069f48"
+    },
+    "results.json": {
+      "bytes": 69120,
+      "sha256": "d25775ac495a0264a614eb8b6c6e65e9d26f027dfdbc8e1018603370395a0180"
+    },
+    "source_receipt.json": {
+      "bytes": 437,
+      "sha256": "c40510fa4a8f3604ef1bf16812a946181bcbd5189f4926a4de403c9a9f353a1d"
+    },
+    "tests-executed.txt": {
+      "bytes": 492,
+      "sha256": "28bfd6ec59a898e39417fae9622083d797d6d0103f4418ca32bf44c699bd7f14"
+    }
+  }
+}
