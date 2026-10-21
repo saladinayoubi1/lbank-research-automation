@@ -1,0 +1,129 @@
+{
+  "schema": "nexus.research-publication.v1",
+  "study_id": "mr40-continuous-account-20261021",
+  "protocol_commit": "b71e99fc4c4a5a8e98aea37ab15d5719c3729b62",
+  "source_commit": "3d454b5aee5b4fadd424408be91eb3d87e77311f",
+  "base_commit": "d43f06cc7f4fe083521c6aab3adb1ca7c9b23481",
+  "result_digest": "dee122e30911d815f426cef84bb9fa6f5a870291b94240a8265733e57c151bba",
+  "archive_sha256": "836c57c0704cfc319973beb5868758ae2416deaacdfa1ec8edc91a0973e7788b",
+  "archive_members": 28,
+  "unit_tests": 7,
+  "independent_decimal_paths": 8,
+  "exact_prefix_curve_and_natural_fill_controls": 8,
+  "raw_decimal_signal_bars": 8514,
+  "independent_recovery_oracles": 8,
+  "replay_byte_exact_files": 8,
+  "maximum_decimal_equity_error_usdt": 2.0736479200422764e-10,
+  "research_only": true,
+  "new_market_data": false,
+  "source_strategy_changes": false,
+  "parameter_search": false,
+  "independent_economic_qualification": false,
+  "auto_demo": false,
+  "live_enabled": false,
+  "orders": 0,
+  "artifacts": [
+    {
+      "path": "research/nexus_mr40_continuous_account_v1.py",
+      "bytes": 13808,
+      "sha256": "f436c5d997ba6a366b0b1884824c7a128c62ccbf6a8255ca0ec374ff8cc3169e",
+      "git_blob": "d1480fab4be742b9a73a0126d2ebcee80a968e29"
+    },
+    {
+      "path": "tests/test_nexus_mr40_continuous_account_v1.py",
+      "bytes": 4037,
+      "sha256": "d3ac062f86da237f63c615088f715f53ffe29784d759ad701b059051873e465a",
+      "git_blob": "d573a3e8f783f71d272b5ed87710f22fe8552757"
+    },
+    {
+      "path": "research/mean_reversion_40_m2_continuous_account_v1.json",
+      "bytes": 3058,
+      "sha256": "2beaf7ae15937570b904adcf0b86aadc93c40857bb95942df1efd82107b8f033",
+      "git_blob": "37eaee69fbb7b479b23e343671eaba71b191756f"
+    },
+    {
+      "path": "docs/research/MR40_CONTINUOUS_ACCOUNT_20261021_FA.md",
+      "bytes": 9074,
+      "sha256": "5df576f7545fa6c6bbef10e12eddcde31b9df1dbf1bef3bcd4ed6dc68faddc9b",
+      "git_blob": "57d670f83bf867d3fca131beeb71b10f2f24abfb"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/README.md",
+      "bytes": 3560,
+      "sha256": "6e82064891929d5c39362475558eb4694c2132db60b2d6be99f99f33d9070acf",
+      "git_blob": "739f909e90c0f060ff79ba5a9cc62cc763af56a4"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/verify_replay.py",
+      "bytes": 2738,
+      "sha256": "17b786f71fc469453e846e48f6c6311a233e13c1f048998aeb1d639fff30b175",
+      "git_blob": "210fef2278f619f7fbaa69be405b0aa3fe7b7c8e"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/tests-executed.txt",
+      "bytes": 1077,
+      "sha256": "c00ea3e3464b032d5b6ad827d213aa1b795c618bfb0943003f689eb77e2ba7ee",
+      "git_blob": "b0f20c50a533794860f26bd48d65e3de0fd8fb64"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/replay-verification.txt",
+      "bytes": 1543,
+      "sha256": "e98b9c3d5b40afab4131c1cb0769aae25a386ddfdd0bd003ff2d3cf514cdb427",
+      "git_blob": "c736eb5feb5d62e18cdf7dfaefbd816e188735cc"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/NEXUS_MR40_Continuous_Account_20261021.zip",
+      "bytes": 942044,
+      "sha256": "836c57c0704cfc319973beb5868758ae2416deaacdfa1ec8edc91a0973e7788b",
+      "git_blob": "18d7b61154f0e1b2468b0eec7a6e8ebdb5c978d3"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/input_manifest.json",
+      "bytes": 4727,
+      "sha256": "dbd54010d2ecbc3de8d3910e4350b77f39f070062ac6f2c2bb957ed2bdb14f37",
+      "git_blob": "6f9113414be9cdb07c808d03a06f0dc37c49a6a5"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/INVENTORY.json",
+      "bytes": 6269,
+      "sha256": "1cb8fc506ca2fc3a583f0f95c81e9f250f4ef7db620481c130b2fd3dec6f00af",
+      "git_blob": "e60622c61bb1dbc331f39b8fb0d89287f0f7ecf5"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/results.json",
+      "bytes": 124702,
+      "sha256": "b3a75c2db439b6ed22943adeca4e37041aa1234d65a355dc412bb0344bab1422",
+      "git_blob": "de3d0ebfc5c66336c6b0e83e25a5eb4a592cc746"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/summary.csv",
+      "bytes": 4406,
+      "sha256": "2e8e123e2aadddc2c6521f06332e46ca6fa9231e4004e89a3491f62aacc61b16",
+      "git_blob": "a7ca83e48190035c7622f1c04fb89ef52338d667"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/closed_positions.csv",
+      "bytes": 92026,
+      "sha256": "e1c17306f0d7d9e06a72a7440a18d7c6784a49cb827496d5cc38bb205aef5ddd",
+      "git_blob": "e82d3e4c42bfb25b12a387ea561a4309ca9f19c3"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/monthly_attribution.csv",
+      "bytes": 49869,
+      "sha256": "f717bd8fadbb8bfbe986e2ec8a394025b0f8114e3174134c550c963e3a392988",
+      "git_blob": "6bce11063d032c83fc1c8caf53194e8c117852ee"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/entry_admissions.csv",
+      "bytes": 26272,
+      "sha256": "7330c4f962147029c14b902260c62002c01ec824430dd16c8d24e0d6b3ab77a1",
+      "git_blob": "b4e865cf15ad472fef06062ce16ecc03e4202a25"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/drawdown_episodes.csv",
+      "bytes": 55954,
+      "sha256": "803b4a84c2440a39904d1a9f7ebee64e69879df51cdf3f9987626a514a4f657f",
+      "git_blob": "89e5704d36b99c7598959d5142e4ed9d371bf049"
+    }
+  ]
+}
