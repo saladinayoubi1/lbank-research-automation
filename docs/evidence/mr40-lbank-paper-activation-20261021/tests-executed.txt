@@ -1,0 +1,6 @@
+Linux: 20 tests OK.
+Command: python -m unittest tests/test_install_mr40_lbank_research_paper_v1.py tests/test_nexus_mr40_lbank_isolated_paper_v1.py tests/test_nexus_mr40_lbank_exact30_v1.py tests/test_nexus_lbank_spot_cost_snapshot_v1.py -q
+Windows Python 3.12.14: 12 dedicated future-Paper tests OK, native frozen code bundle.
+Native activation: 677 closed bars verified; 500 virtual USDT; zero historical fills; task enabled, native RunLevel=0 and LastTaskResult=0.
+Automatic refresh observed 190776 ms after activation without capital reset.
+Host receipt digest and all eight executable source hashes verified against native manifest.

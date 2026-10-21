@@ -1,0 +1,21 @@
+{
+  "schema": "nexus.research-evidence-files.v1",
+  "files": {
+    "SOURCE_MANIFEST.json": {
+      "bytes": 957,
+      "sha256": "018aca0e71e56f72711e7e8604db7b7bccb95071385ea6a608d527293f2a0655"
+    },
+    "activation.json": {
+      "bytes": 2860,
+      "sha256": "2b2134fcea34d85d20afa7b5b750b7ea87f3172be804c23078afd9bd26c6316b"
+    },
+    "task-verified.json": {
+      "bytes": 198,
+      "sha256": "fadf5750dd5126f76d3c4f1b924a0736d2343a380af29ce5c13e434cca79c054"
+    },
+    "tests-executed.txt": {
+      "bytes": 638,
+      "sha256": "7caa31672a875f701ef7acd50d1cd3a70e5eb57f4463fa5e51aefbb3fcb7bae2"
+    }
+  }
+}
