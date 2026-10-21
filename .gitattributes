@@ -129,3 +129,13 @@ docs/evidence/mr40-continuous-account-20261021/fixed30/*.json text eol=lf
 docs/evidence/mr40-continuous-account-20261021/fixed30/*.csv text eol=lf
 docs/evidence/mr40-continuous-account-20261021/fixed30/*.md text eol=lf
 docs/evidence/mr40-continuous-account-20261021/fixed30/*.txt text eol=lf
+
+# Bounded July MR40 provenance audit; preserve source and evidence bytes.
+research/nexus_mr40_july_frame_identity_v1.py text eol=lf
+research/verify_mr40_july_frame_identity_v1.py text eol=lf
+docs/research/MR40_JULY_PROVENANCE_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.csv text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.txt text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/original_reports.zip export-ignore

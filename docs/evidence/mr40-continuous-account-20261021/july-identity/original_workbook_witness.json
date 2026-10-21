@@ -1,0 +1,165 @@
+{
+  "schema": "nexus.mr40-original-workbook-witness.v1",
+  "original_filename": "NEXUS_Bybit_July_2026_156_Backtests.xlsx",
+  "workbook_sha256": "a565aaa538a05c91181123a09c908102d88cee01aa87956debfc3fc068d4c5c1",
+  "workbook_bytes": 31228,
+  "sheet": "Variants 120",
+  "header_row": 4,
+  "data_row": 34,
+  "reported_cells": {
+    "A34": {
+      "label": "Pair",
+      "value": "BTCUSDT"
+    },
+    "B34": {
+      "label": "Timeframe",
+      "value": "4h"
+    },
+    "C34": {
+      "label": "Strategy ID",
+      "value": "mean_reversion_40_m2"
+    },
+    "D34": {
+      "label": "Family",
+      "value": "mean_reversion"
+    },
+    "E34": {
+      "label": "Candles",
+      "value": 186
+    },
+    "F34": {
+      "label": "Net return (%)",
+      "value": 1.9541
+    },
+    "G34": {
+      "label": "Net P&L (USDT)",
+      "value": 195.4101
+    },
+    "H34": {
+      "label": "Max DD (%)",
+      "value": 1.5075
+    },
+    "I34": {
+      "label": "Fills",
+      "value": 4
+    },
+    "J34": {
+      "label": "Holdout return (%)",
+      "value": 1.9541
+    },
+    "K34": {
+      "label": "Holdout DD (%)",
+      "value": 1.5075
+    },
+    "L34": {
+      "label": "Holdout fills",
+      "value": 4
+    },
+    "M34": {
+      "label": "Stress holdout (%)",
+      "value": 0.9396
+    },
+    "N34": {
+      "label": "Stress DD (%)",
+      "value": 1.5075
+    },
+    "O34": {
+      "label": "Stress fills",
+      "value": 4
+    },
+    "P34": {
+      "label": "Capital (USDT)",
+      "value": 10000
+    },
+    "Q34": {
+      "label": "Date start UTC",
+      "value": 46204
+    },
+    "R34": {
+      "label": "Date end UTC",
+      "value": 46234.833333333336
+    },
+    "S34": {
+      "label": "Qualification",
+      "value": "Not qualified; independent requalification required"
+    },
+    "T34": {
+      "label": "Demo activated?",
+      "value": "False"
+    },
+    "U34": {
+      "label": "Config SHA",
+      "value": "0916ba925966b2d21ca3b1e4e584acc17ce22a4c49f09aa77b7f0049d2d33d8e"
+    },
+    "V34": {
+      "label": "Dataset digest",
+      "value": "c75ca7e7a74c0ff3a4d51f5a12a9ac27232563a03a1a87b61b5d65851fe47cc9"
+    }
+  },
+  "date_start_utc": "2026-07-01T00:00:00+00:00",
+  "last_bar_open_utc": "2026-07-31T20:00:00+00:00",
+  "original_source_evidence": [
+    [
+      "Bybit archive",
+      "Source rows",
+      "Compressed bytes",
+      "SHA256",
+      "Original source URL"
+    ],
+    [
+      "BTCUSDT-2026-07.csv.gz",
+      15348822,
+      101492248,
+      "72612fea915ecc542c8d2683d957588e4dc5e097138d1af3cafc08a1509675db",
+      "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-07.csv.gz"
+    ],
+    [
+      "ETHUSDT-2026-07.csv.gz",
+      8281815,
+      63766265,
+      "cb7f11038046bee23fda4e58ee2e52676091722773e29ccc8b07a76ec4d26126",
+      "https://public.bybit.com/spot/ETHUSDT/ETHUSDT-2026-07.csv.gz"
+    ],
+    [
+      "SOLUSDT-2026-07.csv.gz",
+      2476208,
+      21202926,
+      "547b0a8385bd1290d191437d6213fcf8b7cb3d52da097e4e1b7284181676e98c",
+      "https://public.bybit.com/spot/SOLUSDT/SOLUSDT-2026-07.csv.gz"
+    ],
+    [
+      "XRPUSDT-2026-07.csv.gz",
+      1328407,
+      11468409,
+      "0ea1ad498a14c2d60a6296da27b3be9bb86a4a18f3883e20b8589149f8279eb8",
+      "https://public.bybit.com/spot/XRPUSDT/XRPUSDT-2026-07.csv.gz"
+    ],
+    [],
+    [
+      "Provenance field",
+      "Digest / value"
+    ],
+    [
+      "Source commit",
+      "d60c063a2a79d2359538d48dd6088133c704eb8f"
+    ],
+    [
+      "Core report digest",
+      "a6d15b807e8ffc65c8b25b59f236fbfedf3ec37233e50732737654165b9d4721"
+    ],
+    [
+      "Variants report digest",
+      "ea1fe071de2e96b14447d6985a7aa15ae14e355edf470167341d1d995428c218"
+    ],
+    [
+      "Full 3-month source digest",
+      "a74de4fa1d0e8ce11dc19662891b3a40a5986bd06cb8d4cc3c91acce1c9d6e4a"
+    ],
+    [
+      "July source manifest digest",
+      "12934b8c873d2f44b1ec7cddc1c6a97d2ac21ede20e26150b4184c228f727c69"
+    ]
+  ],
+  "source_commit": "d60c063a2a79d2359538d48dd6088133c704eb8f",
+  "read_only": true
+}

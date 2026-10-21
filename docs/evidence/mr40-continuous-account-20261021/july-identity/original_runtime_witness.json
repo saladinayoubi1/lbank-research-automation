@@ -1,0 +1,27 @@
+{
+  "schema": "nexus.mr40-original-runtime-witness.v1",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "source_commit": "d60c063a2a79d2359538d48dd6088133c704eb8f",
+  "run_id": 36432909184,
+  "job_id": 108963379074,
+  "job_name": "acquire-snapshot",
+  "job_conclusion": "success",
+  "downstream_contract_test_conclusion": "failure",
+  "python": "3.12.14",
+  "pandas": "2.3.3",
+  "numpy": "2.3.5",
+  "pyarrow": "23.0.1",
+  "platform": "Ubuntu GitHub-hosted runner",
+  "url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/36432909184/job/108963379074",
+  "relevant_log_lines": [
+    "2026-09-28T14:02:08.7197780Z   python-version: 3.12",
+    "2026-09-28T14:02:08.8481837Z Successfully set up CPython (3.12.14)",
+    "2026-09-28T14:02:13.4922175Z Collecting numpy==2.3.5 (from -r requirements.lock (line 5))",
+    "2026-09-28T14:02:13.6078694Z Collecting pandas==2.3.3 (from -r requirements.lock (line 6))",
+    "2026-09-28T14:02:13.7107526Z Collecting pyarrow==23.0.1 (from -r requirements.lock (line 7))",
+    "2026-09-28T14:02:22.3468345Z Successfully installed PyYAML-6.0.2 certifi-2026.7.22 charset-normalizer-3.4.9 idna-3.18 numpy-2.3.5 pandas-2.3.3 pyarrow-23.0.1 python-dateutil-2.9.0.post0 pytz-2026.3.post1 requests-2.34.2 six-1.17.0 tenacity-9.1.4 tzdata-2026.3 urllib3-2.7.0",
+    "2026-09-28T14:02:23.3252168Z Collecting numpy==2.3.5 (from -r requirements.lock (line 5))",
+    "2026-09-28T14:02:23.4305661Z Collecting pandas==2.3.3 (from -r requirements.lock (line 6))",
+    "2026-09-28T14:02:23.5250230Z Collecting pyarrow==23.0.1 (from -r requirements.lock (line 7))"
+  ]
+}

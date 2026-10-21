@@ -1,0 +1,13 @@
+{
+  "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-2026-07.csv.gz",
+  "status": 200,
+  "headers": {
+    "Content-Length": "101492248",
+    "ETag": "\"ab45380babab927b49c3734590419cad\"",
+    "Last-Modified": "Sat, 01 Aug 2026 03:06:21 GMT"
+  },
+  "received_utc": "2026-10-21T01:44:35.620168+00:00",
+  "bytes": 101492248,
+  "sha256": "72612fea915ecc542c8d2683d957588e4dc5e097138d1af3cafc08a1509675db",
+  "transport_hash_matches_historical_workbook": true
+}
