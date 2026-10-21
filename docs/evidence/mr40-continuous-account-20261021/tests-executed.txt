@@ -1,0 +1,12 @@
+test_input_digest_substitution_is_rejected (__main__.ContinuousAccountTests.test_input_digest_substitution_is_rejected) ... ok
+test_monthly_marks_and_closed_positions_are_separate (__main__.ContinuousAccountTests.test_monthly_marks_and_closed_positions_are_separate) ... ok
+test_prefix_control_rejects_changed_earlier_equity (__main__.ContinuousAccountTests.test_prefix_control_rejects_changed_earlier_equity) ... ok
+test_prefix_control_rejects_changed_natural_fill (__main__.ContinuousAccountTests.test_prefix_control_rejects_changed_natural_fill) ... ok
+test_stitching_reset_accounts_changes_returns (__main__.ContinuousAccountTests.test_stitching_reset_accounts_changes_returns) ... ok
+test_terminal_midnight_is_attributed_to_observed_month (__main__.ContinuousAccountTests.test_terminal_midnight_is_attributed_to_observed_month) ... ok
+test_uninterrupted_position_crosses_old_boundary (__main__.ContinuousAccountTests.test_uninterrupted_position_crosses_old_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.022s
+
+OK

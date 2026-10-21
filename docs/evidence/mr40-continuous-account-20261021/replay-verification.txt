@@ -1,0 +1,13 @@
+test_input_digest_substitution_is_rejected (__main__.ContinuousAccountTests.test_input_digest_substitution_is_rejected) ... ok
+test_monthly_marks_and_closed_positions_are_separate (__main__.ContinuousAccountTests.test_monthly_marks_and_closed_positions_are_separate) ... ok
+test_prefix_control_rejects_changed_earlier_equity (__main__.ContinuousAccountTests.test_prefix_control_rejects_changed_earlier_equity) ... ok
+test_prefix_control_rejects_changed_natural_fill (__main__.ContinuousAccountTests.test_prefix_control_rejects_changed_natural_fill) ... ok
+test_stitching_reset_accounts_changes_returns (__main__.ContinuousAccountTests.test_stitching_reset_accounts_changes_returns) ... ok
+test_terminal_midnight_is_attributed_to_observed_month (__main__.ContinuousAccountTests.test_terminal_midnight_is_attributed_to_observed_month) ... ok
+test_uninterrupted_position_crosses_old_boundary (__main__.ContinuousAccountTests.test_uninterrupted_position_crosses_old_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.023s
+
+OK
+{"account_paths": 8, "decimal_equity_paths": 8, "exact_files": ["results.json", "summary.csv", "fills.csv", "closed_positions.csv", "equity_curve.csv", "monthly_attribution.csv", "entry_admissions.csv", "drawdown_episodes.csv"], "exact_prefix_curves_and_natural_fills": 8, "independent_raw_signal_bars": 8514, "inventory_files": 27, "orders": 0, "replay": "PASS", "result_digest": "dee122e30911d815f426cef84bb9fa6f5a870291b94240a8265733e57c151bba", "unit_tests": 7}

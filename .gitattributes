@@ -109,3 +109,38 @@ docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.csv text eol=lf
 docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.md text eol=lf
 docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.txt text eol=lf
 docs/research/MR40_RECOVERY_RISK_20261021_FA.md text eol=lf
+
+# Full-history MR40 account receipts require byte-stable sources and evidence.
+research/mean_reversion_40_m2_continuous_account_v1.json text eol=lf
+research/nexus_mr40_continuous_account_v1.py text eol=lf
+tests/test_nexus_mr40_continuous_account_v1.py text eol=lf
+docs/research/MR40_CONTINUOUS_ACCOUNT_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/*.csv text eol=lf
+docs/evidence/mr40-continuous-account-20261021/*.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/*.py text eol=lf
+docs/evidence/mr40-continuous-account-20261021/*.txt text eol=lf
+docs/evidence/mr40-continuous-account-20261021/NEXUS_MR40_Continuous_Account_20261021.zip export-ignore
+
+# Fixed 30-day comparison reuses the pinned continuous-account archive.
+research/nexus_mr40_exact30_comparison_v1.py text eol=lf
+docs/research/MR40_EXACT30_COMPARISON_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.csv text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.txt text eol=lf
+
+# Bounded July MR40 provenance audit; preserve source and evidence bytes.
+research/nexus_mr40_july_frame_identity_v1.py text eol=lf
+research/verify_mr40_july_frame_identity_v1.py text eol=lf
+docs/research/MR40_JULY_PROVENANCE_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.csv text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/*.txt text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-identity/original_reports.zip export-ignore
+
+# Byte-stable additive Linux July provenance control.
+docs/research/MR40_JULY_PLATFORM_CONTROL_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-platform/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-platform/*.md text eol=lf

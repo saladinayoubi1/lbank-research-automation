@@ -1,0 +1,25 @@
+{
+  "historical_source_commit": "d60c063a2a79d2359538d48dd6088133c704eb8f",
+  "expressions": {
+    "nexus_monthly_four_pair_pre_demo.py": "frame_digest = _digest([\n                [int(row.timestamp.value // 1_000_000), str(row.open), str(row.high),\n                 str(row.low), str(row.close), str(row.volume)]\n                for row in frame.itertuples(index=False)\n            ])",
+    "nexus_monthly_ten_variant_pre_demo.py": "actual_digest = monthly._digest([\n                [int(r.timestamp.value // 1_000_000), str(r.open), str(r.high),\n                 str(r.low), str(r.close), str(r.volume)]\n                for r in frame.itertuples(index=False)\n            ])"
+  },
+  "frames": {
+    "rebuilt": {
+      "nexus_monthly_four_pair_pre_demo.py": "8b89150033edf9741690c62a367d5bca67f80300c48c64b86fff8dd6e17dc858",
+      "nexus_monthly_ten_variant_pre_demo.py": "8b89150033edf9741690c62a367d5bca67f80300c48c64b86fff8dd6e17dc858"
+    },
+    "cached": {
+      "nexus_monthly_four_pair_pre_demo.py": "e510acb8cf58369880445d2c1ff6d7764234f3718e99902c31b7cf9b239dfa9e",
+      "nexus_monthly_ten_variant_pre_demo.py": "e510acb8cf58369880445d2c1ff6d7764234f3718e99902c31b7cf9b239dfa9e"
+    }
+  },
+  "same_serialization_schema_on_all_rows": true,
+  "both_library_versions_produce_identical_frame": true,
+  "execution_environment": {
+    "python": "3.12.14",
+    "pandas": "2.2.3",
+    "numpy": "2.3.5",
+    "platform": "Linux"
+  }
+}

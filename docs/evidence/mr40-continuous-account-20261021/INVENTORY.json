@@ -1,0 +1,167 @@
+{
+  "schema": "nexus.research-replay-inventory.v1",
+  "files": [
+    {
+      "path": "MR40_CONTINUOUS_ACCOUNT_20261021_FA.md",
+      "bytes": 9074,
+      "sha256": "5df576f7545fa6c6bbef10e12eddcde31b9df1dbf1bef3bcd4ed6dc68faddc9b",
+      "git_blob": "57d670f83bf867d3fca131beeb71b10f2f24abfb"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3560,
+      "sha256": "6e82064891929d5c39362475558eb4694c2132db60b2d6be99f99f33d9070acf",
+      "git_blob": "739f909e90c0f060ff79ba5a9cc62cc763af56a4"
+    },
+    {
+      "path": "frozen/candidate_contract.json",
+      "bytes": 2997,
+      "sha256": "153957458cbc5c3256bf0ea7909db6071cac587f7a765477d06d1f242383de50",
+      "git_blob": "a1a8776f9fe93a670e54b04484feeccc021a8b21"
+    },
+    {
+      "path": "frozen/candidate_results.json",
+      "bytes": 292864,
+      "sha256": "dc8a7622a0aae5397a6f342f17f0f4537c5b5633695847b74d4f7db753b0cce7",
+      "git_blob": "edba4a1be3cd31f0964846a27898a44ecb8b3843"
+    },
+    {
+      "path": "frozen/nexus_mean_reversion_40_m2_momentum30_entry_v1.py",
+      "bytes": 12405,
+      "sha256": "d899e9dd991695959c230426b50ebdb4bab2eca8c5f413ea3c471d957c1f69bb",
+      "git_blob": "d71e8e13b5a1fa7984580546cec016f28d4e10ba"
+    },
+    {
+      "path": "frozen/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27",
+      "git_blob": "146892aab7eca58b56db67c0ee56f70b9e7e3f3c"
+    },
+    {
+      "path": "frozen/nexus_mr40_underwater_diagnostic_v1.py",
+      "bytes": 12663,
+      "sha256": "d7fed55e722fe95d9452fccee5bdc24e540913e23173a5ec813d720f76b12a93",
+      "git_blob": "4b0ae977faff51f07557c9aeb5047bf5ea7aeace"
+    },
+    {
+      "path": "frozen/october_input_extension.json",
+      "bytes": 17280,
+      "sha256": "2d4577ea8cc3b896f57e50e3030e3d131acfd7827a0d1869efe45b9f0b03d0c8",
+      "git_blob": "1df6695d2045866d8b074a428d3e2fd9de570a46"
+    },
+    {
+      "path": "frozen/october_results.json",
+      "bytes": 102436,
+      "sha256": "3d6883df30f1c82dd18df74f61c2add09d9c9dcc55aa9bccbd0e51126ffdebac",
+      "git_blob": "8175f6eea8fe65fac5d35c0291e6de6793604384"
+    },
+    {
+      "path": "frozen/original_contract.json",
+      "bytes": 4488,
+      "sha256": "cca66ab10c161cb907d7de256e69f788dffc44e906791ce1833faf5d33dc550f",
+      "git_blob": "7c3010df3d360090def297a05ebe87460d047977"
+    },
+    {
+      "path": "frozen/original_results.json",
+      "bytes": 488957,
+      "sha256": "33d53dd81e68f59abca2d3a83adffee5e31fd24ab04feae53e05baf9aaa45fd3",
+      "git_blob": "991d932ef2004a1eb861471c16e4a6475787ad9f"
+    },
+    {
+      "path": "frozen/prepared_inputs.json",
+      "bytes": 612908,
+      "sha256": "f901e1ec23bab5370ef2c83671c23e355875a103a3c4cbdb93fc8051c5c3cdc0",
+      "git_blob": "777f8f6588ffd136699efd9e91afc7534ded7c32"
+    },
+    {
+      "path": "frozen/source_manifest.json",
+      "bytes": 12752,
+      "sha256": "68b086fe2cb307df304527ec6b55bc1d97cab10c9c7c66d4240f34065ddace09",
+      "git_blob": "b6c3ee3ba623437adbcdf51c468cb51768f8d309"
+    },
+    {
+      "path": "input_manifest.json",
+      "bytes": 4727,
+      "sha256": "dbd54010d2ecbc3de8d3910e4350b77f39f070062ac6f2c2bb957ed2bdb14f37",
+      "git_blob": "6f9113414be9cdb07c808d03a06f0dc37c49a6a5"
+    },
+    {
+      "path": "recorded_results/closed_positions.csv",
+      "bytes": 92026,
+      "sha256": "e1c17306f0d7d9e06a72a7440a18d7c6784a49cb827496d5cc38bb205aef5ddd",
+      "git_blob": "e82d3e4c42bfb25b12a387ea561a4309ca9f19c3"
+    },
+    {
+      "path": "recorded_results/drawdown_episodes.csv",
+      "bytes": 55954,
+      "sha256": "803b4a84c2440a39904d1a9f7ebee64e69879df51cdf3f9987626a514a4f657f",
+      "git_blob": "89e5704d36b99c7598959d5142e4ed9d371bf049"
+    },
+    {
+      "path": "recorded_results/entry_admissions.csv",
+      "bytes": 26272,
+      "sha256": "7330c4f962147029c14b902260c62002c01ec824430dd16c8d24e0d6b3ab77a1",
+      "git_blob": "b4e865cf15ad472fef06062ce16ecc03e4202a25"
+    },
+    {
+      "path": "recorded_results/equity_curve.csv",
+      "bytes": 4166200,
+      "sha256": "ef801dd80c6ebd7a49aba6773d31bb5152ce46972038da32514207288990006f",
+      "git_blob": "0ac023b63560ee59d52199db77833921d5764740"
+    },
+    {
+      "path": "recorded_results/fills.csv",
+      "bytes": 249248,
+      "sha256": "ac04891397d343fa4cece86ec548e6303a1dead8a636b9f8c48ba5c2d49ec55b",
+      "git_blob": "86ab90a8b177165fc81de6e93333511dec7b55b9"
+    },
+    {
+      "path": "recorded_results/monthly_attribution.csv",
+      "bytes": 49869,
+      "sha256": "f717bd8fadbb8bfbe986e2ec8a394025b0f8114e3174134c550c963e3a392988",
+      "git_blob": "6bce11063d032c83fc1c8caf53194e8c117852ee"
+    },
+    {
+      "path": "recorded_results/results.json",
+      "bytes": 124702,
+      "sha256": "b3a75c2db439b6ed22943adeca4e37041aa1234d65a355dc412bb0344bab1422",
+      "git_blob": "de3d0ebfc5c66336c6b0e83e25a5eb4a592cc746"
+    },
+    {
+      "path": "recorded_results/summary.csv",
+      "bytes": 4406,
+      "sha256": "2e8e123e2aadddc2c6521f06332e46ca6fa9231e4004e89a3491f62aacc61b16",
+      "git_blob": "a7ca83e48190035c7622f1c04fb89ef52338d667"
+    },
+    {
+      "path": "research/nexus_mr40_continuous_account_v1.py",
+      "bytes": 13808,
+      "sha256": "f436c5d997ba6a366b0b1884824c7a128c62ccbf6a8255ca0ec374ff8cc3169e",
+      "git_blob": "d1480fab4be742b9a73a0126d2ebcee80a968e29"
+    },
+    {
+      "path": "study_contract.json",
+      "bytes": 3058,
+      "sha256": "2beaf7ae15937570b904adcf0b86aadc93c40857bb95942df1efd82107b8f033",
+      "git_blob": "37eaee69fbb7b479b23e343671eaba71b191756f"
+    },
+    {
+      "path": "tests/test_nexus_mr40_continuous_account_v1.py",
+      "bytes": 4037,
+      "sha256": "d3ac062f86da237f63c615088f715f53ffe29784d759ad701b059051873e465a",
+      "git_blob": "d573a3e8f783f71d272b5ed87710f22fe8552757"
+    },
+    {
+      "path": "tests-executed.txt",
+      "bytes": 1077,
+      "sha256": "c00ea3e3464b032d5b6ad827d213aa1b795c618bfb0943003f689eb77e2ba7ee",
+      "git_blob": "b0f20c50a533794860f26bd48d65e3de0fd8fb64"
+    },
+    {
+      "path": "verify_replay.py",
+      "bytes": 2738,
+      "sha256": "17b786f71fc469453e846e48f6c6311a233e13c1f048998aeb1d639fff30b175",
+      "git_blob": "210fef2278f619f7fbaa69be405b0aa3fe7b7c8e"
+    }
+  ]
+}

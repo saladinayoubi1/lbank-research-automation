@@ -1,0 +1,110 @@
+{
+  "source_archive_sha256": "22b7580cd5ecb73c55ef279846841178e360377faf75ff681de88577ee958730",
+  "files": {
+    "frozen/prepared_inputs.json": {
+      "archive_member": "frozen/baseline/prepared_inputs.json",
+      "bytes": 612908,
+      "sha256": "f901e1ec23bab5370ef2c83671c23e355875a103a3c4cbdb93fc8051c5c3cdc0"
+    },
+    "frozen/october_input_extension.json": {
+      "archive_member": "october_input_extension.json",
+      "bytes": 17280,
+      "sha256": "2d4577ea8cc3b896f57e50e3030e3d131acfd7827a0d1869efe45b9f0b03d0c8"
+    },
+    "frozen/source_manifest.json": {
+      "archive_member": "source_manifest.json",
+      "bytes": 12752,
+      "sha256": "68b086fe2cb307df304527ec6b55bc1d97cab10c9c7c66d4240f34065ddace09"
+    },
+    "frozen/original_results.json": {
+      "archive_member": "frozen/baseline/recorded_results/results.json",
+      "bytes": 488957,
+      "sha256": "33d53dd81e68f59abca2d3a83adffee5e31fd24ab04feae53e05baf9aaa45fd3"
+    },
+    "frozen/candidate_results.json": {
+      "archive_member": "frozen/recorded_results/results.json",
+      "bytes": 292864,
+      "sha256": "dc8a7622a0aae5397a6f342f17f0f4537c5b5633695847b74d4f7db753b0cce7"
+    },
+    "frozen/october_results.json": {
+      "archive_member": "recorded_results/results.json",
+      "bytes": 102436,
+      "sha256": "3d6883df30f1c82dd18df74f61c2add09d9c9dcc55aa9bccbd0e51126ffdebac"
+    },
+    "frozen/original_contract.json": {
+      "archive_member": "frozen/baseline/study_contract.json",
+      "bytes": 4488,
+      "sha256": "cca66ab10c161cb907d7de256e69f788dffc44e906791ce1833faf5d33dc550f"
+    },
+    "frozen/candidate_contract.json": {
+      "archive_member": "frozen/study_contract.json",
+      "bytes": 2997,
+      "sha256": "153957458cbc5c3256bf0ea7909db6071cac587f7a765477d06d1f242383de50"
+    },
+    "frozen/nexus_mean_reversion_40_m2_retest_v1.py": {
+      "archive_member": "frozen/research/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27"
+    },
+    "frozen/nexus_mean_reversion_40_m2_momentum30_entry_v1.py": {
+      "archive_member": "frozen/research/nexus_mean_reversion_40_m2_momentum30_entry_v1.py",
+      "bytes": 12405,
+      "sha256": "d899e9dd991695959c230426b50ebdb4bab2eca8c5f413ea3c471d957c1f69bb"
+    },
+    "frozen/nexus_mr40_underwater_diagnostic_v1.py": {
+      "source_commit": "b60757effe9bb04d4ea3a9f225d0c1431bb99ae6",
+      "bytes": 12663,
+      "sha256": "d7fed55e722fe95d9452fccee5bdc24e540913e23173a5ec813d720f76b12a93"
+    }
+  },
+  "prefix_controls": {
+    "original/normal": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "b5d10624bfc000114693efe24af262841aec69914e84937bd57d4050010e1e74",
+      "old_terminal_exits": 1,
+      "pre_terminal_mark_equity": 8890.54352819083
+    },
+    "original/stress": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "c84c4dadacd76dde15e037c68be2de4dde7cb207ae523d2103bb5e67ef32a40e",
+      "old_terminal_exits": 1,
+      "pre_terminal_mark_equity": 5944.645227901636
+    },
+    "original/zero_cost_diagnostic": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "190684448ae9d0e0743447acb26948022f8da279b5a013794ce1d96debf6447e",
+      "old_terminal_exits": 1,
+      "pre_terminal_mark_equity": 11319.055380158648
+    },
+    "original/additional_4h_latency": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "3374106f81a0563d285d07cce06fb4b5a94c0b86cae1650786b98fc4f961c88f",
+      "old_terminal_exits": 1,
+      "pre_terminal_mark_equity": 9595.950374062984
+    },
+    "momentum30/normal": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "1bce4c0ca063d68ef9d0d3ecf87e098c399f4a058b2bcfdc56fadce689679b8a",
+      "old_terminal_exits": 0,
+      "pre_terminal_mark_equity": 13980.108765201687
+    },
+    "momentum30/stress": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "5154ad47632f96102b54db648d7011dac0ec1af69ea16df072e5de7955215f66",
+      "old_terminal_exits": 0,
+      "pre_terminal_mark_equity": 11445.939521527369
+    },
+    "momentum30/zero_cost_diagnostic": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "e760346c19346741f9bc47aca6a46249151d57990b3a0fb9527056dfc2845bfb",
+      "old_terminal_exits": 0,
+      "pre_terminal_mark_equity": 15762.52909037813
+    },
+    "momentum30/additional_4h_latency": {
+      "bars": 7662,
+      "equity_sha256_without_old_terminal_liquidation": "52c43a04806b6ce781a122564d2571f981c9dc06c6efc6d4af0a027cb8fa2fdd",
+      "old_terminal_exits": 0,
+      "pre_terminal_mark_equity": 13088.545496989807
+    }
+  }
+}

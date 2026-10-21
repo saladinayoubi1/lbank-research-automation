@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.mr40-exact30-qa.v1",
+  "source_commit": "36d0e963520e7ca2b6243c6c3cf7b792e0bfafff",
+  "result_digest": "b257698ce3da0d489f0bbe5089f99553da80873b080732b0a43dbcf35f621c30",
+  "days_per_account": 30,
+  "bars_per_account": 180,
+  "independent_decimal_paths": 8,
+  "maximum_decimal_error_usdt": 9.094947017729282e-12,
+  "same_october_ledgers": 8,
+  "additional_11_days_all_cash": true,
+  "new_trade_evidence": false,
+  "exact_replay_files": [
+    "results.json",
+    "summary.csv",
+    "fills.csv",
+    "closed_positions.csv",
+    "equity_curve.csv"
+  ],
+  "deterministic_replay": "PASS",
+  "live_enabled": false,
+  "orders": 0
+}

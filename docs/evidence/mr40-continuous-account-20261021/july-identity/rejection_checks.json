@@ -1,0 +1,43 @@
+{
+  "schema": "nexus.mr40-july-identity-rejection-checks.v1",
+  "decision": "pass",
+  "checks": [
+    {
+      "case": "changed_rebuilt_close",
+      "rejected": true,
+      "reason": "rebuilt frame hash"
+    },
+    {
+      "case": "changed_accepted_input",
+      "rejected": true,
+      "reason": "input_digest"
+    },
+    {
+      "case": "changed_original_workbook_hash_cell",
+      "rejected": true,
+      "reason": "original workbook frame cell"
+    },
+    {
+      "case": "false_identity_claim_with_valid_audit_digest",
+      "rejected": true,
+      "reason": "identity claim"
+    },
+    {
+      "case": "changed_original_report_zip",
+      "rejected": true,
+      "reason": "original report ZIP hash"
+    },
+    {
+      "case": "wrong_raw_archive",
+      "rejected": true,
+      "reason": "raw July archive does not match original workbook bytes/hash"
+    },
+    {
+      "case": "prior_output_overwrite",
+      "rejected": true,
+      "reason": "refuse to overwrite a prior audit"
+    }
+  ],
+  "verifier_sha256": "e45ecbf730036458ab956c45991dde25ff7857fe1068c488a5ddcc2b95781a87",
+  "driver_sha256": "308ea3617ee970f08a8132410aac9940488bd20cd17e35a886aaebdbfa976cf3"
+}
