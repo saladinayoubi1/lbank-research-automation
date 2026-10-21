@@ -1,0 +1,5 @@
+Public Laptop2 execution: accuracy + 3 depth requests; zero orders.
+Linux offline replay: all raw SHA256 values and all three VWAP snapshots match exactly.
+python -m unittest tests/test_nexus_lbank_spot_cost_snapshot_v1.py tests/test_nexus_mr40_lbank_exact30_v1.py tests/test_nexus_mr40_momentum30_newday_v1.py -q
+Ran 10 tests: OK
+Independent Decimal accounting verified for the observed-cost sensitivity at both capital sizes.
