@@ -1,0 +1,20 @@
+{
+  "schema": "nexus.mr40-momentum30-newday-study.v1",
+  "strategy": "mean_reversion_40_m2_momentum30_entry_v1",
+  "parent_commit": "52e8f2138ca64936e1180cb3175be934504f67b9",
+  "source_day": "2026-10-20",
+  "window_start_utc": "2026-09-21T00:00:00+00:00",
+  "window_end_exclusive_utc": "2026-10-21T00:00:00+00:00",
+  "window_policy": "Exactly the latest 30 complete UTC days; no window search. Only October 20 is beyond the previous MR40 input cutoff. Report its incremental contribution separately.",
+  "opening_research_cash_usdt": 500,
+  "sizing": "Unchanged all-cash Spot long/flat; independent new research accounts. The frozen 10000-unit engine is normalized linearly to 500 and checked against independent Decimal accounting initialized with 500.",
+  "parameters": {"lookback": 40, "entry_z": -2, "exit_z": 0, "momentum_intervals": 180, "momentum_threshold_pct": 0},
+  "episode_policy": "Reuse unchanged pinned admission module; previous closed bar, next open; a rejected episode cannot enter late. Natural z>=0 exit unchanged. Tagged terminal liquidation only if still invested at the fixed endpoint.",
+  "profiles": [{"id": "normal", "fee_bps": 10, "slippage_bps": 5}, {"id": "stress", "fee_bps": 25, "slippage_bps": 15}],
+  "source": "Only the complete BTCUSDT Spot October 20 daily trade file on public.bybit.com; reuse verified prefix. No substitute exchange, imputation, current candle or repeated old raw ingestion.",
+  "classification": "RETROSPECTIVE_LATEST_DAY_EXTENSION_NOT_PROSPECTIVE_OR_DEMO_EXECUTION",
+  "minimum_trade_count_gate": false,
+  "parameter_search": false,
+  "independent_economic_qualification": false,
+  "authority": {"research_only": true, "live_enabled": false, "exchange_orders": 0, "auto_demo": false, "owner_paper_mutation": false, "scheduling": false}
+}

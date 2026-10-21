@@ -1,4 +1,8 @@
 # Bash payloads embedded in these Windows PowerShell scripts are passed directly
+# Fixed latest-day MR40 research inputs must retain their registered bytes.
+research/nexus_mr40_momentum30_newday_v1.py text eol=lf
+research/mean_reversion_40_m2_momentum30_newday_v1.json text eol=lf
+tests/test_nexus_mr40_momentum30_newday_v1.py text eol=lf
 # to `wsl.exe ... bash -lc`.  CRLF working-tree conversion leaks `\r` into Bash
 # tokens on WSL1, so these specific boundary scripts must remain LF on Windows.
 scripts/provision_nexus_bybit_wsl_runner.ps1 text eol=lf
