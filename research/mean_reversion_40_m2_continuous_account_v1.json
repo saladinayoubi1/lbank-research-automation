@@ -1,0 +1,81 @@
+{
+  "schema": "nexus.mr40-continuous-account-protocol.v1",
+  "study_id": "mr40-continuous-account-20261021",
+  "parent_commit": "d43f06cc7f4fe083521c6aab3adb1ca7c9b23481",
+  "frozen_candidate_commit": "764d544af246769ffae0c6aca00d02c00fb34078",
+  "source_archive_sha256": "22b7580cd5ecb73c55ef279846841178e360377faf75ff681de88577ee958730",
+  "input_manifest_sha256": "dbd54010d2ecbc3de8d3910e4350b77f39f070062ac6f2c2bb957ed2bdb14f37",
+  "window": {
+    "start_utc": "2023-01-01T00:00:00+00:00",
+    "end_exclusive_utc": "2026-10-20T00:00:00+00:00",
+    "initial_usdt": 10000,
+    "expected_bars": 8328,
+    "days": 1388,
+    "prepared_rows": 8514,
+    "warmup": "December 2022; gate initialized once at the first executable known decision."
+  },
+  "strategies": [
+    "original",
+    "momentum30"
+  ],
+  "profiles": [
+    {
+      "id": "normal",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 1
+    },
+    {
+      "id": "stress",
+      "fee_bps": 25,
+      "slippage_bps": 15,
+      "lag_bars": 1
+    },
+    {
+      "id": "zero_cost_diagnostic",
+      "fee_bps": 0,
+      "slippage_bps": 0,
+      "lag_bars": 1
+    },
+    {
+      "id": "additional_4h_latency",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 2
+    }
+  ],
+  "execution": {
+    "resets": "Initial cash once; no month-end or old cohort-boundary reset/liquidation.",
+    "terminal": "Only final sample end may force a tagged close with the unchanged engine; report terminal count.",
+    "sizing": "Unchanged all-cash long/flat quote-fee model; no leverage, order book, partial fills or rounding model.",
+    "signal": "Unchanged original MR40 and original Momentum30 gate; no new filter, threshold or exit."
+  },
+  "prefix_control": {
+    "cutoff_utc": "2026-07-01T00:00:00+00:00",
+    "cases": 8,
+    "method": "Exact first 7662 curve observations and natural fills; replace only the old terminal-liquidation equity by its recorded pre-terminal mark because this account continues.",
+    "candidate": "All four prior filtered curves have no terminal liquidation and must remain completely exact.",
+    "original": "All four prior original curves have one explicit terminal close; its removal for extension must be witnessed, not silently treated as a discrepancy."
+  },
+  "validation": [
+    "Independent Decimal raw targets and gate admissions.",
+    "Eight independent full-account Decimal curves and exact frozen prefix controls.",
+    "Monthly marked PnL sums to final PnL; closed-position monthly PnL is separate.",
+    "Recovery risk from the pinned diagnostic and independent Decimal episode oracle.",
+    "No optimization, independent qualification or minimum-trade gate; report all four fixed profiles."
+  ],
+  "classification": {
+    "already_seen": true,
+    "prospective": false,
+    "independent_economic_qualification": false,
+    "new_market_data": false,
+    "parameter_search": false,
+    "source_strategy_changes": false
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}
