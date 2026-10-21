@@ -7,6 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_SOURCE_ARCHIVE_BYTES = 8 * 1024 * 1024
+SEPARATE_RESEARCH_REPLAY_BUNDLE = (
+    "docs/evidence/mr40-fixed-path-robustness-20261021/"
+    "NEXUS_MR40_Robustness_20261021.zip"
+)
 REQUIRED_RUNTIME_FILES = {
     "requirements.lock",
     "nexus_multipair_strategy_discovery.py",
@@ -35,3 +39,9 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
         for member in members
     )
     assert REQUIRED_RUNTIME_FILES <= names
+    assert SEPARATE_RESEARCH_REPLAY_BUNDLE not in names
+    subprocess.run(
+        ["git", "cat-file", "-e", f"HEAD:{SEPARATE_RESEARCH_REPLAY_BUNDLE}"],
+        cwd=ROOT,
+        check=True,
+    )
