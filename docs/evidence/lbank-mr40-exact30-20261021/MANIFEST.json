@@ -1,0 +1,37 @@
+{
+  "schema": "nexus.research-evidence-files.v1",
+  "files": {
+    "cost-tests-executed.txt": {
+      "bytes": 428,
+      "sha256": "bd961716fd23e2734f3460c79443b1db5affa515a0b478c9b217e4e7ac7bb805"
+    },
+    "current_depth_cost_snapshot.json": {
+      "bytes": 35595,
+      "sha256": "83fcbae2986fc25064890a1b5f92cd42d2931f16daa27974eddeede9cb8ad378"
+    },
+    "independent_qa.json": {
+      "bytes": 1312,
+      "sha256": "ee52052b7973442d443f59da5e0e8d48b8c6f86008775a8c15062a1e84aa368c"
+    },
+    "lbank_kline_response.json": {
+      "bytes": 39437,
+      "sha256": "e889b690efc92ef41a0d0301cf7efa5ad34b4269dd35d8061f80a3eb0f069f48"
+    },
+    "observed_cost_comparison.json": {
+      "bytes": 2826,
+      "sha256": "e56511edd12636aaf25f32567b549002f579e6b388f90a102a346df126142ea3"
+    },
+    "results.json": {
+      "bytes": 69120,
+      "sha256": "d25775ac495a0264a614eb8b6c6e65e9d26f027dfdbc8e1018603370395a0180"
+    },
+    "source_receipt.json": {
+      "bytes": 437,
+      "sha256": "c40510fa4a8f3604ef1bf16812a946181bcbd5189f4926a4de403c9a9f353a1d"
+    },
+    "tests-executed.txt": {
+      "bytes": 492,
+      "sha256": "28bfd6ec59a898e39417fae9622083d797d6d0103f4418ca32bf44c699bd7f14"
+    }
+  }
+}
