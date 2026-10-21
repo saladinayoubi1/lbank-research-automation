@@ -1,0 +1,46 @@
+{
+  "digest": "ce1e33789d16c67ca739fa4f5b21be1ec30092ab4d922d7cdba023ac847a0b75",
+  "effective_proxies": {
+    "https://api.bybit.com": {
+      "configured": false,
+      "details": []
+    },
+    "https://openapi.okx.com": {
+      "configured": false,
+      "details": []
+    },
+    "https://www.okx.com": {
+      "configured": false,
+      "details": []
+    }
+  },
+  "environment_presence": {
+    "ALL_PROXY": false,
+    "CURL_CA_BUNDLE": false,
+    "HTTPS_PROXY": false,
+    "HTTP_PROXY": false,
+    "NO_PROXY": false,
+    "REQUESTS_CA_BUNDLE": false
+  },
+  "exchange_orders": 0,
+  "hosts_override_counts": {
+    "api.bybit.com": 0,
+    "openapi.okx.com": 0,
+    "www.okx.com": 0
+  },
+  "ip_addresses_disclosed": false,
+  "network_requests": 0,
+  "observed_utc": "2026-10-21T09:08:30.917604+00:00",
+  "paper_state_changed": false,
+  "proxy_urls_disclosed": false,
+  "python": "3.12.10",
+  "schema": "nexus.public-market-local-network-context.v1",
+  "settings_changed": false,
+  "source_sha256": "6aa7034956d28f62895d57d77c11631cb5760c01974fb9ed8c9eb087510c2f3c",
+  "windows_user_proxy": {
+    "automatic_config_url_present": false,
+    "enabled": false,
+    "proxy_server_present": false
+  },
+  "worker": "DESKTOP-F4SA4VL"
+}

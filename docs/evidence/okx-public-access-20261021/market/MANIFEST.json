@@ -1,0 +1,17 @@
+{
+  "checks": {
+    "forming_bar_excluded": true,
+    "real_market_data_received": false,
+    "stale_quote_rejected": true,
+    "synthetic_181_closed_bars": true
+  },
+  "files": {
+    "windows.json": {
+      "bytes": 2056,
+      "sha256": "15e8f0a33aa7de437848a89c34b8a166c6dd70aad7df3cee6c338d2f330ec56d"
+    }
+  },
+  "receipt_digest": "1c90ef1ee475c0d5c6e5e966b7fbd282d0fb15c8ba8c3edd50793d8c3839c962",
+  "schema": "nexus.okx-market-access-evidence.v1",
+  "source_sha256": "6e4d38b148660f378b4ebf7b784e9e39efc241edc54a89926a6636170192f15b"
+}

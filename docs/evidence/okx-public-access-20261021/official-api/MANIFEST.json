@@ -1,0 +1,23 @@
+{
+  "checked_utc_date": "2026-10-21",
+  "files": {
+    "network-context.json": {
+      "bytes": 1227,
+      "receipt_digest": "ce1e33789d16c67ca739fa4f5b21be1ec30092ab4d922d7cdba023ac847a0b75",
+      "sha256": "d0e568c9ff0f4f8591ce72576b8f6a77863bc5335aab66cab28fa3c797f8fe63",
+      "source_path": "research/nexus_public_market_network_context_v1.py",
+      "source_sha256": "6aa7034956d28f62895d57d77c11631cb5760c01974fb9ed8c9eb087510c2f3c"
+    },
+    "windows.json": {
+      "bytes": 2034,
+      "receipt_digest": "9e08a40cb7f28522c3c15821f502decf9af07c022ade496bcacc8bc502941963",
+      "sha256": "642cc01badc6a2716a6d1185152775e75cbd9bdde764a57d9cd7afcbb4b5167a",
+      "source_path": "research/nexus_okx_public_access_probe_v1.py",
+      "source_sha256": "5b3ba819634173d7b62c56289710b18593e9928a788382c86104d0db393e95ee"
+    }
+  },
+  "official_announcement_date": "2026-05-20",
+  "official_domain_source": "https://www.okx.com/docs-v5/log_en/",
+  "prior_receipts_unchanged": true,
+  "schema": "nexus.okx-official-api-and-local-context.v1"
+}
