@@ -1,0 +1,23 @@
+{
+  "files": {
+    "README.md": {
+      "bytes": 2280,
+      "sha256": "720d7a9b2c3ecc74d8643aa16bd105952f847df535546afffc39f0e96b00a8a4"
+    },
+    "native-tests.txt": {
+      "bytes": 995,
+      "sha256": "c307d59c01e62d3e5912ae99d3aa22934f658b628374496688ca3f084414799a"
+    },
+    "windows.json": {
+      "bytes": 1555,
+      "sha256": "dc9152e7e8d5e0eb619e77f7209f80c28f7b258972be19e8197a1ea21a11e909"
+    }
+  },
+  "receipt_digest": "b8899c1a9825751e6dd5fc2434ae284838ae27a5cea160cada22600605f8cd2c",
+  "schema": "nexus.mr40-source-diagnostic-evidence.v1",
+  "source_files_sha256": {
+    "bybit_public_klines.py": "133d231e7a080c3187d4cfd26e40b244801b2d04a8b9f3774315429079be116c",
+    "research/nexus_mr40_public_source_diagnostic_v1.py": "eb680c11de9bf49c1499be444c5b970bba251acd46d325aea6ada436ca578b18",
+    "tests/test_nexus_mr40_public_source_diagnostic_v1.py": "513caa6c50ac2c12c73de1560fc4fc8878857184db243a9951f4d1ee6c4af6f7"
+  }
+}

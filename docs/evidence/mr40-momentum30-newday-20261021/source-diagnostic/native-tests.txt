@@ -1,0 +1,10 @@
+test_country_restriction_stops_before_alternate_host_or_stream (test_nexus_mr40_public_source_diagnostic_v1.DiagnosticTests.test_country_restriction_stops_before_alternate_host_or_stream) ... ok
+test_existing_output_is_not_overwritten (test_nexus_mr40_public_source_diagnostic_v1.DiagnosticTests.test_existing_output_is_not_overwritten) ... ok
+test_rate_rejection_stops_without_stream (test_nexus_mr40_public_source_diagnostic_v1.DiagnosticTests.test_rate_rejection_stops_without_stream) ... ok
+test_unclassified_rejection_is_bounded_to_two_official_hosts (test_nexus_mr40_public_source_diagnostic_v1.DiagnosticTests.test_unclassified_rejection_is_bounded_to_two_official_hosts) ... ok
+test_valid_response_discards_forming_bar_and_still_does_not_start_demo (test_nexus_mr40_public_source_diagnostic_v1.DiagnosticTests.test_valid_response_discards_forming_bar_and_still_does_not_start_demo) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.167s
+
+OK
