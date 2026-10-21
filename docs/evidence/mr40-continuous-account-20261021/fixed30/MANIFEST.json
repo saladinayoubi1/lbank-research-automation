@@ -1,0 +1,67 @@
+{
+  "schema": "nexus.research-supplement-publication.v1",
+  "source_commit": "36d0e963520e7ca2b6243c6c3cf7b792e0bfafff",
+  "parent_commit": "37d3a28b23c5e04d5fb40d62d9d7a5d896a59bd3",
+  "parent_archive_sha256": "836c57c0704cfc319973beb5868758ae2416deaacdfa1ec8edc91a0973e7788b",
+  "result_digest": "b257698ce3da0d489f0bbe5089f99553da80873b080732b0a43dbcf35f621c30",
+  "files": [
+    {
+      "path": "docs/research/MR40_EXACT30_COMPARISON_20261021_FA.md",
+      "bytes": 5664,
+      "sha256": "c7047640c92c449d8a076ba8432cf2600ab29ab9b75ca37c7f705bfefe33cffd",
+      "git_blob": "bce9ab7c2cf775cc890d0ce354b1140802a0f861"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/README.md",
+      "bytes": 1472,
+      "sha256": "ac237b04b0a538ca224eb54a19fd75e5b5c64bb0469b24f23aa684efbad463fc",
+      "git_blob": "5da64a56942e19b0cbeb2711bd6f77027a8c1f3e"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/qa.json",
+      "bytes": 646,
+      "sha256": "f9013dfaa7e3851101863f19f61d2a4aa57f7ba4b7bcb18172733125fbfd08c1",
+      "git_blob": "7c0e076e886bb08f1790cef348ddf85d18fd8b9a"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/results.json",
+      "bytes": 43864,
+      "sha256": "2547d2f2ce31a87092e2e0374e2ac1bbc39aa1ee08066961b3131581ddd19971",
+      "git_blob": "49e4f1add8f9abe9764b805fc4035f5cfb15d500"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/summary.csv",
+      "bytes": 3538,
+      "sha256": "63af472e310c3552fefd6b590b494269c22667726de63e3be5e90a13b397532e",
+      "git_blob": "938a5f1ccbb9973869650627c1f3605074630b07"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/fills.csv",
+      "bytes": 7441,
+      "sha256": "f1c277fd91885d6ec5e6d59eca36682b2fea046e985e3a91c0e8be18964e8035",
+      "git_blob": "6fb5c97f2c93d6ccff112a96a1607394cd0170a2"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/closed_positions.csv",
+      "bytes": 2760,
+      "sha256": "b895bf774cc572825b9c44620e3816982eac9ee2d8e81cb9526ccd543f25e5d2",
+      "git_blob": "1de3da60a69a83fa00366e5b26cf46cfd601e07c"
+    },
+    {
+      "path": "docs/evidence/mr40-continuous-account-20261021/fixed30/equity_curve.csv",
+      "bytes": 80882,
+      "sha256": "1e70dccda59009b6f6f5f2ba7674a2829200fe93cb33ba1759af28142b7239ec",
+      "git_blob": "e3995bb3f4b9c0f1404c36ca7d93f1647d78edd4"
+    },
+    {
+      "path": "research/nexus_mr40_exact30_comparison_v1.py",
+      "bytes": 9423,
+      "sha256": "ee554abfb020b4cce8ca835f570b3e4b4ff1830173906902709842193ff87ede",
+      "git_blob": "ff6bf302aa328d0d6bce182ff3e2b5261a069a8d"
+    }
+  ],
+  "new_trade_evidence": false,
+  "research_only": true,
+  "live_enabled": false,
+  "orders": 0
+}
