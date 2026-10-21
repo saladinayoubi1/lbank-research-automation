@@ -106,3 +106,6 @@ research/nexus_mr40_underwater_diagnostic_v1.py text eol=lf
 tests/test_nexus_mr40_underwater_diagnostic_v1.py text eol=lf
 docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.json text eol=lf
 docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.csv text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.md text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.txt text eol=lf
+docs/research/MR40_RECOVERY_RISK_20261021_FA.md text eol=lf

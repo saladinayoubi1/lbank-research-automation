@@ -1,0 +1,23 @@
+{
+  "schema": "nexus.mr40-recovery-qa.v1",
+  "tested_source_commit": "b60757effe9bb04d4ea3a9f225d0c1431bb99ae6",
+  "tested_source_tree": "1954f81cddc9e4908d45b6571e3bb08be2d52fcd",
+  "before_source_archive_bytes": 8655958,
+  "after_source_archive_bytes": 7804653,
+  "archive_limit_bytes": 8388608,
+  "archive_limit_unchanged": true,
+  "required_runtime_files_preserved": true,
+  "research_replay_zip_still_tracked": true,
+  "archive_contract": "PASS",
+  "new_unit_tests": 7,
+  "baseline_curves_exact": 6,
+  "decimal_episode_oracles": 6,
+  "exact_replay_files": [
+    "results.json",
+    "summary.csv",
+    "episodes.csv"
+  ],
+  "source_strategy_changes": false,
+  "live_enabled": false,
+  "orders": 0
+}

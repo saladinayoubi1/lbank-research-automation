@@ -1,0 +1,65 @@
+{
+  "schema": "nexus.research-supplement-publication.v1",
+  "source_commit": "b60757effe9bb04d4ea3a9f225d0c1431bb99ae6",
+  "parent_result_digest": "a2458859f9462208a6127d738e4a104de6dc066342436692394bc9048d12591b",
+  "result_digest": "8cc9d653995eb55d6f1dd848b8d4548e6bf0e5137d34a69f15090750d4755196",
+  "files": [
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/results.json",
+      "bytes": 71022,
+      "sha256": "f4553e680f80e2f822d18a77b6749bee631cdf5b67bb8d179d6a1ee12b2b4788",
+      "git_blob": "9b05d41581971024ae973c761f46f579f71259e4"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/summary.csv",
+      "bytes": 1867,
+      "sha256": "2faab75502166ab19a73bb334699d701a10d59cdaaa158ef371f0228fffc99c5",
+      "git_blob": "dd35deefe6b003f528e50da224c237175ec4cd1f"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/episodes.csv",
+      "bytes": 17734,
+      "sha256": "931902838cff1811ae5e82a8a4ca67399109585962d3e183b0c0f47258d3c83e",
+      "git_blob": "c577ee8d0ed34010cf6f6dde146b986dc5f8fd4d"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/qa.json",
+      "bytes": 703,
+      "sha256": "b8f6f52208ddc0f93e65c97590fbb98d22e15e5e1aed617f1d63c0c4c9b24b2a",
+      "git_blob": "adf8011f848b814fb3bd7b96c5683029291cc5cb"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/tests-executed.txt",
+      "bytes": 928,
+      "sha256": "59650e9220dd386eef1b34d6cc2e723d07991f5dc121ed8c13941e540443d7c1",
+      "git_blob": "135b2e82fad6b6cb761855e60d0b2da91005fd6b"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/underwater/README.md",
+      "bytes": 1840,
+      "sha256": "7fb54701866c2d1a7051409fb079937f5c6baceb49c666b9214d521f658571b3",
+      "git_blob": "c3fc5ef22bc5c461cf761ed96a6d8ea07438bbc3"
+    },
+    {
+      "path": "docs/research/MR40_RECOVERY_RISK_20261021_FA.md",
+      "bytes": 8166,
+      "sha256": "07cd1dadfab6a4a4fab1eeebf7486a9d0824cdff20adba9e10663c86bbdffda6",
+      "git_blob": "bc83fc6e278f929557c288bca1b8701f596987b2"
+    },
+    {
+      "path": "research/nexus_mr40_underwater_diagnostic_v1.py",
+      "bytes": 12663,
+      "sha256": "d7fed55e722fe95d9452fccee5bdc24e540913e23173a5ec813d720f76b12a93",
+      "git_blob": "4b0ae977faff51f07557c9aeb5047bf5ea7aeace"
+    },
+    {
+      "path": "tests/test_nexus_mr40_underwater_diagnostic_v1.py",
+      "bytes": 3234,
+      "sha256": "8ebb8ea983ce1a64d07c174f4dd5a06709b7aaa600669c2fb74b02cc64fa3b70",
+      "git_blob": "c2b68bdc7b6d92d19db6882c52b192d370671a59"
+    }
+  ],
+  "research_only": true,
+  "live_enabled": false,
+  "orders": 0
+}
