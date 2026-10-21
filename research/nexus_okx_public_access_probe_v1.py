@@ -9,7 +9,9 @@ import platform
 import time
 
 STEP = 14_400_000
-BASE = "https://www.okx.com"
+# Official 2026-05-20 OKX changelog recommends the dedicated REST API domain.
+# Keep the two legacy www trials as historical receipts; no rotating fallback.
+BASE = "https://openapi.okx.com"
 ENDPOINTS = (
     ("server_time", "/api/v5/public/time", {}),
     ("ticker", "/api/v5/market/ticker", {"instId": "BTC-USDT"}),

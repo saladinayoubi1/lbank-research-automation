@@ -1,0 +1,43 @@
+{
+  "actual_demo_started": false,
+  "digest": "9e08a40cb7f28522c3c15821f502decf9af07c022ade496bcacc8bc502941963",
+  "exchange": "OKX",
+  "exchange_orders": 0,
+  "finished_utc": "2026-10-21T09:06:22.011300+00:00",
+  "fresh_public_data_verified": false,
+  "live_enabled": false,
+  "market_only": false,
+  "observations": [
+    {
+      "auth_headers_present": false,
+      "body_bytes": 4543,
+      "body_sha256": "380c74d1a879ee991f766eb117f1982be14c160dacc03f3ee65db0ba3f914e62",
+      "content_type": "text/html; charset=UTF-8",
+      "denial_markers": {
+        "challenge_header": false,
+        "cloudflare_attention_required": true,
+        "country_restriction_message": false,
+        "you_have_been_blocked": true
+      },
+      "elapsed_ms": 4156,
+      "http_status": 403,
+      "name": "server_time",
+      "observed_ms": 1792573582010,
+      "params": {},
+      "request_body_is_none": true,
+      "response_excerpt": "<!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 8]>    <html class=\"no-js ie8 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html class=\"no-js\" lang=\"en-US\"> <!--<![endif]-->\n<head>\n<title>Attention Required! | Cloudflare</title>\n<meta charset=\"UTF-8\" />\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=",
+      "server": "cloudflare",
+      "url": "https://openapi.okx.com/api/v5/public/time"
+    }
+  ],
+  "paper_state_mutated": false,
+  "primary_exchange_configuration_changed": false,
+  "python": "3.12.10",
+  "requests_version": "2.34.2",
+  "schema": "nexus.okx-public-access-trial.v1",
+  "source_sha256": "5b3ba819634173d7b62c56289710b18593e9928a788382c86104d0db393e95ee",
+  "started_utc": "2026-10-21T09:06:17.857492+00:00",
+  "user_requested_trial": true,
+  "validation_error": "public endpoint unavailable: server_time",
+  "worker": "DESKTOP-F4SA4VL"
+}

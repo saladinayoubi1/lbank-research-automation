@@ -16,6 +16,8 @@ research/nexus_okx_public_access_probe_v1.py text eol=lf
 docs/research/OKX_PUBLIC_ACCESS_20261021_FA.md text eol=lf
 docs/evidence/okx-public-access-20261021/*.json text eol=lf
 docs/evidence/okx-public-access-20261021/market/*.json text eol=lf
+research/nexus_public_market_network_context_v1.py text eol=lf
+docs/evidence/okx-public-access-20261021/official-api/*.json text eol=lf
 
 # Bash payloads embedded in these Windows PowerShell scripts are passed directly
 # to `wsl.exe ... bash -lc`.  CRLF working-tree conversion leaks `\r` into Bash
