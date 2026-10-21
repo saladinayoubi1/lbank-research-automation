@@ -1,0 +1,9 @@
+test_closed_bar_decision_and_terminal_fee (test_nexus_mr40_momentum30_newday_v1.NewDayAccountTests.test_closed_bar_decision_and_terminal_fee) ... ok
+test_frozen_source_identity (test_nexus_mr40_momentum30_newday_v1.NewDayAccountTests.test_frozen_source_identity) ... ok
+test_reject_digest_tampering (test_nexus_mr40_momentum30_newday_v1.NewDayAccountTests.test_reject_digest_tampering) ... ok
+test_stress_costs_reduce_same_trade (test_nexus_mr40_momentum30_newday_v1.NewDayAccountTests.test_stress_costs_reduce_same_trade) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.708s
+
+OK

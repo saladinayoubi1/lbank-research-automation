@@ -1,0 +1,21 @@
+{
+  "schema": "nexus.mr40-public-kline-preflight.v1",
+  "observed_utc_date": "2026-10-21",
+  "device": "DESKTOP-F4SA4VL",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "method": "GET",
+  "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=240&limit=200",
+  "client": "PowerShell Invoke-WebRequest -UseBasicParsing -TimeoutSec 15",
+  "http_status": 403,
+  "observed_error": "The remote server returned an error: (403) Forbidden.",
+  "remote_process_pid": 11560,
+  "process_exit_code": 0,
+  "process_runtime_seconds": 3.35,
+  "cause": "UNDETERMINED_HTTP_403",
+  "credentials_used": false,
+  "global_bybit_failure_claimed": false,
+  "laptop1_result_verified": false,
+  "actual_demo_started": false,
+  "live_enabled": false,
+  "exchange_orders": 0
+}

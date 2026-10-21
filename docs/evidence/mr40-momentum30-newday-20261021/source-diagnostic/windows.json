@@ -1,0 +1,44 @@
+{
+  "actual_demo_started": false,
+  "classifier_sha256": "133d231e7a080c3187d4cfd26e40b244801b2d04a8b9f3774315429079be116c",
+  "digest": "b8899c1a9825751e6dd5fc2434ae284838ae27a5cea160cada22600605f8cd2c",
+  "exchange_orders": 0,
+  "explicit_restriction": true,
+  "finished_utc": "2026-10-21T08:08:36.514905+00:00",
+  "http_observations": [
+    {
+      "body_bytes": 96,
+      "body_sha256": "7ef856c945703d5772f1b1f2a8c65913247c9b0769302b10facfe14fa1e2083c",
+      "classification": "edge_country_restricted",
+      "content_type": "application/json",
+      "edge": "cloudfront",
+      "http_status": 403,
+      "params": {
+        "category": "spot",
+        "interval": "240",
+        "limit": 200,
+        "symbol": "BTCUSDT"
+      },
+      "request_body_is_none": true,
+      "response_excerpt": "{\n    error:The Amazon CloudFront distribution is configured to block access from your country\n}",
+      "ret_code": null,
+      "ret_code_category": "missing",
+      "ret_msg_category": "invalid_json",
+      "server": "CloudFront",
+      "url": "https://api.bybit.com/v5/market/kline"
+    }
+  ],
+  "live_enabled": false,
+  "python": "3.12.10",
+  "requests_version": "2.34.2",
+  "schema": "nexus.mr40-public-source-diagnostic.v1",
+  "source_ready": false,
+  "source_sha256": "eb680c11de9bf49c1499be444c5b970bba251acd46d325aea6ada436ca578b18",
+  "started_utc": "2026-10-21T08:08:34.711563+00:00",
+  "state_mutations": false,
+  "websocket": {
+    "attempted": false,
+    "reason": "explicit_access_or_rate_rejection"
+  },
+  "worker": "DESKTOP-F4SA4VL"
+}
