@@ -139,3 +139,8 @@ docs/evidence/mr40-continuous-account-20261021/july-identity/*.csv text eol=lf
 docs/evidence/mr40-continuous-account-20261021/july-identity/*.md text eol=lf
 docs/evidence/mr40-continuous-account-20261021/july-identity/*.txt text eol=lf
 docs/evidence/mr40-continuous-account-20261021/july-identity/original_reports.zip export-ignore
+
+# Byte-stable additive Linux July provenance control.
+docs/research/MR40_JULY_PLATFORM_CONTROL_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-platform/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/july-platform/*.md text eol=lf

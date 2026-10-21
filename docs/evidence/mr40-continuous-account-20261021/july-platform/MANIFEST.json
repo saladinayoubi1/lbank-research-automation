@@ -1,0 +1,50 @@
+{
+  "audit_digest": "8024af16df54fa60e1b2264713568770add75e96b45423fb0e15ff54a54a39b2",
+  "auto_demo": false,
+  "byte_exact_shared_frame": "docs/evidence/mr40-continuous-account-20261021/july-identity/rebuilt_july_frame.json",
+  "byte_exact_shared_frame_sha256": "a137a9f603f8aa2e72c6d59793903a2080d741e946cf967353e0b0c9489524c5",
+  "created_utc": "2026-10-21T02:13:35.024667+00:00",
+  "files": {
+    "docs/evidence/mr40-continuous-account-20261021/july-platform/README.md": {
+      "bytes": 1133,
+      "git_blob": "97be577a15e467e7168046ba781ab3afabde1ad8",
+      "sha256": "168625ac1a04fff68221752b35a0ce8a6355dd32364cabdcdb8921f99376c8d0"
+    },
+    "docs/evidence/mr40-continuous-account-20261021/july-platform/audit.json": {
+      "bytes": 3559,
+      "git_blob": "256fa5205d5b20ccedca09ff1bcac2fc313aa6e2",
+      "sha256": "0f9b837ee00216f4216f444e8a04864d6ce24273c75ed81b17a69bd1cfd0acb0"
+    },
+    "docs/evidence/mr40-continuous-account-20261021/july-platform/environment.json": {
+      "bytes": 284,
+      "git_blob": "72d2027be723266699a5b7df75a0f9588964dc72",
+      "sha256": "f2c56dc2c49186ae6316c06a08d1e6a14787122a864274fbe566aa7e087bb669"
+    },
+    "docs/evidence/mr40-continuous-account-20261021/july-platform/execution.json": {
+      "bytes": 1009,
+      "git_blob": "a9faeca09ba1c65af9722660f0e6dbeda02f554f",
+      "sha256": "edfd6c07015d399b84dc3dcc3af56a1569ebce353aa29c10fb2dadb4c6cb4194"
+    },
+    "docs/evidence/mr40-continuous-account-20261021/july-platform/independent_qa.json": {
+      "bytes": 2585,
+      "git_blob": "86f7b9a9b31cebfcdda1754422c690e30241d110",
+      "sha256": "52a88010deaaa5385e36a7722e79c2fb74cfb04181cf883e817e9b222fb40624"
+    },
+    "docs/research/MR40_JULY_PLATFORM_CONTROL_20261021_FA.md": {
+      "bytes": 4868,
+      "git_blob": "f58c41f34060e25a349d7bd231b74437110a2c28",
+      "sha256": "10cdb79529d753712ab7d0482b7a4591854a825713195b8df9ecf536c9e6d14e"
+    }
+  },
+  "live_enabled": false,
+  "orders": 0,
+  "original_full_frame_identity_proven": false,
+  "parent_commit": "bf965ed709c47042d34c1c6c704ea0151e23e933",
+  "prior_publication_digest": "4a060cc0153dca6463cab6b75417bc477f6a1aa23bcc81f823c8ed22272e5221",
+  "prior_receipts_changed": false,
+  "publication_digest": "8a224b3f6368d53eb2bafbf64616adea8d8ad9a24a966b72d267a462b04b65d2",
+  "research_only": true,
+  "schema": "nexus.mr40-july-platform-publication.v1",
+  "strategy_or_verifier_code_changed": false,
+  "verification_digest": "a2542edd19e991330d4b69ad12b2e49baa7440b60f8e5191eb7028e90a3355b6"
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "nexus.mr40-july-platform-execution.v1",
+  "physical_worker": "DESKTOP-F4SA4VL",
+  "exit_code": 0,
+  "runtime_seconds": 147.5,
+  "code_commit_before_execution": "bf965ed709c47042d34c1c6c704ea0151e23e933",
+  "driver_sha256": "308ea3617ee970f08a8132410aac9940488bd20cd17e35a886aaebdbfa976cf3",
+  "whole_file_historical_reader_executed": false,
+  "original_native_ubuntu_environment_parity_claimed": false,
+  "observed_runtime_warning": {
+    "category": "UserWarning",
+    "subject": "NumPy longdouble type signature not recognized; NumPy falls back to its type probe",
+    "suppressed": false
+  },
+  "shared_frame_path": "docs/evidence/mr40-continuous-account-20261021/july-identity/rebuilt_july_frame.json",
+  "shared_frame_file_sha256": "a137a9f603f8aa2e72c6d59793903a2080d741e946cf967353e0b0c9489524c5",
+  "frame_byte_identical_to_both_windows_runs": true,
+  "original_full_frame_identity_proven": false,
+  "research_only": true,
+  "live_enabled": false,
+  "orders": 0,
+  "auto_demo": false
+}

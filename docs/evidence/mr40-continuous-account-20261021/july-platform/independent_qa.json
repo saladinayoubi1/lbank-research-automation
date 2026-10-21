@@ -1,0 +1,58 @@
+{
+  "all_186_price_records_exact": true,
+  "audit_digest": "8024af16df54fa60e1b2264713568770add75e96b45423fb0e15ff54a54a39b2",
+  "decision": "computational_checks_pass",
+  "different_cells_by_column": {
+    "close": 0,
+    "high": 0,
+    "low": 0,
+    "open": 0,
+    "timestamp": 0,
+    "volume": 12
+  },
+  "historical_and_cached_projected_ohlc_sha256": "9dc3fb762d0aa41400bbbd8d5cd9cf0b60e4a84715cca8e3e17ffa182f8215b6",
+  "independent_decimal_controls": [
+    {
+      "absolute_drawdown_error_pp": "3.2432241865104874198979836829656280E-15",
+      "absolute_pnl_error_usdt": "6.039245451175360987343664586922005E-12",
+      "fill_count": 4,
+      "max_close_drawdown_pct_decimal": "1.5074746392020855567758134895125801020163170343720",
+      "net_pnl_usdt_decimal": "195.410134803655960754548824639012656335413077995",
+      "profile": "normal"
+    },
+    {
+      "absolute_drawdown_error_pp": "1.44432241865104874198979836829656310E-14",
+      "absolute_pnl_error_usdt": "9.53076092045471610991865548219749E-13",
+      "fill_count": 4,
+      "max_close_drawdown_pct_decimal": "1.5074746392020855567758134895125801020163170343690",
+      "net_pnl_usdt_decimal": "93.963868393292653076092045471610991865548219749",
+      "profile": "stress"
+    },
+    {
+      "absolute_drawdown_error_pp": "3.2432241865104874198979836829656330E-15",
+      "absolute_pnl_error_usdt": "6.19408146774660710965623402055816E-13",
+      "fill_count": 4,
+      "max_close_drawdown_pct_decimal": "1.5074746392020855567758134895125801020163170343670",
+      "net_pnl_usdt_decimal": "256.766495966040880591853225339289034376597944184",
+      "profile": "zero_cost_diagnostic"
+    },
+    {
+      "absolute_drawdown_error_pp": "1.44432241865104874198979836829656330E-14",
+      "absolute_pnl_error_usdt": "2.667190836440310590064611692937484E-12",
+      "fill_count": 4,
+      "max_close_drawdown_pct_decimal": "1.5074746392020855567758134895125801020163170343670",
+      "net_pnl_usdt_decimal": "117.215217204236132809163559689409935388307062516",
+      "profile": "additional_4h_latency"
+    }
+  ],
+  "independent_decimal_signal_bars": 186,
+  "maximum_volume_difference_btc": "1E-13",
+  "orders": 0,
+  "original_156_row_json_reports_recovered_and_digests_verified": true,
+  "original_full_frame_identity_proven": false,
+  "original_report_metrics_match_reconstruction": true,
+  "original_workbook_hash_and_parameter_cells_match": true,
+  "research_only": true,
+  "schema": "nexus.mr40-july-frame-independent-qa.v1",
+  "verification_digest": "a2542edd19e991330d4b69ad12b2e49baa7440b60f8e5191eb7028e90a3355b6"
+}
