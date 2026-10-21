@@ -1,0 +1,45 @@
+{
+  "actual_demo_started": false,
+  "digest": "1c90ef1ee475c0d5c6e5e966b7fbd282d0fb15c8ba8c3edd50793d8c3839c962",
+  "exchange": "OKX",
+  "exchange_orders": 0,
+  "finished_utc": "2026-10-21T08:35:18.899920+00:00",
+  "fresh_public_data_verified": false,
+  "live_enabled": false,
+  "market_only": true,
+  "observations": [
+    {
+      "auth_headers_present": false,
+      "body_bytes": 4543,
+      "body_sha256": "20cfa9fc1078bb1d17af0f41e67a208996e39bfebd2d59d118228c2893d3fedf",
+      "content_type": "text/html; charset=UTF-8",
+      "denial_markers": {
+        "challenge_header": false,
+        "cloudflare_attention_required": true,
+        "country_restriction_message": false,
+        "you_have_been_blocked": true
+      },
+      "elapsed_ms": 984,
+      "http_status": 403,
+      "name": "ticker",
+      "observed_ms": 1792571718898,
+      "params": {
+        "instId": "BTC-USDT"
+      },
+      "request_body_is_none": true,
+      "response_excerpt": "<!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 8]>    <html class=\"no-js ie8 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html class=\"no-js\" lang=\"en-US\"> <!--<![endif]-->\n<head>\n<title>Attention Required! | Cloudflare</title>\n<meta charset=\"UTF-8\" />\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=",
+      "server": "cloudflare",
+      "url": "https://www.okx.com/api/v5/market/ticker"
+    }
+  ],
+  "paper_state_mutated": false,
+  "primary_exchange_configuration_changed": false,
+  "python": "3.12.10",
+  "requests_version": "2.34.2",
+  "schema": "nexus.okx-public-access-trial.v1",
+  "source_sha256": "6e4d38b148660f378b4ebf7b784e9e39efc241edc54a89926a6636170192f15b",
+  "started_utc": "2026-10-21T08:35:17.900923+00:00",
+  "user_requested_trial": true,
+  "validation_error": "public endpoint unavailable: ticker",
+  "worker": "DESKTOP-F4SA4VL"
+}

@@ -21,15 +21,19 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
-def validate(observations):
+def validate(observations, *, require_server_time=True):
     by_name = {item["name"]: item for item in observations}
     checks = {}
-    for name, _, _ in ENDPOINTS:
+    required = ENDPOINTS if require_server_time else ENDPOINTS[1:]
+    for name, _, _ in required:
         item = by_name.get(name)
         if not item or item.get("http_status") != 200 or item.get("payload", {}).get("code") != "0":
             raise ValueError("public endpoint unavailable: " + name)
-    stamp = int(by_name["server_time"]["payload"]["data"][0]["ts"])
-    checks["server_time_age_ms"] = by_name["server_time"]["observed_ms"] - stamp
+    checks["server_time_verified"] = require_server_time
+    checks["freshness_reference"] = "worker_utc_clock"
+    if require_server_time:
+        stamp = int(by_name["server_time"]["payload"]["data"][0]["ts"])
+        checks["server_time_age_ms"] = by_name["server_time"]["observed_ms"] - stamp
     tick = by_name["ticker"]["payload"]["data"]
     if len(tick) != 1 or tick[0].get("instId") != "BTC-USDT" or tick[0].get("instType") != "SPOT":
         raise ValueError("wrong Spot ticker identity")
@@ -38,7 +42,8 @@ def validate(observations):
     if not all(v.is_finite() and v > 0 for v in (last, bid, ask)) or bid > ask:
         raise ValueError("invalid Spot price or bid/ask")
     checks["ticker_age_ms"] = by_name["ticker"]["observed_ms"] - int(tick["ts"])
-    if not all(-10000 <= checks[k] <= 120000 for k in ("server_time_age_ms", "ticker_age_ms")):
+    ages = ("server_time_age_ms", "ticker_age_ms") if require_server_time else ("ticker_age_ms",)
+    if not all(-10000 <= checks[k] <= 120000 for k in ages):
         raise ValueError("stale or future server time/ticker")
     candles = by_name["candles"]["payload"]["data"]
     seen, closed, forming = set(), [], 0
@@ -73,7 +78,7 @@ def validate(observations):
     return checks
 
 
-def run(output):
+def run(output, market_only=False):
     if output.exists():
         raise ValueError("refuse trial overwrite")
     import requests
@@ -81,10 +86,11 @@ def run(output):
               "started_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
               "requests_version": requests.__version__, "observations": [],
               "exchange": "OKX", "user_requested_trial": True, "fresh_public_data_verified": False,
+              "market_only": market_only,
               "actual_demo_started": False, "exchange_orders": 0, "paper_state_mutated": False,
               "primary_exchange_configuration_changed": False, "live_enabled": False}
     with requests.Session() as session:
-        for name, path, params in ENDPOINTS:
+        for name, path, params in (ENDPOINTS[1:] if market_only else ENDPOINTS):
             item = {"name": name, "url": BASE + path, "params": params}
             result["observations"].append(item)
             started = time.monotonic()
@@ -103,12 +109,19 @@ def run(output):
                         item["payload"] = json.loads(raw)
                     else:
                         item["response_excerpt"] = raw[:512].decode("utf-8", errors="replace")
+                        lower = raw.lower()
+                        item["denial_markers"] = {
+                            "cloudflare_attention_required": b"attention required! | cloudflare" in lower,
+                            "you_have_been_blocked": b"you have been blocked" in lower,
+                            "country_restriction_message": any(s in lower for s in (b"block access from your country", b"restricted country", b"country is not supported")),
+                            "challenge_header": response.headers.get("cf-mitigated", "") == "challenge",
+                        }
                     if response.status_code in (403, 429, 451) or 300 <= response.status_code < 400:
                         break
             except Exception as exc:
                 item.update({"error_type": type(exc).__name__, "error": str(exc)[:256]})
     try:
-        result["checks"] = validate(result["observations"])
+        result["checks"] = validate(result["observations"], require_server_time=not market_only)
         result["fresh_public_data_verified"] = True
     except Exception as exc:
         result["validation_error"] = str(exc)
@@ -126,4 +139,5 @@ def run(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--market-only", action="store_true")
     run(**vars(parser.parse_args()))
