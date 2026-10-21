@@ -1,0 +1,13 @@
+test_closed_form_known_root (__main__.RobustnessTests.test_closed_form_known_root) ... ok
+test_cost_monotonicity_and_component_symmetry (__main__.RobustnessTests.test_cost_monotonicity_and_component_symmetry) ... ok
+test_invalid_intervals_and_empty_product (__main__.RobustnessTests.test_invalid_intervals_and_empty_product) ... ok
+test_omitted_episode_stays_cash_and_original_entry_times_survive (__main__.RobustnessTests.test_omitted_episode_stays_cash_and_original_entry_times_survive) ... ok
+test_returns_rank_instead_of_dollar_profit_and_tie_is_earliest (__main__.RobustnessTests.test_returns_rank_instead_of_dollar_profit_and_tie_is_earliest) ... ok
+test_substituted_digest_is_rejected (__main__.RobustnessTests.test_substituted_digest_is_rejected) ... ok
+test_zero_cost_compounding_and_missed_winner (__main__.RobustnessTests.test_zero_cost_compounding_and_missed_winner) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.018s
+
+OK
+{"account_paths": 27, "exact_baseline_curves": 6, "exact_csv_files": ["summary.csv", "cost_boundaries.csv", "fills.csv", "closed_positions.csv", "equity_curve.csv", "monthly_attribution.csv"], "independent_decimal_equity_paths": 27, "independent_product_checks": 27, "inventory_members": 24, "orders": 0, "recorded_result_digest": "a2458859f9462208a6127d738e4a104de6dc066342436692394bc9048d12591b", "semantic_replay": "PASS", "unit_tests": 7, "zero_pnl_root_checks": 6}

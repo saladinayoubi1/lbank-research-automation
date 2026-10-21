@@ -83,3 +83,29 @@ scripts/nexus_mr40_october_followup_intake_v1.py text eol=lf
 tests/test_nexus_mr40_october_followup_intake_v1.py text eol=lf
 research/nexus_mr40_momentum30_october_followup_v1.py text eol=lf
 tests/test_nexus_mr40_momentum30_october_followup_v1.py text eol=lf
+
+# Fixed-path MR40 robustness receipts also require LF checkout bytes.
+research/mean_reversion_40_m2_robustness_v1.json text eol=lf
+research/nexus_mr40_fixed_path_robustness_v1.py text eol=lf
+tests/test_nexus_mr40_fixed_path_robustness_v1.py text eol=lf
+
+# Byte-stable MR40 frozen-path audit evidence.
+docs/research/MR40_FIXED_PATH_ROBUSTNESS_20261021_FA.md text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.json text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.csv text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.py text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.txt text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/*.md text eol=lf
+
+# The separately hash-pinned replay archive duplicates prices and ledgers.
+# Keep it in Git for research; exclude it from the bounded runtime transport.
+docs/evidence/mr40-fixed-path-robustness-20261021/NEXUS_MR40_Robustness_20261021.zip export-ignore
+
+# Recovery diagnostics bind source bytes without changing the frozen strategy.
+research/nexus_mr40_underwater_diagnostic_v1.py text eol=lf
+tests/test_nexus_mr40_underwater_diagnostic_v1.py text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.json text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.csv text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.md text eol=lf
+docs/evidence/mr40-fixed-path-robustness-20261021/underwater/*.txt text eol=lf
+docs/research/MR40_RECOVERY_RISK_20261021_FA.md text eol=lf

@@ -1,0 +1,12 @@
+test_flat_peak_is_not_underwater (__main__.UnderwaterTests.test_flat_peak_is_not_underwater) ... ok
+test_independent_run_detector_for_multiple_episodes (__main__.UnderwaterTests.test_independent_run_detector_for_multiple_episodes) ... ok
+test_initial_capital_anchor_and_right_censoring (__main__.UnderwaterTests.test_initial_capital_anchor_and_right_censoring) ... ok
+test_invalid_frame_is_rejected (__main__.UnderwaterTests.test_invalid_frame_is_rejected) ... ok
+test_last_equal_peak_and_exact_recovery (__main__.UnderwaterTests.test_last_equal_peak_and_exact_recovery) ... ok
+test_longest_episode_is_distinct_from_deepest (__main__.UnderwaterTests.test_longest_episode_is_distinct_from_deepest) ... ok
+test_profitable_final_can_still_be_underwater (__main__.UnderwaterTests.test_profitable_final_can_still_be_underwater) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.001s
+
+OK

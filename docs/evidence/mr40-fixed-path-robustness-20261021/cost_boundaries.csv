@@ -1,0 +1,4 @@
+cohort,closed_positions,gross_price_ratio_product,zero_cost_final_usdt,break_even_fee_bps_at_slippage_15bps,break_even_slippage_bps_at_fee_25bps,fee_headroom_bps_above_25,slippage_headroom_bps_above_15,break_even_effective_cost_bps_per_side,stress_effective_cost_bps_per_side,effective_cost_definition
+retrospective_42_months,40,1.576252909037812,15762.529090378119,41.881050609576405,31.881146631528043,16.881050609576405,16.881146631528043,56.88069327609733,39.999850000562496,"c=(fee+slip)/(1+fee*slip), components in fractions"
+october_01_19,2,1.0180262893268865,10180.262893268866,29.664257440069704,19.66427827276913,4.664257440069704,4.664278272769133,44.66405870114936,39.999850000562496,"c=(fee+slip)/(1+fee*slip), components in fractions"
+august_october19_continuous,6,1.118155753873032,11181.55753873032,78.06563599191261,68.06612985633627,53.065635991912615,53.06612985633628,93.06454622046427,39.999850000562496,"c=(fee+slip)/(1+fee*slip), components in fractions"

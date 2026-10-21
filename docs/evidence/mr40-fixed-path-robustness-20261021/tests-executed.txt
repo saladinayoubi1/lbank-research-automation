@@ -1,0 +1,12 @@
+test_closed_form_known_root (__main__.RobustnessTests.test_closed_form_known_root) ... ok
+test_cost_monotonicity_and_component_symmetry (__main__.RobustnessTests.test_cost_monotonicity_and_component_symmetry) ... ok
+test_invalid_intervals_and_empty_product (__main__.RobustnessTests.test_invalid_intervals_and_empty_product) ... ok
+test_omitted_episode_stays_cash_and_original_entry_times_survive (__main__.RobustnessTests.test_omitted_episode_stays_cash_and_original_entry_times_survive) ... ok
+test_returns_rank_instead_of_dollar_profit_and_tie_is_earliest (__main__.RobustnessTests.test_returns_rank_instead_of_dollar_profit_and_tie_is_earliest) ... ok
+test_substituted_digest_is_rejected (__main__.RobustnessTests.test_substituted_digest_is_rejected) ... ok
+test_zero_cost_compounding_and_missed_winner (__main__.RobustnessTests.test_zero_cost_compounding_and_missed_winner) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.010s
+
+OK

@@ -1,0 +1,125 @@
+{
+  "schema": "nexus.research-archive-inventory.v1",
+  "files": [
+    {
+      "path": "MR40_Robustness_Report_FA.md",
+      "bytes": 8555,
+      "sha256": "a3dffa8c8726dfefaa70bfc02466e1e8bc0da449443bbe84e14376435c782c3c"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3923,
+      "sha256": "c36f6e1bbb0131bbb002b53034f966c9d5cd2e82e29bbe057f2ac578cc3a7396"
+    },
+    {
+      "path": "input_manifest.json",
+      "bytes": 3054,
+      "sha256": "af978c277caddefc99bb3419d13a6ef4360562781d8e7a787b126dedc537db7f"
+    },
+    {
+      "path": "inputs/candidate_contract.json",
+      "bytes": 2997,
+      "sha256": "153957458cbc5c3256bf0ea7909db6071cac587f7a765477d06d1f242383de50"
+    },
+    {
+      "path": "inputs/candidate_results.json",
+      "bytes": 292864,
+      "sha256": "dc8a7622a0aae5397a6f342f17f0f4537c5b5633695847b74d4f7db753b0cce7"
+    },
+    {
+      "path": "inputs/nexus_mean_reversion_40_m2_momentum30_entry_v1.py",
+      "bytes": 12405,
+      "sha256": "d899e9dd991695959c230426b50ebdb4bab2eca8c5f413ea3c471d957c1f69bb"
+    },
+    {
+      "path": "inputs/nexus_mean_reversion_40_m2_retest_v1.py",
+      "bytes": 9774,
+      "sha256": "e9b898040d4680f128da330177df84e2fcc4ba1e2f70f467cf5455d685247b27"
+    },
+    {
+      "path": "inputs/october_contract.json",
+      "bytes": 3524,
+      "sha256": "5e900e2ec44b9f31ea44e007ce4d05701129e49323bb214412c4507259115978"
+    },
+    {
+      "path": "inputs/october_input_extension.json",
+      "bytes": 17280,
+      "sha256": "2d4577ea8cc3b896f57e50e3030e3d131acfd7827a0d1869efe45b9f0b03d0c8"
+    },
+    {
+      "path": "inputs/october_results.json",
+      "bytes": 102436,
+      "sha256": "3d6883df30f1c82dd18df74f61c2add09d9c9dcc55aa9bccbd0e51126ffdebac"
+    },
+    {
+      "path": "inputs/prepared_inputs.json",
+      "bytes": 612908,
+      "sha256": "f901e1ec23bab5370ef2c83671c23e355875a103a3c4cbdb93fc8051c5c3cdc0"
+    },
+    {
+      "path": "inputs/source_manifest.json",
+      "bytes": 12752,
+      "sha256": "68b086fe2cb307df304527ec6b55bc1d97cab10c9c7c66d4240f34065ddace09"
+    },
+    {
+      "path": "recorded_results/closed_positions.csv",
+      "bytes": 93423,
+      "sha256": "e3dba0cff3ac06ce483f0b1bb29e76e9ce956e7d7ea6acebb423af23d2bfaa93"
+    },
+    {
+      "path": "recorded_results/cost_boundaries.csv",
+      "bytes": 978,
+      "sha256": "8e1dd0861c790ec45dff8bea208c14a6f75b483ddf110f16b98e7bff59dc99f8"
+    },
+    {
+      "path": "recorded_results/equity_curve.csv",
+      "bytes": 7798175,
+      "sha256": "e1073264af840c2767b86b4f4db62adfceae54faf5008c6213ee706dd865015b"
+    },
+    {
+      "path": "recorded_results/fills.csv",
+      "bytes": 253540,
+      "sha256": "663d133979bf6792730bc6a022a192e4761558334a6c6b86d4d1e64228d02ae9"
+    },
+    {
+      "path": "recorded_results/monthly_attribution.csv",
+      "bytes": 60379,
+      "sha256": "142988f0dc2d95e898fc10a078e3b7874974a0d8975aa69829f4e7828cd0b5c3"
+    },
+    {
+      "path": "recorded_results/results.json",
+      "bytes": 585413,
+      "sha256": "ff83f0f8dcc7d9a856c4aa3cef7367be27d815d0c8263ed34519f8e71c50d02f"
+    },
+    {
+      "path": "recorded_results/summary.csv",
+      "bytes": 12496,
+      "sha256": "38ca6a359f5857d97848e5891c6301bff1497f43b202c5c62b9b911bca9935e5"
+    },
+    {
+      "path": "research/nexus_mr40_fixed_path_robustness_v1.py",
+      "bytes": 18937,
+      "sha256": "28a96b073d25622c912974a2c0dae2aada77338997c75d6cb2ba43465e522fa4"
+    },
+    {
+      "path": "study_contract.json",
+      "bytes": 2762,
+      "sha256": "d40d67433d818ab278b143d95f0c325b54381b1b7323a063b1f2e62f9a64228f"
+    },
+    {
+      "path": "tests/test_nexus_mr40_fixed_path_robustness_v1.py",
+      "bytes": 4835,
+      "sha256": "2fc4c7241b41a83b83d4ceaf77904d5c1b9051c7f3317b857974cf9abf430cb4"
+    },
+    {
+      "path": "tests-executed.txt",
+      "bytes": 984,
+      "sha256": "a63c6b0cf743343938be048cfb31001bf5b5cffa727a1369acac6fd960c717d6"
+    },
+    {
+      "path": "verify_replay.py",
+      "bytes": 3239,
+      "sha256": "0240300cb550e53bb6fdc947ce7085be3c4bb3309fa6850b79e86c3cddc973a0"
+    }
+  ]
+}

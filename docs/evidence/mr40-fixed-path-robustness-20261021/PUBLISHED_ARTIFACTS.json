@@ -1,0 +1,105 @@
+{
+  "schema": "nexus.research-publication.v1",
+  "study_id": "mr40-fixed-path-robustness-20261021",
+  "source_commit": "205e99a38a7d50e564b22202166e5cbdbac4590f",
+  "protocol_commit": "0f58362edf77b9484466a4a49d2b6a754c777b9e",
+  "base_commit": "6d9d0ad3908236ec9c16c4f05fad06c59c38042a",
+  "result_digest": "a2458859f9462208a6127d738e4a104de6dc066342436692394bc9048d12591b",
+  "archive_sha256": "074ebdd7ca7712498194817d949b3c712884c9c0efff5d9d8fa4d6a677b11226",
+  "archive_members": 25,
+  "unit_tests": 7,
+  "account_paths": 27,
+  "exact_parent_curves": 6,
+  "independent_decimal_paths": 27,
+  "independent_products": 27,
+  "zero_pnl_root_checks": 6,
+  "exact_replay_csv_files": 6,
+  "maximum_decimal_error_usdt": 1.255102688446641e-10,
+  "classification": "FIXED_PATH_HISTORICAL_EX_POST_STRESS_NOT_INDEPENDENT_QUALIFICATION",
+  "frozen_strategy_changes": false,
+  "new_market_data": false,
+  "parameter_search": false,
+  "research_only": true,
+  "live_enabled": false,
+  "auto_demo": false,
+  "orders": 0,
+  "source_blobs": {
+    "research/nexus_mr40_fixed_path_robustness_v1.py": "1c5a253e6cb523cd3bca2a8baf591c69fcfe21dc",
+    "tests/test_nexus_mr40_fixed_path_robustness_v1.py": "b4ce5a2de43876daaf8b9e546b75ca155cd48121",
+    "docs/evidence/mr40-fixed-path-robustness-20261021/input_manifest.json": "80caeed17bba380da37dff7edca5ccc8f1f31013"
+  },
+  "artifacts": [
+    {
+      "path": "docs/research/MR40_FIXED_PATH_ROBUSTNESS_20261021_FA.md",
+      "bytes": 8555,
+      "sha256": "a3dffa8c8726dfefaa70bfc02466e1e8bc0da449443bbe84e14376435c782c3c",
+      "git_blob": "19e86793e6c7efedee8ea6f8df6c7a03063cd402"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/README.md",
+      "bytes": 3923,
+      "sha256": "c36f6e1bbb0131bbb002b53034f966c9d5cd2e82e29bbe057f2ac578cc3a7396",
+      "git_blob": "c286311d515167290d7e546b2fa73ac1ed049419"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/verify_replay.py",
+      "bytes": 3239,
+      "sha256": "0240300cb550e53bb6fdc947ce7085be3c4bb3309fa6850b79e86c3cddc973a0",
+      "git_blob": "ee41157cba75e0bb05bbef3576dc9bf3013955ce"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/tests-executed.txt",
+      "bytes": 984,
+      "sha256": "a63c6b0cf743343938be048cfb31001bf5b5cffa727a1369acac6fd960c717d6",
+      "git_blob": "3b20a9de4cf7f42a7a36e9e6028fccf10a86cccc"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/replay-verification.txt",
+      "bytes": 1454,
+      "sha256": "4922dc3910cb99d9ed565f2eee8f4ec76020d8f219e56bb826603dabff9e0845",
+      "git_blob": "1883e13185a574e1ea57406e2c4d016ce1b71380"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/NEXUS_MR40_Robustness_20261021.zip",
+      "bytes": 954226,
+      "sha256": "074ebdd7ca7712498194817d949b3c712884c9c0efff5d9d8fa4d6a677b11226",
+      "git_blob": "51e68d1316116b411c17407cc62fe2b29f5e125c"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/INVENTORY.json",
+      "bytes": 4068,
+      "sha256": "60c89b28f9774c99a68caf9334c5545b48e945bdc1050b59263ad39a12edc361",
+      "git_blob": "3129b355e1cd192f26cc0a1bdb88c551ee1a70a6"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/results.json",
+      "bytes": 585413,
+      "sha256": "ff83f0f8dcc7d9a856c4aa3cef7367be27d815d0c8263ed34519f8e71c50d02f",
+      "git_blob": "839a5debeaa4ed3c9eae234ffd5e4ab35231e445"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/summary.csv",
+      "bytes": 12496,
+      "sha256": "38ca6a359f5857d97848e5891c6301bff1497f43b202c5c62b9b911bca9935e5",
+      "git_blob": "d335108d2ca307ff9eb2ca75d20cd0dfffdeba03"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/cost_boundaries.csv",
+      "bytes": 978,
+      "sha256": "8e1dd0861c790ec45dff8bea208c14a6f75b483ddf110f16b98e7bff59dc99f8",
+      "git_blob": "36dc7b70bf417eb016800013963e989589966897"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/closed_positions.csv",
+      "bytes": 93423,
+      "sha256": "e3dba0cff3ac06ce483f0b1bb29e76e9ce956e7d7ea6acebb423af23d2bfaa93",
+      "git_blob": "a157a13fca2c91c1e683283d526ea48355ac8548"
+    },
+    {
+      "path": "docs/evidence/mr40-fixed-path-robustness-20261021/monthly_attribution.csv",
+      "bytes": 60379,
+      "sha256": "142988f0dc2d95e898fc10a078e3b7874974a0d8975aa69829f4e7828cd0b5c3",
+      "git_blob": "c4a427e4ac75c3cfc0ecba37d027f63bec5022ba"
+    }
+  ]
+}

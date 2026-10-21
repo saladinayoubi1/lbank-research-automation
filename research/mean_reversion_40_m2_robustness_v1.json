@@ -1,0 +1,75 @@
+{
+  "schema": "nexus.mr40-fixed-path-robustness-protocol.v1",
+  "study_id": "mr40-fixed-path-robustness-20261021",
+  "frozen_candidate_commit": "764d544af246769ffae0c6aca00d02c00fb34078",
+  "source_followup_commit": "6d9d0ad3908236ec9c16c4f05fad06c59c38042a",
+  "source_archive_sha256": "22b7580cd5ecb73c55ef279846841178e360377faf75ff681de88577ee958730",
+  "source_candidate_result_digest": "959832aa111ba6bbab7a899547a7d4e031a0f3cd0a283de30397635f1ba5f118",
+  "source_october_result_digest": "3209320f841a694f7711a365e93a0fd1e6777f31b1dd250c0c44f3ab630ca7ac",
+  "cohorts": [
+    {
+      "id": "retrospective_42_months",
+      "omitted_best_counts": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "id": "october_01_19",
+      "omitted_best_counts": [
+        1
+      ]
+    },
+    {
+      "id": "august_october19_continuous",
+      "omitted_best_counts": [
+        1,
+        3
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "normal",
+      "fee_bps": 10,
+      "slippage_bps": 5
+    },
+    {
+      "id": "stress",
+      "fee_bps": 25,
+      "slippage_bps": 15
+    }
+  ],
+  "cost_analysis": {
+    "method": "Exact all-cash round-trip product at frozen entry/exit references; no search over entry, exit, lookback or threshold.",
+    "formula": "final=10000*product(exit_reference/entry_reference)*(((1-fee)/(1+fee))*((1-slip)/(1+slip)))^N",
+    "break_even": "Solve closed form for per-side fee at fixed slip15bps and per-side slip at fixed fee25bps; validate zero-PnL root against frozen execution engine.",
+    "fixed_adverse_case": {
+      "fee_bps": 25,
+      "slippage_bps": 20,
+      "meaning": "one additional 5bps slippage per side over the prior stress profile; dates and prices fixed"
+    }
+  },
+  "concentration_analysis": {
+    "rank": "Positive trades ranked by net percentage return, descending; tie by entry timestamp.",
+    "omission": "Skip the entire selected frozen position episode, keep cash, then compound subsequent original entries at their same times. Recompute the complete equity path and drawdown.",
+    "classification": "Ex-post missed-best-trades stress exercise, not an implementable signal, probability forecast or independently selected strategy.",
+    "independent_check": "Product of remaining actual trade factors must match the replayed final cash; never subtract original USDT winners from final PnL."
+  },
+  "classification": {
+    "already_seen": true,
+    "independent_economic_qualification": false,
+    "parameter_search": false,
+    "source_strategy_changes": false,
+    "new_market_data": false,
+    "minimum_trade_count_gate": false,
+    "all_fixed_scenarios_reported": true
+  },
+  "authority": {
+    "research_only": true,
+    "auto_demo": false,
+    "live_enabled": false,
+    "orders": 0
+  }
+}
