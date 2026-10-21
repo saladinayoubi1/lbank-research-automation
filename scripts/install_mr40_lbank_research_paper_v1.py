@@ -28,9 +28,22 @@ def command(args, check=True):
     return result
 
 
-def install(source, state_root, python, source_sha, manifest_sha):
+def verify_registered(text, args):
+    tree = ET.fromstring(text.lstrip("\ufeff"))
+    find = lambda path: tree.findtext(path,namespaces={"t":NS})
+    # Task Scheduler omits default-valued nodes in its exported XML. Native
+    # COM readback on the owner device also verified RunLevel=0, LogonType=3.
+    if (find("t:Principals/t:Principal/t:RunLevel") not in (None,"LeastPrivilege")
+            or find("t:Principals/t:Principal/t:LogonType") != "InteractiveToken"
+            or find("t:Settings/t:Enabled") not in (None,"true")
+            or find("t:Actions/t:Exec/t:Arguments") != subprocess.list2cmdline(args)):
+        raise ValueError("registered_task_identity_verification_failed")
+
+
+def install(source, state_root, python, source_sha, manifest_sha, resume_finalization=False):
     if os.name != "nt": raise ValueError("Windows installer only")
-    if command(["schtasks.exe","/Query","/TN",NAME,"/XML"],check=False).returncode == 0:
+    existing = command(["schtasks.exe","/Query","/TN",NAME,"/XML"],check=False).returncode == 0
+    if existing and not resume_finalization:
         raise ValueError("research_task_already_exists_no_replacement")
     identity = next(csv.reader(io.StringIO(command(["whoami.exe","/user","/fo","csv","/nh"]).stdout)))
     sid = identity[-1].strip()
@@ -39,8 +52,9 @@ def install(source, state_root, python, source_sha, manifest_sha):
     runner = source/"research/nexus_mr40_lbank_isolated_paper_v1.py"
     args = [str(runner),"--source",str(source),"--state-root",str(state_root),
             "--source-sha",source_sha,"--manifest-sha",manifest_sha]
-    first = command([str(python),*args])
-    print(first.stdout.strip(),flush=True)
+    if not existing:
+        first = command([str(python),*args])
+        print(first.stdout.strip(),flush=True)
     state = json.loads((state_root/"state.json").read_bytes())
     if (state["source_sha"] != source_sha or state["manifest_sha256"] != manifest_sha
             or state["policy"]["live_enabled"] is not False or state["policy"]["initial_cash_usdt"] != "500"):
@@ -79,14 +93,10 @@ def install(source, state_root, python, source_sha, manifest_sha):
     child(execution,"WorkingDirectory",str(source))
     xml_path = state_root.parent/"paper_task.xml"
     xml_path.write_bytes(ET.tostring(task,encoding="utf-16",xml_declaration=True))
-    command(["schtasks.exe","/Create","/TN",NAME,"/XML",str(xml_path)])
+    if not existing:
+        command(["schtasks.exe","/Create","/TN",NAME,"/XML",str(xml_path)])
     registered = command(["schtasks.exe","/Query","/TN",NAME,"/XML"])
-    tree = ET.fromstring(registered.stdout.lstrip("\ufeff"))
-    find = lambda path: tree.findtext(path,namespaces={"t":NS})
-    if (find("t:Principals/t:Principal/t:RunLevel") != "LeastPrivilege"
-            or find("t:Principals/t:Principal/t:LogonType") != "InteractiveToken"
-            or find("t:Actions/t:Exec/t:Arguments") != subprocess.list2cmdline(args)):
-        raise ValueError("registered_task_identity_verification_failed")
+    verify_registered(registered.stdout,args)
     desktop_buffer = ctypes.create_unicode_buffer(32768)
     if ctypes.windll.shell32.SHGetFolderPathW(None,0x10,None,0,desktop_buffer) != 0:
         raise OSError("desktop_path_unavailable")
@@ -112,4 +122,5 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser()
     for name in ("source","state-root","python"): parser.add_argument("--"+name,type=Path,required=True)
     for name in ("source-sha","manifest-sha"): parser.add_argument("--"+name,required=True)
+    parser.add_argument("--resume-finalization",action="store_true")
     install(**vars(parser.parse_args()))
