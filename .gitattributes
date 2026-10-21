@@ -1,6 +1,6 @@
 # Fixed LBank research replay retains pinned source and raw receipt bytes.
 research/nexus_mr40_lbank_isolated_paper_v1.py text eol=lf
-scripts/install_mr40_lbank_research_paper_v1.ps1 text eol=lf
+scripts/install_mr40_lbank_research_paper_v1.py text eol=lf
 tests/test_nexus_mr40_lbank_isolated_paper_v1.py text eol=lf
 docs/research/MR40_LBANK_ISOLATED_PAPER_PROTOCOL_20261021_FA.md text eol=lf
 research/nexus_lbank_spot_cost_snapshot_v1.py text eol=lf
