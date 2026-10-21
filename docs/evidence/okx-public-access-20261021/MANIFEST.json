@@ -1,0 +1,11 @@
+{
+  "files": {
+    "windows.json": {
+      "bytes": 1805,
+      "sha256": "2b6a6ba3afd91c037512105d0e3884033db0e63fb2645a6ac43ea11a4c3bc608"
+    }
+  },
+  "receipt_digest": "19746d8b985e3f247552ca82aed2f186bb0b08bcd41978de3851fe6cede90f14",
+  "schema": "nexus.okx-public-access-evidence.v1",
+  "source_sha256": "30b7001b5b77db6f234ed10c29bc894375a4354355ccd6a17819aab42b4477db"
+}
