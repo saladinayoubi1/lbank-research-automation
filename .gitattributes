@@ -121,3 +121,11 @@ docs/evidence/mr40-continuous-account-20261021/*.md text eol=lf
 docs/evidence/mr40-continuous-account-20261021/*.py text eol=lf
 docs/evidence/mr40-continuous-account-20261021/*.txt text eol=lf
 docs/evidence/mr40-continuous-account-20261021/NEXUS_MR40_Continuous_Account_20261021.zip export-ignore
+
+# Fixed 30-day comparison reuses the pinned continuous-account archive.
+research/nexus_mr40_exact30_comparison_v1.py text eol=lf
+docs/research/MR40_EXACT30_COMPARISON_20261021_FA.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.json text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.csv text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.md text eol=lf
+docs/evidence/mr40-continuous-account-20261021/fixed30/*.txt text eol=lf
