@@ -375,3 +375,8 @@ tests/test_nexus_mr40_frozen_47_spot_fee_audit_v1.py text eol=lf export-ignore
 research/mr40_all47_intraposition_drawdown_bounds_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_all47_intratrade_ohlc_equity_bounds_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_all47_intratrade_ohlc_equity_bounds_v1.py text eol=lf export-ignore
+
+# Fixed prior-data all-47 MR40 tail MAE/hold diagnostic, never exported to execution runtime.
+research/mr40_frozen47_tail_risk_distribution_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
