@@ -1,0 +1,41 @@
+{
+  "bybit_current_api_403_unresolved": true,
+  "digest": "f50e7c8d3784597f49bd8d64b2b713771e38898e2ff76892f1b3ec069b6c834b",
+  "event_kinds": {
+    "ENTRY_NEXT_OPEN": 47,
+    "FLAT": 7570,
+    "HOLD": 850,
+    "NATURAL_EXIT_NEXT_OPEN": 47
+  },
+  "events_executable": false,
+  "histories_previously_seen": true,
+  "market_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "matches": [
+    {
+      "entry_indices_identical": true,
+      "exit_indices_identical": true,
+      "first_entry_next_open_events": 25,
+      "natural_exit_next_open_events": 25,
+      "window": "train"
+    },
+    {
+      "entry_indices_identical": true,
+      "exit_indices_identical": true,
+      "first_entry_next_open_events": 22,
+      "natural_exit_next_open_events": 22,
+      "window": "evaluation"
+    }
+  ],
+  "merge": false,
+  "no_ledger_driven_decisions": true,
+  "no_money_unit_ack_only": true,
+  "orders_generated": 0,
+  "paper_changed": false,
+  "prior_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "promote": false,
+  "protocol_sha256": "1dbac323ea46637d37e23faee0b62c63a44f712441e7030dbc9823acfe6743db",
+  "real_fills_simulated": false,
+  "schema": "nexus.mr40.closed-signal-to-event-replay.results.v1",
+  "source_4h_1m_parity_not_proven": true,
+  "total_closed_source_bars": 8514
+}
