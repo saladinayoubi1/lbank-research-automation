@@ -250,3 +250,15 @@ docs/evidence/mr40-rr-sizing-20261022/summary.json text eol=lf export-ignore
 # Read-only risk audit is tracked as research evidence, never runtime payload.
 docs/evidence/mr40-partial-loss-trim-20261022/risk_attribution.json export-ignore
 research/nexus_mr40_partial_trim_low_audit_v1.py text eol=lf
+
+# MR40 trigger-and-ratchet research is offline-only and source byte-stable.
+research/mr40_trigger_ratchet_v1.json text eol=lf
+research/nexus_mr40_trigger_ratchet_v1.py text eol=lf
+research/verify_mr40_trigger_ratchet_temporal_v1.py text eol=lf
+tests/test_nexus_mr40_trigger_ratchet_v1.py text eol=lf
+docs/research/MR40_TRIGGER_RATCHET_20261022_FA.md text eol=lf
+# Research replay data stays verified in Git, not the 8-MiB runtime source transport.
+docs/evidence/mr40-trigger-ratchet-20261022/results.json.gz export-ignore
+docs/evidence/mr40-trigger-ratchet-20261022/ledger.jsonl.gz export-ignore
+# Previous byte-pinned historical result data is also non-runtime evidence.
+docs/evidence/mr40-isolated-improvement-20261022/results.json export-ignore
