@@ -29,10 +29,8 @@ class TestCashFractionRisk(unittest.TestCase):
 
     def test_zero_fee_half_fraction_float_bounds_distinct_with_same_candle_ambiguity(self):
         rows=[bar(0,100,120,80,100),bar(1,100,101,99,100)]
-        # Override only for synthetic price math, not any real audit.
-        from unittest.mock import patch
-        with patch("research.nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.FEE",D(0)):
-            z=evaluate_fraction(rows,[trade(rows,0,1)],D("0.50"))
+        # Explicit zero-fee synthetic branch, independent of VIP0 study rate.
+        z=evaluate_fraction(rows,[trade(rows,0,1)],D("0.50"),fee=D(0))
         self.assertEqual(D(z["realized_only_max_dd_pct"]),D(0))
         self.assertEqual(D(z["prior_high_to_current_low_global_OHLC_dd_lower_pct"]),D(10))
         self.assertTrue(D(z["adversarial_same_bar_high_first_OHLC_dd_upper_pct"])>D(18))
