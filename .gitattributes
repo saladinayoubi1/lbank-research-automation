@@ -284,3 +284,8 @@ research/nexus_mr40_one_combination_ablation_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_entry_event_contract_v1.py text eol=lf export-ignore
 docs/research/MR40_ENTRY_EVENT_CONTRACT_20261022_FA.md text eol=lf export-ignore
 docs/evidence/mr40-entry-event-contract-20261022/*.json text eol=lf export-ignore
+
+# One rejected MR40 pre-entry structural-break diagnostic is historical offline evidence only.
+research/mr40_structure_break_audit_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
