@@ -340,3 +340,9 @@ research/mr40_ws_raw_minute_diagnostic_protocol_20261022.json text eol=lf export
 research/nexus_mr40_ws_raw_minute_diagnostic_v1.ps1 text eol=lf export-ignore
 research/nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
+
+# Fixed-window Bybit public Spot 4h native-bool, raw-message source close V2; never runtime.
+research/mr40_public_spot_4h_close_v2_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_4h_raw_close_gate_v2.py text eol=lf export-ignore
+research/nexus_mr40_bybit_public_4h_raw_capture_v2.ps1 text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_4h_raw_close_gate_v2.py text eol=lf export-ignore
