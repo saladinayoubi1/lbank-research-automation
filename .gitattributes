@@ -268,3 +268,6 @@ docs/evidence/mr40-trigger-ratchet-20261022/equal_capital_attribution.json expor
 
 docs/evidence/mr40-entry-stop-20261022/results.json.gz export-ignore
 docs/evidence/mr40-entry-stop-20261022/ledger.jsonl.gz export-ignore
+docs/evidence/mr40-entry-quality-20261022/results.json.gz export-ignore
+docs/evidence/mr40-entry-quality-20261022/ledger.jsonl.gz export-ignore
+docs/evidence/mr40-entry-quality-20261022/excursion_audit.json export-ignore
