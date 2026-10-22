@@ -220,3 +220,13 @@ docs/evidence/mr40-adaptive-sizing-20261022/*.txt text eol=lf
 docs/evidence/mr40-adaptive-sizing-20261022/*.zip export-ignore
 docs/evidence/mr40-adaptive-sizing-20261022/*.png export-ignore
 docs/research/MR40_ADAPTIVE_SIZING_20261022_FA.md text eol=lf
+
+# Staged-entry historical fills are kept byte-for-byte in GitHub as a separate
+# research replay artifact; do not duplicate their compressed payload in the
+# size-capped, runtime-only git archive. Keep the report, tests and engine.
+research/mr40_staged_entry_v1.json text eol=lf
+research/nexus_mr40_staged_entry_v1.py text eol=lf
+tests/test_nexus_mr40_staged_entry_v1.py text eol=lf
+docs/research/MR40_STAGED_ENTRY_20261022_FA.md text eol=lf
+docs/evidence/mr40-staged-entry-20261022/results.json text eol=lf
+docs/evidence/mr40-staged-entry-20261022/ledger.jsonl.gz export-ignore
