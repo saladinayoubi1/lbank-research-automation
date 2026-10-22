@@ -275,3 +275,6 @@ docs/evidence/mr40-entry-quality-20261022/excursion_audit.json export-ignore
 docs/evidence/mr40-minute-execution-20261022/public_api_raw.json.gz export-ignore
 docs/evidence/mr40-minute-execution-20261022/strict_audit.json export-ignore
 docs/evidence/mr40-minute-execution-20261022/descriptive_trace.json export-ignore
+
+docs/evidence/mr40-spot-ticks-20251010/summary.json export-ignore
+docs/evidence/mr40-spot-ticks-20251010/one_minute_trade_tape.csv.gz export-ignore
