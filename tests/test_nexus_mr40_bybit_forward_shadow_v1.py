@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from research.nexus_mr40_bybit_forward_shadow_v1 import (
-    check_clock,validate_bridge,NOT_BEFORE,run)
+    check_clock,validate_bridge,NOT_BEFORE,run,mark_archive_signals_as_delayed)
 from research.nexus_mr40_bybit_archive_bridge_v1 import canon
 
 P={"schema":"nexus.mr40.prospective_spot_archive_shadow_protocol.v1",
@@ -46,6 +46,52 @@ class TestMR40ForwardShadow(unittest.TestCase):
             spec=root/"lock.json";spec.write_text(json.dumps(P))
             with self.assertRaisesRegex(ValueError,"refuse_overwrite"):
                 run(spec,root,root/"bridge.json",root,out)
+
+
+    @staticmethod
+    def valid_synthetic_markers():
+        from datetime import datetime,timezone
+        from research.nexus_mr40_bybit_archive_bridge_v1 import epoch,STEP4
+        base=epoch("2026-10-23")
+        return [
+            {
+                "four_hour_open_utc":datetime.fromtimestamp((base+i*STEP4)/1000,timezone.utc).isoformat(),
+                "four_hour_end_utc":datetime.fromtimestamp((base+(i+1)*STEP4)/1000,timezone.utc).isoformat(),
+                "first_entry_close_marker":i==0,
+                "natural_exit_close_marker":False,
+            }
+            for i in range(6)
+        ]
+
+    def test_archive_signal_never_becomes_online_executable_at_market_close(self):
+        source=self.valid_synthetic_markers()
+        future_receipt=NOT_BEFORE+120000
+        annotated=mark_archive_signals_as_delayed(source,future_receipt)
+        self.assertEqual(len(annotated),6)
+        self.assertTrue(all(r["signal_calculation_is_retrospective_after_archive_release"] for r in annotated))
+        self.assertTrue(all(r["next_open_reference_already_past_at_receipt"] for r in annotated))
+        self.assertTrue(all(not r["realtime_decision_available_at_original_bar_close"] for r in annotated))
+        self.assertTrue(all(r["signal_not_authorized_for_live_or_paper"] for r in annotated))
+        self.assertFalse("market_bar_close_ms" in source[0])
+        self.assertTrue(annotated[0]["archive_receipt_lag_after_4h_close_ms"] > annotated[-1]["archive_receipt_lag_after_4h_close_ms"])
+
+    def test_fake_early_receipt_fails_closed(self):
+        with self.assertRaisesRegex(ValueError,"invalid_fixed_day_archive_receipt"):
+            mark_archive_signals_as_delayed(self.valid_synthetic_markers(),NOT_BEFORE-1)
+
+    def test_string_timestamp_not_trusted_as_external_receipt(self):
+        with self.assertRaisesRegex(ValueError,"invalid_fixed_day_archive_receipt"):
+            mark_archive_signals_as_delayed(self.valid_synthetic_markers(),str(NOT_BEFORE))
+
+    def test_original_candle_market_clock_cannot_be_shifted(self):
+        rows=self.valid_synthetic_markers()
+        rows[2]["four_hour_open_utc"]="2026-10-23T12:00:00+00:00"
+        with self.assertRaisesRegex(ValueError,"archive_signal_market_clock_modified"):
+            mark_archive_signals_as_delayed(rows,NOT_BEFORE+1000)
+
+    def test_full_fixed_six_candles_required(self):
+        with self.assertRaisesRegex(ValueError,"invalid_fixed_day_archive_receipt"):
+            mark_archive_signals_as_delayed(self.valid_synthetic_markers()[:5],NOT_BEFORE+1000)
 
 
 if __name__=="__main__":
