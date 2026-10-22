@@ -51,3 +51,27 @@ def test_registered_filters_and_policy_paper_off():
     assert "Paper 500 USDT on Laptop2 untouched" in cfg["restriction"]
     for case in cfg["candidate_filters"]:
         m.filtered_signals(rows,signals,181,220,case)
+
+def test_frozen_entry_quality_evidence():
+    """Check the 144 existing trade-acceptance outcomes without rerunning prices."""
+    import gzip,hashlib
+    root=Path(__file__).resolve().parents[1]
+    d=root/"docs"/"evidence"/"mr40-entry-quality-20261022"
+    a=d/"results.json.gz";b=d/"ledger.jsonl.gz"
+    assert hashlib.sha256(a.read_bytes()).hexdigest()=="b6ca802e3142f2121b0bfcb639a669359955b88c8137302fbe461eec4d3febf0"
+    assert hashlib.sha256(b.read_bytes()).hexdigest()=="2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e"
+    with gzip.open(a,"rt",encoding="utf-8") as f:
+        data=json.load(f)
+    logical=data.pop("digest")
+    c=json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(c).hexdigest()==logical=="b19bb3302aebbadfff9ddea84429bfba2c047454f93ff93e9388de98db8933c5"
+    assert data["runs"]==len(data["rows"])==144
+    assert len(data["base_parity"])==24
+    assert data["selection"]=={"qualified_train":[],"chosen":"baseline","evaluation_pass":False}
+    assert all(v is False for v in data["candidate_evaluation_gates"].values())
+    assert data["paper_changed"] is False and data["future_blind"] is False
+    with gzip.open(b,"rt",encoding="utf-8") as f:
+        entries=[json.loads(line) for line in f]
+    assert len(entries)==144
+    assert all(x["decisions"] for x in entries)
+    assert all(x["key"]["case"]=="baseline" or x["key"]["case"] in data["candidate_evaluation_gates"] for x in entries)
