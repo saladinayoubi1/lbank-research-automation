@@ -113,3 +113,24 @@ def test_early_excursion_audit_is_frozen_and_descriptive():
     assert crash["max_adverse_low_pct"]>14
     assert crash["reached_plus2_closed"] is False
     assert crash["observed_entry4_stop_hit"] is True
+
+def test_exact_rank_stability_audit_does_not_promote():
+    """AUC trend across train and evaluation is exploratory, not a trading signal."""
+    import hashlib
+    root=Path(__file__).resolve().parents[1]
+    source=root/"docs"/"evidence"/"mr40-entry-quality-20261022"/"rank_stability.json"
+    data=json.loads(source.read_bytes())
+    logical=data.pop("digest")
+    canonical=json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(canonical).hexdigest()==logical=="b0b823aa20b074e0b43bade4ed643e91ed9f7bd13e8004eed3e87f38e097f0df"
+    assert len(data["rank_tests"])==10
+    assert data["baseline_counts"]["train"]=={"N":25,"winners":19,"losers":6,"possible_labelings":177100}
+    assert data["baseline_counts"]["evaluation"]=={"N":22,"winners":18,"losers":4,"possible_labelings":7315}
+    assert data["stable_significant_features"]==[]
+    assert data["promotion_allowed"] is False and data["paper_changed"] is False
+    m=lambda w,n:next(r for r in data["rank_tests"] if r["window"]==w and r["feature"]==n)
+    assert m("train","short_drift6_pct")["winner_higher_auc"]>0.7
+    assert m("evaluation","short_drift6_pct")["winner_higher_auc"]<0.4
+    assert m("train","long_drift60_pct")["winner_higher_auc"]>0.65
+    assert m("evaluation","long_drift60_pct")["winner_higher_auc"]<0.3
+    assert all(r["exact_two_sided_p"]>.005 for r in data["rank_tests"])
