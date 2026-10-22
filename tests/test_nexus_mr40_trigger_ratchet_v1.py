@@ -67,3 +67,13 @@ if __name__=="__main__":
     spec=importlib.util.spec_from_file_location("ratchet_engine",a.engine)
     mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
     print(json.dumps({"synthetic_checks":run(mod),"pass":True,"real_orders":0}))
+
+
+def test_trigger_ratchet_synthetic_in_pytest():
+    """Collect the real stop simulator synthetic assertions on every CI OS."""
+    from pathlib import Path
+    engine=Path(__file__).resolve().parents[1]/"research"/"nexus_mr40_trigger_ratchet_v1.py"
+    spec=importlib.util.spec_from_file_location("ratchet_pytest_engine",engine)
+    mod=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert run(mod)==10
