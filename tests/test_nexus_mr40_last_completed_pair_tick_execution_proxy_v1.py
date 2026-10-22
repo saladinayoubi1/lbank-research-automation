@@ -42,7 +42,7 @@ class TestLastCompletedPair(unittest.TestCase):
             path=Path(d)/"source.gz"
             t=date_ms("2026-10-14")+4*14_400_000
             fake_day(path,"2026-10-14",t)
-            with self.assertRaisesRegex(ValueError,"outside_expected_utc_day"):
+            with self.assertRaisesRegex(ValueError,"target_window_not_same_utc_day"):
                 inspect_trade_day(path,"2026-10-19",t)
 
     def test_duplicate_archive_id_rejected(self):
