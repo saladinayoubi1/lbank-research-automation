@@ -1,0 +1,38 @@
+{
+  "schema": "nexus.mr40.public_spot_ws_closed_bar_gate.v1",
+  "issue": 2799,
+  "pr": 2808,
+  "date": "2026-10-22",
+  "objective": "Assess whether actual official Bybit Spot public WS 4h frames are safe to feed the independent MR40 close-only engine, given the immutable tick-archive bridge ends Oct21 20:00 UTC.",
+  "evidence_path": "docs/evidence/mr40-entry-event-contract-20261022/bybit_public_spot_ws_probe_20261022.json",
+  "required_transport": {
+    "endpoint": "wss://stream.bybit.com/v5/public/spot",
+    "topic": "kline.240.BTCUSDT",
+    "subscription_ack": true
+  },
+  "required_closed_signal": {
+    "confirmed_closed": "strict Boolean true, never truthy coercion",
+    "response_after_candle_end": true,
+    "aligned_open_ms": 14400000,
+    "expected_next_bar": "last pinned bridge 4h open + 14,400,000 ms",
+    "valid_ohlcv": true,
+    "valid_utc_source_receipt": true,
+    "nondecreasing_message_ms": true
+  },
+  "source_bridge": {
+    "sha": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "last_verified_4h_open_utc": "2026-10-21T20:00:00Z",
+    "expected_next_4h_open_utc": "2026-10-22T00:00:00Z",
+    "no_reverse_backfill_from_current_ws": true
+  },
+  "interpretation": "Transport/subscription PASS is not an accepted closed market candle. An unconfirmed bar cannot affect MR40. Even a later confirmed true frame requires continuous verified source bridge; if missing any 4h interval must block and not synthesize it.",
+  "source_quality_limit": "Public official WS Kline snapshots may be in progress; no full archive parity, no private/demo execution, no live trading permission.",
+  "safety": {
+    "no_order_transport": true,
+    "private_api": false,
+    "live": false,
+    "paper500_unchanged": true,
+    "promote": false,
+    "merge": false
+  }
+}
