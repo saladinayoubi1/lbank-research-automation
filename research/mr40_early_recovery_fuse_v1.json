@@ -1,0 +1,101 @@
+{
+  "schema": "nexus.mr40.early_failure_fuse.v1",
+  "parent_sha": "dd77e737a15d8d91652048cd3fc856e1fd35b1be",
+  "study_type": "exploratory_offline_no_new_data",
+  "hypothesis": "Time-conditioned confirmation-failure exit for ALREADY ENTERED full-size MR40+Momentum30 spot position, compared with unchanged baseline. Distinct from prior pre-entry confirm3, forced 40-bar cap and price-only fixed stops. Evaluate if exiting an episode with no favorable closed-candle recovery in first 3 or 6 bars reduces worst account drawdown without excessive opportunity loss.",
+  "cases": [
+    {
+      "id": "baseline",
+      "observe_bars": null,
+      "minimum_favorable_close": 0
+    },
+    {
+      "id": "fuse3_be",
+      "observe_bars": 3,
+      "minimum_favorable_close": 0
+    },
+    {
+      "id": "fuse6_be",
+      "observe_bars": 6,
+      "minimum_favorable_close": 0
+    },
+    {
+      "id": "fuse3_0p5",
+      "observe_bars": 3,
+      "minimum_favorable_close": 0.005
+    },
+    {
+      "id": "fuse6_0p5",
+      "observe_bars": 6,
+      "minimum_favorable_close": 0.005
+    },
+    {
+      "id": "fuse3_1p0",
+      "observe_bars": 3,
+      "minimum_favorable_close": 0.01
+    },
+    {
+      "id": "fuse6_1p0",
+      "observe_bars": 6,
+      "minimum_favorable_close": 0.01
+    }
+  ],
+  "execution": "Enter 100% free cash on original MR40+Momentum30 entry at next Open with venue lot/fees. Starting from entry Open, observe CLOSE on first N entire four-hour candles including entry candle; exactly once when candle N has fully closed, check the MAX of those N completed CLOSE values against actual executed entry price*(1+minimum_favorable_close). If not reached, issue immediate SELL to execute at next available Open subject to profile lag; original natural exit pending for same Open takes precedence. Natural exit remains original Z>=0; no forced stop apart from fixed period-terminal liquidation. If confirmation reached, original position continues without a new initial stop. Exit for failed confirmation cannot use future highs or lows. Freeze one decision at N only; not re-evaluate. After fused exit block any buy for the remainder of original episode, even if its signal persists. No leverage / no partial trade / no intrabar assumption.",
+  "fundamentals": "Closing an initial position before it has first demonstrated a positive close does not protect against the FIRST 3/6 bars' adverse intrabar move, overnight gap, or slippage. Never call this a stop-loss or a guarantee.",
+  "data_constraints": {
+    "bybit_combined_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "lbank_30day_sha256": "7274373a6ff9e1a060da4c18dffe9da69436345657505cd52f768f11d04ab278",
+    "no_external_market_calls": true,
+    "all_dates_previously_observed": true
+  },
+  "windows": {
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation": [
+      "2025-01-01",
+      "2026-10-20"
+    ],
+    "full": [
+      "2023-01-01",
+      "2026-10-20"
+    ],
+    "lbank": [
+      "2026-09-21",
+      "2026-10-21"
+    ]
+  },
+  "profiles": {
+    "normal": [
+      10,
+      5,
+      1
+    ],
+    "stress": [
+      25,
+      15,
+      1
+    ],
+    "extra_delay": [
+      10,
+      5,
+      2
+    ]
+  },
+  "capitals": [
+    10000,
+    500
+  ],
+  "selection": "Use training only. Profit qualification: normal PnL>=baseline, stress PnL>=1.05*baseline stress, worst(normal,stress) close DD<=1.10*baseline. Efficiency qualification: normal CAGR>=.75*baseline, stress CAGR>0, worst close DD<=.90*baseline, stress-CAGR / worst DD >=1.10*baseline. Winners maximum training stress PnL / stress-CAGR-to-worst-DD respectively, else baseline. Locked evaluation qualifies only if profits both profiles >=.75*baseline, worst close DD<=.80*baseline worst, efficiency >=1.10*baseline. No threshold retuning after evaluation. Label all conclusions exploratory.",
+  "validation": "Exact original baseline parity on frozen windows, Decimal-ledger independent fill and cash replay, chronological trigger/candle-count invariance, synthetic lag/exit/no re-entry/capital and decision-priority checks, temporal prefix invariance, original input digests, all evidence SHA256 in Git. No active Paper or exchange access.",
+  "permissions": {
+    "research_only": true,
+    "paper_unchanged": true,
+    "live_disabled": true,
+    "private_api": false,
+    "orders": false,
+    "merge": false,
+    "promotion": false
+  }
+}

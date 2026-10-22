@@ -19,6 +19,8 @@ PARTIAL_TRIM_RESULTS = "docs/evidence/mr40-partial-loss-trim-20261022/results.js
 PARTIAL_TRIM_RISK_AUDIT = "docs/evidence/mr40-partial-loss-trim-20261022/risk_attribution.json"
 TRIGGER_RATCHET_LEDGER = "docs/evidence/mr40-trigger-ratchet-20261022/ledger.jsonl.gz"
 TRIGGER_RATCHET_RESULTS = "docs/evidence/mr40-trigger-ratchet-20261022/results.json.gz"
+EARLY_FUSE_LEDGER = "docs/evidence/mr40-early-recovery-fuse-20261022/ledger.jsonl.gz"
+EARLY_FUSE_RESULTS = "docs/evidence/mr40-early-recovery-fuse-20261022/results.json.gz"
 TRIGGER_RATCHET_NORMALIZED = "docs/evidence/mr40-trigger-ratchet-20261022/equal_capital_attribution.json"
 OLDER_RESEARCH_RESULTS = "docs/evidence/mr40-isolated-improvement-20261022/results.json"
 PREVIOUS_RR_SUMMARY = "docs/evidence/mr40-rr-sizing-20261022/summary.json"
@@ -59,6 +61,8 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
     assert PARTIAL_TRIM_RISK_AUDIT not in names
     assert TRIGGER_RATCHET_LEDGER not in names
     assert TRIGGER_RATCHET_RESULTS not in names
+    assert EARLY_FUSE_LEDGER not in names
+    assert EARLY_FUSE_RESULTS not in names
     assert TRIGGER_RATCHET_NORMALIZED not in names
     assert OLDER_RESEARCH_RESULTS not in names
     assert PREVIOUS_RR_SUMMARY not in names
@@ -75,6 +79,7 @@ def test_research_evidence_remains_versioned_outside_runtime_archive() -> None:
         PARTIAL_TRIM_LEDGER, PARTIAL_TRIM_RESULTS, PARTIAL_TRIM_RISK_AUDIT,
         PREVIOUS_RR_SUMMARY, TRIGGER_RATCHET_LEDGER,
         TRIGGER_RATCHET_RESULTS, TRIGGER_RATCHET_NORMALIZED, OLDER_RESEARCH_RESULTS,
+        EARLY_FUSE_LEDGER, EARLY_FUSE_RESULTS,
     ):
         subprocess.run(
             ["git", "cat-file", "-e", f"HEAD:{path}"],

@@ -265,3 +265,13 @@ docs/evidence/mr40-isolated-improvement-20261022/results.json export-ignore
 
 research/nexus_mr40_ratchet_equal_capital_attribution_v1.py text eol=lf
 docs/evidence/mr40-trigger-ratchet-20261022/equal_capital_attribution.json export-ignore
+
+# MR40 offline early-failure fuse: code LF, bulky immutable research evidence
+# Git versioned but deliberately excluded from bounded runtime source transport.
+research/mr40_early_recovery_fuse_v1.json text eol=lf
+research/nexus_mr40_early_recovery_fuse_v1.py text eol=lf
+research/verify_mr40_early_recovery_fuse_temporal_v1.py text eol=lf
+tests/test_nexus_mr40_early_recovery_fuse_v1.py text eol=lf
+docs/research/MR40_EARLY_RECOVERY_FUSE_20261022_FA.md text eol=lf
+docs/evidence/mr40-early-recovery-fuse-20261022/results.json.gz export-ignore
+docs/evidence/mr40-early-recovery-fuse-20261022/ledger.jsonl.gz export-ignore
