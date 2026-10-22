@@ -17,8 +17,8 @@ BASECASE={"id":"baseline","initial_stop":None,"arm2":False}
 
 def canon(x):return json.dumps(x,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()
 def digest(x):return hashlib.sha256(canon(x)).hexdigest()
-def load_entry_stop(source):
-    file=source/"research/nexus_mr40_entry_protection_v1.py"
+def load_entry_stop(parent_engine):
+    file=parent_engine
     spec=importlib.util.spec_from_file_location("mr40_entry_stop_reference",file)
     mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
     return mod
@@ -90,12 +90,12 @@ def assess_retained(ref_positions,decisions):
        "winner_pnl_retained_fraction":kept_win_sum/total_win_sum if total_win_sum else 1.,
        "entries_total":len(decisions),"entries_accepted":sum(x["allowed"] for x in decisions)}
 
-def execute(source,inputs,policy,output):
+def execute(source,inputs,parent_engine,policy,output):
     if output.exists():raise ValueError("refuse_overwrite")
     cfg=json.loads(policy.read_bytes())
     if cfg["based_on"]!=SOURCE_PARENT or len(cfg["candidate_filters"])!=6:raise ValueError("protocol_drift")
     if [x["id"] for x in cfg["candidate_filters"]]!=["baseline","green_reversal","short_drift_6","range_quiet_14","trend_10d_60","reversal_and_quiet"]:raise ValueError("filter_drift")
-    original=load_entry_stop(source)
+    original=load_entry_stop(parent_engine)
     v3=original.load_v3(source);v2,base,code=v3.load_engines(source)
     b=json.loads((inputs/"bybit_prepared_inputs.json").read_bytes())
     e=json.loads((inputs/"bybit_october_input_extension.json").read_bytes())
@@ -171,6 +171,6 @@ def execute(source,inputs,policy,output):
 
 if __name__=="__main__":
     p=argparse.ArgumentParser()
-    for name in ("source","inputs","policy","output"):
+    for name in ("source","inputs","parent_engine","policy","output"):
         p.add_argument("--"+name,required=True,type=Path)
     execute(**vars(p.parse_args()))
