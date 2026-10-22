@@ -35,7 +35,7 @@ def indices(rows,base,dates):
     return s,e
 
 def simulate(rows,data,signals,case,start,end,profile,capital=10000,liquidate=True):
-    if start<181 or start>=end or end>len(rows):raise ValueError("invalid_window")
+    if start<1 or start>=end or end>len(rows):raise ValueError("invalid_window")
     fee=D(profile["fee_bps"])/10000
     slip=D(profile["slippage_bps"])/10000
     lag=profile["lag_bars"]
