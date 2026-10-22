@@ -316,3 +316,22 @@
 **آزمایش واقعی انجام‌شده در لپ‌تاپ پژوهشی:** ۱۲ از ۱۲ تست مصنوعی parser/gate پاس؛ از جمله رد `"true"` متنی و `1` عددی، پیام تأیید زودرس، تاریخ اشتباه، OHLC ناسازگار، تکرار پیام True، اشتراک ناقص. فایل PS1 نیز در Windows PowerShell با **صفر خطای parser** بارگیری و بررسی شد. در `2026-10-22T19:44:42Z` اجرای واقعیِ فایل در خارج پنجره با `outside_fixed_one_shot_capture_window_no_network` **رد شد**؛ در کنترل بعدی `V2_PROOF_FILE_EXISTS=False`. بنابراین شواهد اجرای زندهٔ V2 هنوز وجود ندارد و **هیچ ادعایی دربارهٔ دریافت چهار‌ساعتهٔ `confirm=true` در این مرحله نمی‌کنیم**.
 
 **وضعیت گیت:** `bybit_spot_public_ws_connected_earlier=true`، `ws_confirm_true_1m_observed_earlier=true`، `v2_4h_confirm_true_observed=false`، `four_missing_4h_bar_source_gap=true`، `paper_untouched=true`، `live=false`، `orders=0`، `promote=false`، `merge=false`. پرکردن شکاف فقط با دادهٔ معتبر خود Bybit و بعد سنجش سیگنال آینده‌نگر قابل قبول است؛ Bitget/LBank جایگزین سیگنال Bybit نیستند.
+
+
+## نتیجهٔ واقعی پنجرهٔ قفل‌شدهٔ ۲۰:۰۰ UTC، ۲۲ اکتبر — **چهارساعته confirm=true PASS؛ MR40 همچنان BLOCK**
+
+**این بار برنامه فقط آماده نشد، واقعاً در پنجرهٔ تعیین‌شده اجرا شد.** آخرین CI مربوط به HEAD پیشین `7ae74e39e93856891e1df838e75480c07e6e3d64` تماماً SUCCESS بود. لپ‌تاپ پژوهشی در `2026-10-22T19:58:25Z` بررسی شد و کد یک‌بارهٔ از پیش قفل‌شدهٔ `research/nexus_mr40_bybit_public_4h_raw_capture_v2.ps1` **در `19:58:36.3184930Z`، داخل پنجرهٔ 19:58–20:02Z** شروع به کار کرد. بنابراین هیچ عقب‌بردن، تعویض تاریخ یا تمدید پنجرهٔ آزمون صورت نگرفت.
+
+**نتیجهٔ ۴۹ پیام خام واقعی کانال عمومی `wss://stream.bybit.com/v5/public/spot`، Topic `kline.240.BTCUSDT`:**
+- اتصال عمومی و پاسخ ACK اشتراک هر دو **موفق**؛ **۴۸** Snapshot کندل باز با `confirm=false` و **یک** پیام کندل بسته‌شده با **بولین JSON واقعی** `confirm=true`.
+- کندل موردنظر و از پیش انتخاب‌شده: `2026-10-22 16:00–20:00 UTC`، Unix start `1792684800000`، Unix end `1792699199999`.
+- `Open=81677.3`، `High=81761.2`، `Low=80927.9`، `Close=81488.6` USDT؛ `Base Volume=2951.920267 BTC`.
+- زمان تولید پیام تأیید سرور `2026-10-22T20:00:00.563Z` و رسید مستقل روی دستگاه `2026-10-22T20:00:00.8162316Z`. ختم اجرای یک‌باره `20:00:00.8212490Z`. فیلد `data.timestamp` **۵۶۴ms بعد از end** است و طبق قرارداد به‌عنوان متادیتای جانبی ثبت شده، نه جایگزین اصل `confirm`.
+
+**اعتبارسنجی جداگانهٔ حقیقی:** `research/nexus_mr40_bybit_4h_raw_close_gate_v2.py` روی همین فایل خام اجرا شد. نتیجهٔ `confirmed_4h_closed_seen=true`، `snapshots=49`، `unconfirmed_updates=48`، معتبر بودن OHLCV/ساعت پیام/رسید و عدم رویداد True تکراری **PASS** بود. پیش‌تر **۱۲/۱۲ تست مصنوعی** مربوط به نوع واقعی confirm و حالت‌های خطا PASS بود. به این ترتیب **دریافت آنلاین یک Close واقعی تایم‌فریم چهار‌ساعته از خود Bybit Spot اکنون مستند است**؛ اما هنوز اتصال REST و کیفیت تمام بازه‌ها اثبات نشده‌اند.
+
+**مانع منبع که دست‌نخورده باقی مانده:** آخرین کندل ۴ساعتهٔ آرشیویِ تأییدشده `2026-10-21T20:00Z` و کندل زندهٔ فوق `2026-10-22T16:00Z` است. چهار کندل `00:00، 04:00، 08:00، 12:00 UTC` روز ۲۲ اکتبر هنوز از آرشیو رسمی Spot تأیید نشده‌اند؛ آزمون HEAD آخر آن روز قبل از ساعت ۲۰:۰۰ همچنان `HTTP 404` بود. از این رو **حتی با `confirm=true` واقعی، `MR40_source_ready=false`** و **هیچ سیگنال، Paper، Fill یا سفارش ساخته نشد**. آرشیو روزانهٔ رسمی بعد از انتشار، علاوه بر پرکردن گپ، امکان تطبیق همین کندلِ ثابت با Trade→1m→4h را می‌دهد.
+
+**شواهد:** فایل خام ۴۹ پیام با زمان دریافت UTC روی لپ‌تاپ پژوهشی در `E:\NEXUS-Research\MR40-Entry-Event-20261022\results\bybit_spot_4h_raw_close_v2_20261022.json`، SHA256 `7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e`. خروجی گیت `...\bybit_spot_4h_raw_close_v2_gate_20261022.json` با SHA256 `43d01ec0fa7ab836505dfe1b1b727cd5ddb7020806df2832e566d6151b7fd9f5`، digest منطقی `d52988afdce73267a9a8489e516cbce20cd58707b96bf907fc79fcfe4904f30f`. چکیدهٔ اصلی و هش فایل‌های کامل روی گیت‌هاب در `docs/evidence/mr40-entry-event-contract-20261022/bybit_spot_4h_closed_confirm_v2_summary.json` ثبت شده است؛ **خود فایل ۴۹ فریم در لپ‌تاپ نگهداری می‌شود، نه در GitHub**.
+
+**طبقه‌بندی دقیق:** `public_bybit_spot_WS_4h_close_confirmed=true`؛ `fully_contiguous_bybit_4h_history=false`؛ `MR40_feed_authorized=false`؛ `paper500_unchanged=true`؛ `live=false`؛ `private_api=false`؛ `orders=0`؛ `NO_MERGE/NO_PROMOTE`. این گیت جدید راه انتقال سیگنال بالقوهٔ MR40 را از نظر فناوری می‌سازد، نه از نظر مجوز اجرا یا مزیت مالی.
