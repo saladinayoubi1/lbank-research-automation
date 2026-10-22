@@ -1,0 +1,44 @@
+{
+  "schema": "nexus.mr40.bybit_archive_bridge_two_days.v1",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "frozen_on": "2026-10-22",
+  "objective": "Read precisely two official Bybit BTCUSDT Spot daily trade archives Oct20 and Oct21 UTC. Reconstruct 12 new closed 4h bars in sequence after frozen 8514 rows. Generate research-only MR40 signals from the extended candles, no outcomes, no order execution.",
+  "classification": "HISTORICAL_BRIDGE, previously available and not genuinely blind OOS",
+  "days": [
+    "2026-10-20",
+    "2026-10-21"
+  ],
+  "archive_bytes": {
+    "2026-10-20": 7004770,
+    "2026-10-21": 6154622
+  },
+  "url_template": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_{DAY}.csv.gz",
+  "csv_header": [
+    "id",
+    "timestamp",
+    "price",
+    "volume",
+    "side",
+    "rpi"
+  ],
+  "pinned_frozen_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "frozen_rows": 8514,
+  "last_frozen_utc": "2026-10-19T20:00:00Z",
+  "new_4h_bars": 12,
+  "source_rule": "Strict gzip and trade CSV CRC, no bad or duplicate ID, timestamp in selected UTC day, sorted timestamps, 1440 complete 1m bars, six 4h bars per day, exact trade-to-1m-to-4h aggregate, valid OHLCV, no missing 4h intervals. Fail closed. Preserve raw archive SHA256 and receipts.",
+  "signal_rule": "Use independent previously tested ClosedMR40 on frozen previous 8514 rows plus 12 new confirmed candles. Report only closed signal events, no PnL, future labels, market fills or actual orders. Preserve exact first 8514 original bar states, no ledger decisions used.",
+  "future_boundary": "First eligible untouched full UTC day for separate future-only shadow experiment: 2026-10-23, locked now before that day begins. Requires full Oct22 bridge archive first, then Oct23 archive only once published, plus new source verification. Oct20 and Oct21 never count as truly forward.",
+  "acceptance": "Exactly two complete valid archive days and 12 contiguous new 4h candles; any failure => NO source pass; no change to Paper even if success.",
+  "safety": {
+    "Bybit_only_Paper": true,
+    "backup_venues_research_only": true,
+    "Paper500_laptop2_untouched": true,
+    "live": false,
+    "private_API": false,
+    "orders": 0,
+    "merge": false,
+    "promote": false,
+    "automation": false
+  }
+}
