@@ -14,7 +14,7 @@
     {
       "venue": "LBank",
       "method": "GET",
-      "url_template": "https://api.lbank.info/v2/kline.do?symbol=btc_usdt&size=8&type=hour4&time={UTC_UNIX_SECONDS_MINUS_48H}",
+      "url_template": "https://api.lbank.info/v2/kline.do?symbol=btc_usdt&size=8&type=hour4&time={UTC_UNIX_SECONDS_MINUS_16H}",
       "format": "rows [ts_s,O,H,L,C,base_vol]",
       "expected_result": "true"
     }
