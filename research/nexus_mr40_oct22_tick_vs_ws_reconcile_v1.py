@@ -146,8 +146,8 @@ def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,outp
     if archive_path.exists() or output.exists():
         raise ValueError("refuse_overwrite_existing_raw_source_or_result")
     policy,prev,closed,info=load_pinned_files(protocol_path,bridge_path,ws_raw_path,ws_gate_path)
-    now_ms=int(time.time()*1000)
-    reject_before_day_end(now_ms)
+    request_started_ms=int(time.time()*1000)
+    reject_before_day_end(request_started_ms)
     req=urllib.request.Request(URL,headers={"User-Agent":"NEXUS-Research-Bybit-Spot-Trade-WS-SameVenue-Reconcile"})
     # HEAD is read-only; no fallback to a different venue/domain or date.
     try:
@@ -165,6 +165,11 @@ def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,outp
         if response.status!=200:
             raise ValueError("official_oct22_archive_GET_not_200")
         raw=response.read(MAX_GZIP+1)
+    # Causal data-as-of availability cannot predate the completion of GET.
+    # Keep request-start separately; never label pre-request time 'received'.
+    archive_received_ms=int(time.time()*1000)
+    if archive_received_ms<request_started_ms:
+        raise ValueError("public_source_receipt_before_request_started")
     if len(raw)>MAX_GZIP or len(raw)<100000:
         raise ValueError("official_oct22_archive_oversized_or_truncated")
     if compressed_length is not None and int(compressed_length)!=len(raw):
@@ -182,7 +187,10 @@ def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,outp
         "prior_spot_WS_gate_digest":WS_GATE_DIGEST,
         "source_validation":src,
         "official_trade_archive":{
-            "url":URL,"received_utc":datetime.fromtimestamp(now_ms/1000,timezone.utc).isoformat(),
+            "url":URL,
+            "request_started_utc":datetime.fromtimestamp(request_started_ms/1000,timezone.utc).isoformat(),
+            "received_utc":datetime.fromtimestamp(archive_received_ms/1000,timezone.utc).isoformat(),
+            "data_availability_clock_is_post_full_GET":True,
             "last_modified_header":last_modified,
             "gz_size_bytes":len(raw),
             "gz_sha256":hashlib.sha256(raw).hexdigest(),
