@@ -278,3 +278,4 @@ docs/evidence/mr40-minute-execution-20261022/descriptive_trace.json export-ignor
 
 docs/evidence/mr40-spot-ticks-20251010/summary.json export-ignore
 docs/evidence/mr40-spot-ticks-20251010/one_minute_trade_tape.csv.gz export-ignore
+docs/evidence/mr40-l2-depth-20251022/depth_audit.json export-ignore
