@@ -228,5 +228,9 @@ research/mr40_staged_entry_v1.json text eol=lf
 research/nexus_mr40_staged_entry_v1.py text eol=lf
 tests/test_nexus_mr40_staged_entry_v1.py text eol=lf
 docs/research/MR40_STAGED_ENTRY_20261022_FA.md text eol=lf
-docs/evidence/mr40-staged-entry-20261022/results.json text eol=lf
+docs/evidence/mr40-staged-entry-20261022/results.json text eol=lf export-ignore
 docs/evidence/mr40-staged-entry-20261022/ledger.jsonl.gz export-ignore
+
+# Adaptive study aggregate is already separately hash-pinned in Git; keep
+# its full summary outside the limited runtime-only archive as well.
+docs/evidence/mr40-adaptive-sizing-20261022/summary.json text eol=lf export-ignore
