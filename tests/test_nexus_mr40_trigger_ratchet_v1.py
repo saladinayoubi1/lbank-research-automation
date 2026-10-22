@@ -44,7 +44,7 @@ def run(m):
 
     # Existing strategy's queued natural exit precedes any stop decision or intrabar check.
     n=[v[:] for v in p]
-    sig=[0,1,1,1,1,0]+[0]*11
+    sig=[0,1,1,1,0]+[0]*12
     q=simulate(m,n,sig,staged)
     assert q["positions"][0]["exit"]["reason"]=="natural_exit"
     checks+=1
