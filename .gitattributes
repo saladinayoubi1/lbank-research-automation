@@ -271,3 +271,7 @@ docs/evidence/mr40-entry-stop-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/results.json.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/excursion_audit.json export-ignore
+
+docs/evidence/mr40-minute-execution-20261022/public_api_raw.json.gz export-ignore
+docs/evidence/mr40-minute-execution-20261022/strict_audit.json export-ignore
+docs/evidence/mr40-minute-execution-20261022/descriptive_trace.json export-ignore
