@@ -51,7 +51,7 @@ def assert_valid_trade(row):
 def parse_archive(raw):
     # CRC32 and truncated gzip are validated by full decompression.
     content=gzip.decompress(raw)
-    reader=csv.DictReader(io.StringIO(content.decode("utf8-sig"),newline=""))
+    reader=csv.DictReader(io.StringIO(content.decode("utf-8-sig"),newline=""))
     if reader.fieldnames!=HEADER:raise ValueError("unexpected_csv_headers")
     seen=set(); trades=[]
     for line_idx,row in enumerate(reader):
