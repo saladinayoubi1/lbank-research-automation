@@ -100,7 +100,7 @@ def main(protocol,inputs,ledger,output):
             for label,reference in price_scenarios.items():
                 item={"reference_case":label,"reference_price":str(reference),
                       "gap_below_stop_pct":round(100*float(1-reference/stop),5)}
-                for pname,fee,slip in (("normal",D(".001"),D(".0005")),("stress",D(".0025"),D(".0015")):
+                for pname,fee,slip in (("normal",D(".001"),D(".0005")),("stress",D(".0025"),D(".0015"))):
                     execution=reference*(1-slip)
                     pnl=cash_after_buy+qty*execution*(1-fee)-initial_cash
                     item[pname+"_pnl_usdt"]=round(float(pnl),4)
