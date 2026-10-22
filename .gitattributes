@@ -195,3 +195,16 @@ docs/evidence/mr40-isolated-improvement-20261022/*.zip export-ignore
 docs/evidence/mr40-isolated-improvement-20261022/*.png export-ignore
 docs/evidence/mr40-isolated-improvement-20261022/*.py text eol=lf
 docs/research/MR40_ISOLATED_IMPROVEMENT_20261022_FA.md text eol=lf
+
+# Predeclared RR/sizing systems, with replay data outside the runtime archive.
+research/mr40_rr_sizing_v2.json text eol=lf
+research/nexus_mr40_rr_sizing_v2.py text eol=lf
+tests/test_nexus_mr40_rr_sizing_v2.py text eol=lf
+scripts/build_mr40_rr_sizing_evidence_v2.py text eol=lf
+docs/evidence/mr40-rr-sizing-20261022/*.json text eol=lf
+docs/evidence/mr40-rr-sizing-20261022/*.md text eol=lf
+docs/evidence/mr40-rr-sizing-20261022/*.txt text eol=lf
+docs/evidence/mr40-rr-sizing-20261022/*.py text eol=lf
+docs/evidence/mr40-rr-sizing-20261022/*.zip export-ignore
+docs/evidence/mr40-rr-sizing-20261022/*.png export-ignore
+docs/research/MR40_RR_SIZING_20261022_FA.md text eol=lf

@@ -1,0 +1,36 @@
+----------------------------------------------------------------------
+Ran 9 tests in 0.380s
+
+OK
+----------------------------------------------------------------------
+Ran 21 tests in 0.423s
+
+OK
+{"completed_window": "Bybit/training/10000", "ledger_replays": 108}
+{"completed_window": "Bybit/training/500", "ledger_replays": 216}
+{"training_selection_locked": {"profit": "baseline_a100", "efficiency": "baseline_a100", "profit_eligible": [], "efficiency_eligible": [], "scores": {"baseline_a100": 0.3369498441863216, "baseline_a50": 0.3388142431661504, "baseline_a25": 0.3394339960548286, "confirm_natural_a100": 0.20956633823662862, "b_rr1_a100": null, "b_rr1_r1": null, "b_rr1p5_a100": null, "b_rr1p5_r1": null, "b_rr2_a100": null, "b_rr2_r1": null, "b_rr3_a100": null, "b_rr3_r1": null, "b_rr2_r05": null, "b_rr2_r2": null, "b_rr2_a25": null, "b_rr2_a50": null, "b_hybrid2_r1": null, "b_be2_r1": null, "b_trail2_r1": null, "b_partial3_r1": null, "c_hybrid2_r1": 0.016631487807648865, "c_be2_r1": 0.06421100988696415, "c_trail2_r1": 0.390343017206318, "c_partial3_r1": 0.029247102851050918, "c_rr1p5_r1": 0.22667001681168109, "c_rr2_r1": 0.1656706465335922, "c_rr3_r1": 0.8223490795661382}}}
+{"completed_window": "Bybit/evaluation/10000", "ledger_replays": 324}
+{"completed_window": "Bybit/full/10000", "ledger_replays": 432}
+{"completed_window": "Bybit/year2026/10000", "ledger_replays": 540}
+{"completed_window": "Bybit/evaluation/500", "ledger_replays": 648}
+{"completed_window": "Bybit/full/500", "ledger_replays": 756}
+{"completed_window": "Bybit/year2026/500", "ledger_replays": 864}
+{"completed_window": "Bybit/fold0_train/10000", "ledger_replays": 918}
+{"completed_window": "Bybit/fold0_test/10000", "ledger_replays": 972}
+{"completed_window": "Bybit/fold1_train/10000", "ledger_replays": 1026}
+{"completed_window": "Bybit/fold1_test/10000", "ledger_replays": 1080}
+{"completed_window": "Bybit/fold2_train/10000", "ledger_replays": 1134}
+{"completed_window": "Bybit/fold2_test/10000", "ledger_replays": 1188}
+{"completed_window": "Bybit/fold3_train/10000", "ledger_replays": 1242}
+{"completed_window": "Bybit/fold3_test/10000", "ledger_replays": 1296}
+{"completed_window": "Bybit/fold4_train/10000", "ledger_replays": 1350}
+{"completed_window": "Bybit/fold4_test/10000", "ledger_replays": 1404}
+{"completed_window": "Bybit/fold5_train/10000", "ledger_replays": 1458}
+{"completed_window": "Bybit/fold5_test/10000", "ledger_replays": 1512}
+{"completed_window": "LBank/lbank30/10000", "ledger_replays": 1620}
+{"completed_window": "LBank/lbank30/500", "ledger_replays": 1728}
+{"completed_window": "Bybit/ambiguous_full/10000", "ledger_replays": 1729}
+{"completed_window": "Bybit/ambiguous_evaluation/10000", "ledger_replays": 1730}
+{"completed_window": "LBank/ambiguous_lbank30/10000", "ledger_replays": 1731}
+{"selection": {"profit": "baseline_a100", "efficiency": "baseline_a100", "profit_eligible": [], "efficiency_eligible": [], "scores": {"baseline_a100": 0.3369498441863216, "baseline_a50": 0.3388142431661504, "baseline_a25": 0.3394339960548286, "confirm_natural_a100": 0.20956633823662862, "b_rr1_a100": null, "b_rr1_r1": null, "b_rr1p5_a100": null, "b_rr1p5_r1": null, "b_rr2_a100": null, "b_rr2_r1": null, "b_rr3_a100": null, "b_rr3_r1": null, "b_rr2_r05": null, "b_rr2_r2": null, "b_rr2_a25": null, "b_rr2_a50": null, "b_hybrid2_r1": null, "b_be2_r1": null, "b_trail2_r1": null, "b_partial3_r1": null, "c_hybrid2_r1": 0.016631487807648865, "c_be2_r1": 0.06421100988696415, "c_trail2_r1": 0.390343017206318, "c_partial3_r1": 0.029247102851050918, "c_rr1p5_r1": 0.22667001681168109, "c_rr2_r1": 0.1656706465335922, "c_rr3_r1": 0.8223490795661382}}, "evaluation_profit_success": false, "evaluation_efficiency_success": false, "main_ledger_replays": 1728, "prefix_checks": 108, "digest": "d4bf7a4426d4b65399fa7f0a7470ce117b19fde92e9a16d6594360b2b17eebd0"}
+{"verified": true, "bundle_files": 28, "independent_ledger_replays": 1731, "prefix_checks": 108, "baseline_parity_checks": 12, "unit_tests": 30, "original_result_digest": "d4bf7a4426d4b65399fa7f0a7470ce117b19fde92e9a16d6594360b2b17eebd0", "network_requests": 0}
