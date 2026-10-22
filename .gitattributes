@@ -246,3 +246,7 @@ docs/evidence/mr40-partial-loss-trim-20261022/results.json.gz export-ignore
 docs/evidence/mr40-partial-loss-trim-20261022/ledger.jsonl.gz export-ignore
 # Already hash-pinned historical study summary: keep in Git, outside transport.
 docs/evidence/mr40-rr-sizing-20261022/summary.json text eol=lf export-ignore
+
+# Read-only risk audit is tracked as research evidence, never runtime payload.
+docs/evidence/mr40-partial-loss-trim-20261022/risk_attribution.json export-ignore
+research/nexus_mr40_partial_trim_low_audit_v1.py text eol=lf
