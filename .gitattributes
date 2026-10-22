@@ -385,3 +385,8 @@ tests/test_nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-igno
 research/mr40_preregistered_cash_fraction_risk_sensitivity_20261022.json text eol=lf export-ignore
 research/nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
+
+# Descriptive time-to-adverse-LOW risk audit; NEVER deployed in Paper or trading runtime.
+research/mr40_all47_adversity_timing_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
