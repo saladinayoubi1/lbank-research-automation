@@ -1,0 +1,315 @@
+{
+  "schema": "nexus.mr40-rr-sizing-contract.v2",
+  "base_driver_sha256": "07a3ba7a0ebf52e9d1e2c6832de1caf480a373db1e5303d5ed600d89345a52af",
+  "authority": {
+    "research_only": true,
+    "live_enabled": false,
+    "exchange_orders": 0,
+    "paper_mutation": false,
+    "automatic_promotion": false
+  },
+  "cases": [
+    {
+      "id": "baseline_a100",
+      "entry": "baseline",
+      "exit": "natural",
+      "rr": null,
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "baseline_a50",
+      "entry": "baseline",
+      "exit": "natural",
+      "rr": null,
+      "sizing": "allocation",
+      "amount": "0.5"
+    },
+    {
+      "id": "baseline_a25",
+      "entry": "baseline",
+      "exit": "natural",
+      "rr": null,
+      "sizing": "allocation",
+      "amount": "0.25"
+    },
+    {
+      "id": "confirm_natural_a100",
+      "entry": "confirm3",
+      "exit": "natural",
+      "rr": null,
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "b_rr1_a100",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "1",
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "b_rr1_r1",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "1",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_rr1p5_a100",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "1.5",
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "b_rr1p5_r1",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "1.5",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_rr2_a100",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "b_rr2_r1",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_rr3_a100",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "3",
+      "sizing": "allocation",
+      "amount": "1"
+    },
+    {
+      "id": "b_rr3_r1",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "3",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_rr2_r05",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.005"
+    },
+    {
+      "id": "b_rr2_r2",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.02"
+    },
+    {
+      "id": "b_rr2_a25",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "allocation",
+      "amount": "0.25"
+    },
+    {
+      "id": "b_rr2_a50",
+      "entry": "baseline",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "allocation",
+      "amount": "0.5"
+    },
+    {
+      "id": "b_hybrid2_r1",
+      "entry": "baseline",
+      "exit": "hybrid",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_be2_r1",
+      "entry": "baseline",
+      "exit": "breakeven",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_trail2_r1",
+      "entry": "baseline",
+      "exit": "trail",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "b_partial3_r1",
+      "entry": "baseline",
+      "exit": "partial50",
+      "rr": "3",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_hybrid2_r1",
+      "entry": "confirm3",
+      "exit": "hybrid",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_be2_r1",
+      "entry": "confirm3",
+      "exit": "breakeven",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_trail2_r1",
+      "entry": "confirm3",
+      "exit": "trail",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_partial3_r1",
+      "entry": "confirm3",
+      "exit": "partial50",
+      "rr": "3",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_rr1p5_r1",
+      "entry": "confirm3",
+      "exit": "rr",
+      "rr": "1.5",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_rr2_r1",
+      "entry": "confirm3",
+      "exit": "rr",
+      "rr": "2",
+      "sizing": "risk",
+      "amount": "0.01"
+    },
+    {
+      "id": "c_rr3_r1",
+      "entry": "confirm3",
+      "exit": "rr",
+      "rr": "3",
+      "sizing": "risk",
+      "amount": "0.01"
+    }
+  ],
+  "atr": {
+    "method": "arithmetic mean of last 20 closed true ranges including signal bar",
+    "period": 20,
+    "initial_stop_multiple": "2"
+  },
+  "protective_execution": "Normal/stress assume predeclared protective orders can react inside each 4h bar. Stop gap fills at the adverse open; favorable target gaps receive only the target price. If both stop and target are touched, stop executes first. New brackets are active after entry; no reentry after any exit on the same bar. Intrabar fills have an interval, not a fabricated precise timestamp. No tick data, volume queue or intrabar jumps are modeled.",
+  "entry_policy": "Frozen M30 episode admission and optional confirm3, using only closed data. Entry only at first rising edge of the admitted target; signals observed while holding are not entered late after an RR exit. No leverage, averaging down or additional entries.",
+  "stop_updates": "Breakeven and trailing updates use only a post-entry closed bar available before execution, with the same configured lag. Breakeven activates after that close is >= entry fill + initial ATR risk distance. Cost-adjusted breakeven includes entry/exit fees and modeled slippage. Trailing = max(old stop, prior close - 2*prior ATR20).",
+  "partial_exit": "Sell floor-to-lot 50% of initial quantity at 1R and remaining quantity at 3R; move remaining stop to cost-adjusted breakeven only after the partial bar closes and update latency elapses. If a partial is below venue minimum, keep the whole position for 3R without activating breakeven. On ambiguous bars stop precedes all targets.",
+  "sizing": "Allocation is a fraction of available cash. Risk is a fraction of account equity divided by the expected per-unit loss at the initial stop including fees/slippage, capped by available cash. Risk is nominal and can be exceeded by gaps/late execution. Quantity floors to 0.00001 BTC; minimum quantity 0.00001, minimum reference notional 1 USDT; current LBank limits are historical assumptions.",
+  "rr_definition": "Configured RR is the gross price-distance reward multiple; report net planned RR and realized average win/loss separately. Fixed bracket is anchored to actual modeled entry fill.",
+  "profiles": [
+    {
+      "id": "normal",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 1,
+      "protection": "intrabar"
+    },
+    {
+      "id": "stress",
+      "fee_bps": 25,
+      "slippage_bps": 15,
+      "lag_bars": 1,
+      "protection": "intrabar"
+    },
+    {
+      "id": "extra_4h_delay",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 2,
+      "protection": "intrabar"
+    },
+    {
+      "id": "close_confirmed",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 1,
+      "protection": "close_next_open"
+    }
+  ],
+  "capitals_usdt": [
+    10000,
+    500
+  ],
+  "training": [
+    "2023-01-01",
+    "2025-01-01"
+  ],
+  "evaluation": [
+    "2025-01-01",
+    "2026-10-20"
+  ],
+  "full": [
+    "2023-01-01",
+    "2026-10-20"
+  ],
+  "year2026": [
+    "2026-01-01",
+    "2026-10-20"
+  ],
+  "lbank30": [
+    "2026-09-21",
+    "2026-10-21"
+  ],
+  "selection": {
+    "excluded": [
+      "baseline_a25",
+      "baseline_a50"
+    ],
+    "profit": "Training 10000 only: maximize stress PnL; require normal PnL >= baseline and stress PnL >= 1.05*positive baseline stress PnL (or positive if baseline nonpositive), and worst normal/stress DD <= 1.10*baseline worst DD; ties use listed order; otherwise baseline.",
+    "efficiency": "Training 10000 only: maximize min(normal CAGR,stress CAGR)/max(normal DD,stress DD). Require positive stress CAGR, normal CAGR >= 0.75*positive baseline normal CAGR, worst DD <= baseline worst DD and score >= 1.10*positive baseline score; otherwise baseline.",
+    "evaluation": "Report profit-pick success only when evaluation normal/stress PnL >= baseline and worst DD <= 1.10*baseline; efficiency success requires evaluation score >=1.10*baseline, normal PnL >=0.75*baseline and normal DD <=0.80*baseline. Never retune after inspecting evaluation. Baseline fallback is not a new improvement."
+  },
+  "walk_forward": [
+    "2024-01-01",
+    "2024-07-01",
+    "2025-01-01",
+    "2025-07-01",
+    "2026-01-01",
+    "2026-07-01",
+    "2026-10-20"
+  ],
+  "robustness": "Both-target ordering sensitivity is diagnostic only for the two training-selected candidates and baseline. Main results always use stop-first. Check prefix invariance, independent Decimal ledger replay, original baseline equality and partial-fill accounting.",
+  "data": "Reuse the hash-verified 8514-bar Bybit frame and 672-bar LBank frame from the prior study. The invalid long LBank intake stays excluded; no repaired/imputed/dropped candles and no new exchange requests.",
+  "classification": "Retrospective structured parameter search of 27 predeclared paths. This history was already observed in prior studies; time splits and anchored walk-forward constrain this run but are not pristine unseen-data qualification. Overlapping windows and model runs are not independent market samples. No automatic Paper change."
+}
