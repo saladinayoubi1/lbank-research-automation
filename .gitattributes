@@ -359,3 +359,9 @@ tests/test_nexus_mr40_bybit_confirm_latency_tick_proxy_v1.py text eol=lf export-
 research/mr40_last_completed_pair_tick_execution_proxy_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_last_completed_pair_tick_execution_proxy_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_last_completed_pair_tick_execution_proxy_v1.py text eol=lf export-ignore
+
+# One-shot public Spot L50 visible spread/liquidity cost source audit, never runtime exchange execution.
+research/mr40_bybit_spot_orderbook50_snapshot_cost_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_ob50_snapshot_capture_v1.ps1 text eol=lf export-ignore
+research/nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
