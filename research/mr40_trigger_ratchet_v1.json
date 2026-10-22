@@ -1,0 +1,138 @@
+{
+  "schema": "mr40.trigger_ratchet.v1",
+  "based_on": "e764a4ef4e8c8584cf617889ccfaf3d4281451b0",
+  "goal": "Research-only offline historical stress test of close-confirmed profit triggers followed by monotone staged stop-loss ratchet; not the previously rejected static RR stop or previous partial-loss trim.",
+  "cases": [
+    {
+      "id": "baseline",
+      "stages": []
+    },
+    {
+      "id": "arm2_be",
+      "stages": [
+        [
+          0.02,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "ratchet_2_4_6",
+      "stages": [
+        [
+          0.02,
+          -0.01
+        ],
+        [
+          0.04,
+          0.01
+        ],
+        [
+          0.06,
+          0.03
+        ]
+      ]
+    },
+    {
+      "id": "ratchet_3_5_8",
+      "stages": [
+        [
+          0.03,
+          0
+        ],
+        [
+          0.05,
+          0.02
+        ],
+        [
+          0.08,
+          0.05
+        ]
+      ]
+    },
+    {
+      "id": "ratchet_4_6_9",
+      "stages": [
+        [
+          0.04,
+          0
+        ],
+        [
+          0.06,
+          0.03
+        ],
+        [
+          0.09,
+          0.06
+        ]
+      ]
+    },
+    {
+      "id": "ratchet_2_5_8",
+      "stages": [
+        [
+          0.02,
+          -0.01
+        ],
+        [
+          0.05,
+          0.01
+        ],
+        [
+          0.08,
+          0.04
+        ]
+      ]
+    }
+  ],
+  "execution_contract": "100% of available account cash on original MR40+Momentum30 buy signal at next candle OPEN. Trigger if any last fully closed 4h candle CLOSE >= first executed buy price*(1+trigger). On a subsequent OPEN, ratchet active STOP to first buy price*(1+specified stop offset). Never lower STOP, never use future CLOSE/HIGH for activation, never activate same candle. If OPEN <= stop, stop execution at OPEN less sell-side slippage (gap); else if candle LOW <= stop, execute at stop less sell-side slippage. Fees on each buy/sell. No intrabar profit-trigger activation. If native MR40 Z>=0 natural exit was scheduled for same OPEN, natural exit takes priority and no stop later. With lag=2, all signal/trigger decisions delayed two candles consistently; stops once armed stay active each next bar. After stop exit block re-entry until signal episode ends (avoid same episode churn). If stop never arms, natural exit and terminal liquidation unchanged. BTC lot=.00001 and notional>=1 USDT. No leverage, no order calls.",
+  "profiles": {
+    "normal": [
+      10,
+      5,
+      1
+    ],
+    "stress": [
+      25,
+      15,
+      1
+    ],
+    "extra_delay": [
+      10,
+      5,
+      2
+    ]
+  },
+  "windows": {
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation": [
+      "2025-01-01",
+      "2026-10-20"
+    ],
+    "full": [
+      "2023-01-01",
+      "2026-10-20"
+    ],
+    "lbank": [
+      "2026-09-21",
+      "2026-10-21"
+    ]
+  },
+  "capitals": [
+    10000,
+    500
+  ],
+  "frozen_selection": "Training qualification profitability: normal PnL >= baseline; stress PnL >= baseline*1.05; worst of normal/stress close DD <= baseline*1.10. Training qualification downside-efficiency: normal CAGR >=0.75*baseline, stress CAGR >0, worst close DD <=0.90*baseline, stressCAGR/worstDD >= 1.10*baseline. Profit winner maximizes training stress PnL. Efficiency winner maximizes training stressCAGR/worstDD. If none, baseline. Evaluation pass if independently reset normal and stress PnL each >= 75% baseline, normal and stress worst close DD <=80% baseline worst, and stressCAGR/worstDD >=1.10 baseline. Also report Low-based drawdown with fully chronological open-before-low assumptions; it does not convert observed histories into untouched future evidence.",
+  "validation": "Pinned immutable previously captured inputs, all baseline fills/equity parity, independent Decimal ledger recon for entries/stops/exits/cash/low marks, synthetic stop gaps/trigger chronology/ratchet monotonicity/priority/reentry-block, temporal prefix invariance. Freeze policy before any historical computation. Never re-download market data.",
+  "restrictions": {
+    "paper_modified": false,
+    "live": false,
+    "private_exchange_api": false,
+    "real_orders": false,
+    "automatic_promotion": false,
+    "merge": false
+  }
+}
