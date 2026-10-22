@@ -1,0 +1,35 @@
+{
+  "schema": "nexus.mr40.bybit_public_spot_orderbook50_cost_snapshot.v1",
+  "repo": "saladinayoubi1/lbank-research-automation",
+  "issue": 2799,
+  "pr": 2808,
+  "study_utc_day": "2026-10-22",
+  "purpose": "One source-authentic BTCUSDT Bybit SPOT Level50 public WebSocket snapshot to bound visible bid/ask spread and simple 500 USDT quote-notional instantaneous marketability proxy; more economically grounded than last-trade prices but still NOT a fill or forward MR40 result.",
+  "official_documentation": "https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook",
+  "endpoint": "wss://stream.bybit.com/v5/public/spot",
+  "topic": "orderbook.50.BTCUSDT",
+  "observe_only_first_valid_snapshot": true,
+  "stop_after_seconds": 16,
+  "max_frame_size_bytes": 200000,
+  "subscription": {
+    "op": "subscribe",
+    "args": [
+      "orderbook.50.BTCUSDT"
+    ]
+  },
+  "data_contract": "Source topic exact, type snapshot, data.s BTCUSDT, data.b descending price and data.a ascending price with price/size >0, numeric server ts and matching-engine cts, independent device receipt UTC, valid spread ask>bid. No depth merge or inference from delta. Drop if cannot receive and validate first full snapshot.",
+  "quote_notional_usdt": "500",
+  "fixed_cost_method": "At one snapshot, marketable buy 500 quote USDT by consuming visible ask levels at face values, obtaining BTC; simultaneously hypothetical sell precisely this acquired BTC against visible bid levels; cost = 500 - bid-side proceeds. Compare with top bid/ask mid and best half-spread separately; exclude all fees, changes over time, RPI, true order fills, actual market impact, order placement time and latency; report order-book shown liquidity is not guaranteed fill.",
+  "data_quality_limit": "Bybit publicly documents Spot orderbook.50 snapshot then delta and excludes RPI orders. This isolated snapshot is not a complete book nor an executable guarantee. Single time sample is not representative of market conditions near MR40 signals.",
+  "live_source_gate": "Read-only observation cannot and will not bypass historical missing Oct22 4h market archive gap or activate paper.",
+  "safety": {
+    "public_only": true,
+    "private_api": false,
+    "orders": 0,
+    "paper500_unchanged": true,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  }
+}
