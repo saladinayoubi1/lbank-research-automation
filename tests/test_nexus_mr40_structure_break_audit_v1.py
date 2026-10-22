@@ -34,10 +34,10 @@ class StructureBreakTest(unittest.TestCase):
     def test_prior_window_exactly_30(self):
         rows=self.rows()
         rows[0][3]="1"
-        rows[30][4]="89"
-        self.assertTrue(new_low_break(rows,30))
+        rows[31][4]="89"
+        self.assertTrue(new_low_break(rows,31))
         rows[1][3]="50"
-        self.assertFalse(new_low_break(rows,30))
+        self.assertFalse(new_low_break(rows,31))
 
     def test_requires_history(self):
         with self.assertRaises(ValueError):
