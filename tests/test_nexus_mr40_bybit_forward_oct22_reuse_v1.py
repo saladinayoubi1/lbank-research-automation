@@ -77,6 +77,12 @@ class TestOct22SourceParityReuse(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
+        # Simulate an eligible *future* offline audit date; actual Oct22 UTC
+        # has not ended, so the production source must still fail closed.
+        clock=patch("research.nexus_mr40_bybit_forward_shadow_v1.time.time",
+                    return_value=epoch("2026-10-24")/1000+1000)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.dir=Path(self.tmp.name)
         self.cache=self.dir/"Bybit_BTCUSDT_Spot_2026-10-22.csv.gz"
         self.audit_file=self.dir/"oct22_verified_source_audit.json"
