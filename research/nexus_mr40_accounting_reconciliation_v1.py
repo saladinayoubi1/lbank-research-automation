@@ -102,8 +102,8 @@ def replay(rows, ledger, expected, key):
     capital = D(capital_int)
     dates = WINDOWS[window]
     start = next((i for i,r in enumerate(rows) if r[0] == ms(dates[0])), -1)
-    end = next((i for i,r in enumerate(rows) if r[0] == ms(dates[1])), -1)
-    must(start >= 181 and end > start, "missing_window_boundaries")
+    end = next((i for i,r in enumerate(rows) if r[0] == ms(dates[1])), len(rows))
+    must(start >= 181 and end > start and (rows[end-1][0] + STEP == ms(dates[1])), "missing_window_boundaries")
     must(all(rows[i+1][0] - rows[i][0] == STEP for i in range(start,end-1)),
          "missing_4h_bars")
 
