@@ -258,3 +258,22 @@
 **۵/۵ تست کنترل آینده‌نگری و عدم‌نوشتن روی شواهد قبلی PASS**. هیچ خروجی سود/زیان آینده‌نگر هنوز ساخته نشده است و در این مرحله هم هیچ پوزیشن، کلید خصوصی، سفارش یا تغییر دمو مجاز نیست.
 
 **گیت نهایی:** `bybit_official_trade_archive_2day_bridge=true`، `entry_signal_events_on_bridge=0`، `genuine_future_OOS_observations_available=false`، `REST_access_verified=false` (مسیرهای عمومی قبلی 403)، `paper500_unchanged=true`، `NO_MERGE/NO_PROMOTE`. این یک پیشرفت در صحت منبع و امکان مشاهدهٔ بعدی است، **نه تأیید مزیت معاملاتی MR40**.
+
+
+## ۲۲ اکتبر ۲۰۲۶ — Bybit Spot Public WebSocket وصل شد؛ گیت Close و پیوستگی عمداً BLOCK
+
+**یافتهٔ جدید و مستقل:** در حالی که REST V5 بای‌بیت روی هر دو لپ‌تاپ HTTP 403 می‌داد و برای دادهٔ تازه تنها آرشیو معاملات روزانه قابل استفاده بود، مستندات رسمی خود Bybit یک جریان عمومی مستقل در `wss://stream.bybit.com/v5/public/spot` با موضوع `kline.240.BTCUSDT` و علامت `confirm=true` برای کندل بسته‌شده دارد. مرجع: `https://bybit-exchange.github.io/docs/v5/ws/connect` و `https://bybit-exchange.github.io/docs/v5/websocket/public/kline`.
+
+**پروتکل قبل از اتصال**: commit `6a7825b1e28219b6aab6a71bf7f090e58c5f3b29`، کد آزمون یک‌باره فقطخواندنی `research/nexus_mr40_bybit_public_spot_ws_probe_v1.ps1`. چون Policy اجرای اسکریپت‌ها روی ماشین research-laptop محدود بود، اجرای اول بدون تغییر OS ناموفق بود؛ سپس فقط همان پروسه با `-ExecutionPolicy Bypass` موقت اجرا شد. **هیچ تغییر دائمی سیاست ویندوز یا نصب نرم‌افزار صورت نگرفت.**
+
+**اجرای واقعی روی DESKTOP-F4SA4VL:**
+- اتصال TLS/WebSocket عمومی **PASS**، پاسخ ACK اشتراک کانال BTCUSDT SPOT 4h **PASS**.
+- از حدود **19:02 UTC**، دو پیام کندل چهار‌ساعته با شروع کندل `2026-10-22T16:00Z` دریافت شد؛ مقدار `confirm=false` در هر دو. این کندل در آن ساعت هنوز بسته نشده بود؛ هیچ نمونه‌ای به‌عنوان کندل بسته‌شده پذیرفته نشد.
+- متادیتای پذیرش: `public_ws_connected=true`، `subscribe_ack_success=true`، `confirmed_closed_4h_received=0`، `accepted_closed_4h_from_realtime=false`، `paper_modified=false`، `orders_sent=0`.
+- شواهد خام زمان‌دار در `docs/evidence/mr40-entry-event-contract-20261022/bybit_public_spot_ws_probe_20261022.json` ذخیره شد. این اثبات **امکان دریافت Snapshot بازار Spot** است، نه تأیید REST، API دمو، پرشدن سفارش یا دریافت Close قطعی در زمان پایان کندل.
+
+**گیت مستقلِ علّی قبل از ساخت سیگنال:** پروتکل `research/mr40_public_ws_close_gate_protocol_20261022.json` در commit `68486e6a789730e5ade9cd2a2d78a6df8b4cc9b4` قبل از سنجش ثبت شد. کد `research/nexus_mr40_public_ws_close_gate_v1.py` فقط در صورت `confirm` از نوع Boolean و دقیقاً `true`، زمان رسید پس از پایان کندل، OHLCV معتبر و **تداوم دقیق ۴ساعته از آخرین تاریخچهٔ SHA-pinned** اجازهٔ تحویل یک کندل تأییدشده را می‌دهد. تاریخچهٔ معتبر پیشین با آرشیو رسمی معاملات تا کندل شروع `2026-10-21T20:00Z` موجود بود؛ ورودی WS فعلی کندل شروع `2026-10-22T16:00Z` است. پس **چهار کندل ۰۰/۰۴/۰۸/۱۲ اکتبر ۲۲ UTC در تاریخچهٔ پیوستهٔ تأییدشده موجود نیستند**. دریافت یک کندل فعلی نباید جای این بازه را پُر کند.
+
+**نتیجهٔ گیت:** ۹/۹ تست مصنوعی از جمله unconfirmed، gap، پیام تأیید زودهنگام، نوع نادرست confirm، تکرار Close، Topic اشتباه، قیمت نامعتبر و عدم ACK **PASS**. روی دو پیام واقعی، `source_transport_read_only=true` اما `confirmed_closed_samples_seen=0` و `may_feed_mr40_from_this_probe=false`؛ `missing_completed_4h_bars_before_latest_ws_bar=4`. شواهد `docs/evidence/mr40-entry-event-contract-20261022/bybit_public_ws_closed_gate_20261022.json`، digest `a3d5fffc320fd3a0c7d81782b491231f8a1f47897ef8e727796f1e343892f01b`، SHA256 فایل محلی `75ac461e37a2a1211ff747c4e3f50e60d2e1a9399393361f3d67719109cacc7e`.
+
+**نتیجهٔ اجرایی:** برای اولین بار یک مسیر خواندنی زندهٔ **خود Bybit Spot** تأیید شد و ریسکِ «سیگنال زودرس» با گیت صریح مهار شد. اما **هیچ کندل بسته‌شدهٔ پیوسته‌ای هنوز از WebSocket به موتور MR40 تحویل داده نشده**؛ این، راه‌اندازی زندهٔ Paper و تأیید مزیت ورود MR40 نیست. مسیر بعدی: پرکردن معتبر شکاف ۰۰ تا ۱۲ UTC از آرشیو Bybit پس از انتشار، سپس شاهد `confirm=true` در یک کندل بعدی با رسید UTC مستقل. پروتکل ثابت آزمایش روز ۲۳ اکتبر نباید دستکاری شود. بدون WebSocket watcher دائمی، Scheduler، API خصوصی، Live، سفارش یا تغییر دمو.
