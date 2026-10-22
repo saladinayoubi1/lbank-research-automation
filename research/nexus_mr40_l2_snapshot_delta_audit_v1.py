@@ -87,6 +87,12 @@ def main(archive,policy,output):
                 if event["topic"]!="orderbook.200.BTCUSDT" or data["s"]!="BTCUSDT":
                     raise ValueError("topic_not_spot_btcusdt")
                 u=int(data["u"]);seq=int(data["seq"]);cts=int(event.get("cts") or ts)
+                if ts>=1760140800000 and ts<1760141100000 and cts<=ts+2000:
+                    # Archive contains an adjacent-date trailing delta (first at
+                    # 2025-10-11 00:00:00.065); this FAILS full-day scope.
+                    # Do NOT update the October 10 state from future data.
+                    stats["out_of_day_trailing_records"]+=1
+                    continue
                 if not(1760054400000<=ts<1760140800000 and cts<=ts+2000):
                     raise ValueError("timestamp_outside_day_or_cts_future")
                 if last_ts is not None and ts<last_ts:
@@ -144,6 +150,8 @@ def main(archive,policy,output):
           "first_issues":issues,
           "snapshots":list(anchors.values()),"test":"Historical displayed book liquidity, not executable stop fills.",
           "prior_4h_1m_full_ohlc_parity":"FAILED and deliberately not changed",
+          "full_day_strict_time_scope_pass":stats["out_of_day_trailing_records"]==0,
+          "adjacent_day_overflow_caveat":"Exclude all post-midnight records from October 10 L2 state; strict full-day date-only scope remains FAILED.",
           "real_fill_verified":False,"paper_changed":False}
     data["cross_state_usable"]=bool(anchors["first_cross"]["book_valid"])
     data["digest"]=hashlib.sha256(canon(data)).hexdigest()
