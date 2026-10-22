@@ -93,6 +93,43 @@ def replay_no_orders(original,bridge,days):
                     "new_future_natural_exit_close_markers":sum(x["natural_exit_close_marker"] for x in forward)}
 
 
+
+def mark_archive_signals_as_delayed(markers,archive_received_ms):
+    """Never mistake post-day FULL ARCHIVE computation for an online close event.
+
+    Signals are market-clock-as-of in the indicator, but were *observed*
+    only after the official daily file arrived, later than the 4h next open.
+    This method never generates an executable signal or a pretend fill.
+    """
+    if (type(archive_received_ms) is not int or archive_received_ms<NOT_BEFORE
+        or len(markers)!=6):
+        raise ValueError("invalid_fixed_day_archive_receipt_or_bar_count")
+    seen=[]
+    for index,old in enumerate(markers):
+        opening=epoch("2026-10-23")+index*STEP4
+        closing=opening+STEP4
+        if (old.get("four_hour_open_utc")!=datetime.fromtimestamp(opening/1000,timezone.utc).isoformat()
+            or old.get("four_hour_end_utc")!=datetime.fromtimestamp(closing/1000,timezone.utc).isoformat()):
+            raise ValueError("archive_signal_market_clock_modified")
+        if archive_received_ms<closing:
+            raise ValueError("cannot_receive_completed_4h_bar_before_close")
+        item=dict(old)
+        item.update({
+            "market_bar_close_ms":closing,
+            "source_first_available_to_this_replay_ms":archive_received_ms,
+            "archive_receipt_lag_after_4h_close_ms":archive_received_ms-closing,
+            "next_open_reference_ms":closing,
+            "next_open_reference_already_past_at_receipt":archive_received_ms>closing,
+            "source_kind":"PUBLIC_BYBIT_SPOT_DAILY_ARCHIVE_POST_DAY_END",
+            "signal_calculation_is_retrospective_after_archive_release":True,
+            "realtime_decision_available_at_original_bar_close":False,
+            "signal_not_authorized_for_live_or_paper":True,
+            "entry_or_exit_fill_observed":False,
+        })
+        seen.append(item)
+    return seen
+
+
 def run(protocol,source_dir,bridge_file,archive_dir,output):
     if output.exists():raise ValueError("refuse_overwrite_shadow_report")
     p=json.loads(protocol.read_bytes())
@@ -120,6 +157,10 @@ def run(protocol,source_dir,bridge_file,archive_dir,output):
         if row[0]!=original[-1][0]+STEP4*(i+1):
             raise ValueError("historical_to_forward_calendar_gap")
     markers,counts=replay_no_orders(original,bridge,all_days)
+    # Exact source-observation time is NOT the historical market-close time.
+    # This is why an archival shadow marker can never be treated as a fill.
+    receipt_ms=receipts[1]["received_ms"]
+    markers=mark_archive_signals_as_delayed(markers,receipt_ms)
     doc={
         "schema":"nexus.mr40.spot_archive_forward_shadow.results.v1",
         "protocol_sha256":hashlib.sha256(protocol.read_bytes()).hexdigest(),
@@ -134,6 +175,10 @@ def run(protocol,source_dir,bridge_file,archive_dir,output):
         "no_future_price_used_in_marker":True,
         "no_same_day_profit_labels":True,
         "source_is_archive_not_live_rest":True,
+        "market_close_vs_source_observed_at_distinct":True,
+        "archive_source_first_observed_ms":receipt_ms,
+        "forward_day_observations_are_not_live_execution_signals":True,
+        "real_time_close_decision_latency_tested":False,
         "not_a_verified_fill":True,
         "real_orders":0,"private_api":False,
         "paper_modified":False,"live":False,
