@@ -1,0 +1,42 @@
+{
+  "schema": "mr40.20251010.spot-minute-stop-audit.v1",
+  "based_on": "b36256f601561e756449c4f17f8ed724f5fd050a",
+  "roadmap_issue": 2799,
+  "asset": "Bybit BTCUSDT spot only",
+  "purpose": "Constrain 4h assumption of automatic 4%-stop fill in October 2025 intraday crash with public 1-minute candles. Research-only and no private APIs or live orders.",
+  "source_uri": "https://api.bybit.com/v5/market/kline",
+  "request": {
+    "category": "spot",
+    "symbol": "BTCUSDT",
+    "interval": "1",
+    "start": 1760112000000,
+    "end": 1760155200000,
+    "limit": 1000
+  },
+  "expected": "720 fully closed UTC minutes for [2025-10-10T16:00:00Z, 2025-10-11T04:00:00Z), contiguous 60000ms, de-duplicated and ascending. Server response saved unchanged with SHA256. Crosscheck minute aggregated OHLC to original pinned 4h Bybit spot candles with start times 16:00,20:00,00:00 UTC. Any irreconcilable mismatch invalidates stop price modeling; report mismatch, not approximate.",
+  "parent_market_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "parent_original_trade": "2025-10-10T16:00:00Z, baseline 10k USDT normal 10bp commission and 5bp adverse buy/sell price slippage. Original entry-fill and original 4% stop derived from original engine ledger. No smoothing.",
+  "predefined_metrics": [
+    "retrieval status and SHA256",
+    "minute count continuity",
+    "three 4h OHLC aggregate parity",
+    "first one-minute LOW below entry fill times 0.96",
+    "price at that one-minute OPEN/HIGH/LOW/CLOSE",
+    "preceding and subsequent two fully completed minute closes",
+    "worst intraminute and next-five-minute low below stop",
+    "minute turnover and base volume at crossing as context, not order-book depth",
+    "simple illustrative mark-based outcomes under fill at stop, crossing-minute close, crossing-minute low, next-minute open, all after modeled 5bp slip and 10bp fee",
+    "same stop crossing under 25bp fee and 15bp slip stress",
+    "no claim minute OHLC proves exact stop-market fill or volume execution"
+  ],
+  "refusal_checks": "If byte-pinned historic 4h spot and new public 1m candles do not reconcile exactly (OHLC per 4h within 0.01 USDT), do NOT estimate counterfactual execution; record missing source parity. Also reject missing minutes, unclosed candles, negative volume, mismatched category and UTC boundary.",
+  "restrictions": {
+    "private_api": false,
+    "real_order": false,
+    "live": false,
+    "paper_changed": false,
+    "new_strategy_backtest": false,
+    "auto_promote": false,
+    "merge": false
+  }
+}
