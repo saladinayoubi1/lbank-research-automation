@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.mr40.public_spot_ws_raw_minute_diagnostic.v1",
+  "date": "2026-10-22",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "trigger": "Locked one-shot 1m WS strict gate rejected an unseen third frame at 19:22 UTC with invalid_public_spot_minute_market_payload; first two frames were valid confirm=false. The precise offending raw field was not saved. Separate second and final public read-only diagnostic intended for field-level forensic classification, NOT relaxing original test after observation.",
+  "endpoint": "wss://stream.bybit.com/v5/public/spot",
+  "topic": "kline.1.BTCUSDT",
+  "time_limit_seconds": 80,
+  "stop_rule": "Stop after receiving first confirm=true 1m frame OR 80s, whichever happens first. Preserve up to 24 decoded public topic frames with actual received UTC. If no confirmed minute, report inconclusive. Do NOT forward to strategy or qualify a 4h feed.",
+  "acceptance": "Raw observation only, no positive signal gate. Analyze per-field contract AFTER archival capture; do not modify original test's pass criterion retroactively.",
+  "safety": {
+    "read_only": true,
+    "private_api": false,
+    "orders": 0,
+    "paper_unchanged": true,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduled_listener": true
+  }
+}
