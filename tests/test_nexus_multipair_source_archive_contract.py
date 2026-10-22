@@ -11,6 +11,7 @@ SEPARATE_RESEARCH_REPLAY_BUNDLE = (
     "docs/evidence/mr40-fixed-path-robustness-20261021/"
     "NEXUS_MR40_Robustness_20261021.zip"
 )
+STAGED_ENTRY_LEDGER = "docs/evidence/mr40-staged-entry-20261022/ledger.jsonl.gz"
 REQUIRED_RUNTIME_FILES = {
     "requirements.lock",
     "nexus_multipair_strategy_discovery.py",
@@ -40,8 +41,17 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
     )
     assert REQUIRED_RUNTIME_FILES <= names
     assert SEPARATE_RESEARCH_REPLAY_BUNDLE not in names
+    assert STAGED_ENTRY_LEDGER not in names
     subprocess.run(
         ["git", "cat-file", "-e", f"HEAD:{SEPARATE_RESEARCH_REPLAY_BUNDLE}"],
+        cwd=ROOT,
+        check=True,
+    )
+
+
+def test_staged_entry_ledger_remains_versioned_outside_runtime_archive() -> None:
+    subprocess.run(
+        ["git", "cat-file", "-e", f"HEAD:{STAGED_ENTRY_LEDGER}"],
         cwd=ROOT,
         check=True,
     )
