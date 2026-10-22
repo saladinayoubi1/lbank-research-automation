@@ -173,12 +173,10 @@ def run(protocol,inputs,ledger,prior_fee_report,output):
         or p["data"]["positions"]!=47
         or p["equity"]["start_quote_usdt"]!="500"
         or p["controls"]["no_orders"] is not True
-        or p["controls"]["no_promotion"] if "no_promotion" in p["controls"] else False):
-        # The preceding check fails against an unexpected *explicit*
-        # no_promotion=true to avoid accidentally reading a wrong schema.
+        or p["controls"]["no_promotion"] is not True
+        or p["controls"]["live"] is not False
+        or p["controls"]["PR_draft_no_merge"] is not True):
         raise ValueError("source_risk_study_protocol_not_frozen")
-    if p["controls"].get("no_promotion",None) is not None or p["controls"]["no_orders"] is not True:
-        raise ValueError("unexpected_extra_protocol_risk_flag")
     prescribed={x["name"]:x["taker_fee_each_side"] for x in p["scenarios"]}
     if prescribed!={name:str(rate) for name,rate in RATES.items()}:
         raise ValueError("fee_scenarios_drift")
