@@ -1,0 +1,80 @@
+{
+  "schema": "mr40.partial_trim.research.v1",
+  "based_on": "f0a45bd9d2dae77dcb00df6a858660ad570393d3",
+  "purpose": "OFFLINE HISTORICAL MODEL ONLY. No deployment or connected trading functions. Examine one partial risk-reduction exit while preserving MR40 natural exit for remaining holdings.",
+  "paths": [
+    [
+      "baseline",
+      null,
+      0
+    ],
+    [
+      "trim25at5",
+      0.05,
+      0.25
+    ],
+    [
+      "trim50at5",
+      0.05,
+      0.5
+    ],
+    [
+      "trim75at5",
+      0.05,
+      0.75
+    ],
+    [
+      "trim50at8",
+      0.08,
+      0.5
+    ],
+    [
+      "trim75at8",
+      0.08,
+      0.75
+    ]
+  ],
+  "definitions": "Only after a fully closed 4-hour candle falls below the initial filled entry price by threshold, reduce that historical simulated position once at subsequent candle open. Remaining units continue unchanged until existing Z>=0 close condition. A complete natural exit takes precedence. No intrabar execution; historical fees/slippage modeled. No additions/reentries/leverage. Respect minimum 0.00001 BTC and 1 USDT venue conditions.",
+  "windows": {
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation": [
+      "2025-01-01",
+      "2026-10-20"
+    ],
+    "full": [
+      "2023-01-01",
+      "2026-10-20"
+    ],
+    "lbank": [
+      "2026-09-21",
+      "2026-10-21"
+    ]
+  },
+  "profiles": {
+    "normal": [
+      10,
+      5,
+      1
+    ],
+    "stress": [
+      25,
+      15,
+      1
+    ],
+    "lag": [
+      10,
+      5,
+      2
+    ]
+  },
+  "criteria": "Train profit: normal PnL >= base, stress PnL >= base*1.05 and worst close DD <= base*1.10. Train efficiency: normal CAGR >= base*.75, stress CAGR positive, DD <= base*.90 and score=min(normal,stress CAGR)/max(normal,stress DD) >= base*1.10. Frozen evaluation success for selected: both normal/stress profits >= base*.75, close DD <= base*.80, efficiency >= base*1.10. If none train-qualify, retain baseline. Do not retune.",
+  "validation": "Pinned old input hashes and baseline exact parity, independent accounting replay, time-prefix invariance, case-specific synthetic tests. All prior data already seen.",
+  "permissions": "Research files only; do not interact with active Paper or Live environments.",
+  "capitals": [
+    10000,
+    500
+  ]
+}
