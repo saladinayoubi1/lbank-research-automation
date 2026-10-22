@@ -101,3 +101,34 @@ def test_frozen_ratchet_evidence_in_pytest():
     assert report["paper_changed"] is False
     with gzip.open(ledger,"rt",encoding="utf-8") as f:
         assert sum(1 for _ in f)==144
+
+def test_normalized_concentration_matches_frozen_ledger(tmp_path):
+    """Replay accounting only; no trading-strategy rerun or network access."""
+    from pathlib import Path
+    import hashlib
+    root=Path(__file__).resolve().parents[1]
+    evidence=root/"docs"/"evidence"/"mr40-trigger-ratchet-20261022"
+    stored=evidence/"equal_capital_attribution.json"
+    data=json.loads(stored.read_bytes())
+    old=data.pop("digest")
+    canonical=json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(canonical).hexdigest()==old=="99cb681c4169a70a3a273e74a394f2edfab9440e72e65b0df4aeaad17d84ac91"
+    script=root/"research"/"nexus_mr40_ratchet_equal_capital_attribution_v1.py"
+    spec=importlib.util.spec_from_file_location("mr40_normalized_accounting",script)
+    mod=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    dest=tmp_path/"regenerated_audit.json"
+    mod.audit(evidence/"ledger.jsonl.gz",evidence/"results.json.gz",dest)
+    recalculated=json.loads(dest.read_bytes())
+    assert len(recalculated["windows"])==len(data["windows"])==6
+    for got,expected in zip(recalculated["windows"],data["windows"]):
+        assert got["window"]==expected["window"] and got["profile"]==expected["profile"]
+        assert abs(got["relative_terminal_wealth_gain_pct"]-expected["relative_terminal_wealth_gain_pct"])<1e-8
+        if expected["focus_log_contribution_pct"] is not None:
+            assert abs(got["focus_log_contribution_pct"]-expected["focus_log_contribution_pct"])<1e-8
+            assert abs(got["rest_of_recorded_trades_relative_wealth_pct"]-expected["rest_of_recorded_trades_relative_wealth_pct"])<1e-8
+    normal=next(x for x in recalculated["windows"] if x["window"]=="full" and x["profile"]=="normal")
+    eval_normal=next(x for x in recalculated["windows"] if x["window"]=="evaluation" and x["profile"]=="normal")
+    assert normal["focus_log_contribution_pct"]>100
+    assert normal["rest_of_recorded_trades_relative_wealth_pct"]<0
+    assert eval_normal["relative_terminal_wealth_gain_pct"]==0
