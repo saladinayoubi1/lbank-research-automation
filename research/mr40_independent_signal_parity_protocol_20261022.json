@@ -1,0 +1,55 @@
+{
+  "schema": "nexus.mr40.independent_closed_signal_parity.v1",
+  "issue": 2799,
+  "base_pr": 2808,
+  "locked_date": "2026-10-22",
+  "goal": "Build a pure as-of 4h signal generator from pinned OHLCV (not ledger-derived episode indices), then compare independently generated entry and exit CLOSED-candle indices against frozen prior 47 Bybit baseline positions. Fail closed on any discrepancy; no orders or broker connection.",
+  "source": {
+    "rows_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "ledger_file_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "venue": "Bybit BTCUSDT spot historical frozen 4h 6-column candles",
+    "sampling": "14400000 ms continuous rows in UTC, full close confirmation required",
+    "windows": {
+      "train": [
+        "2023-01-01",
+        "2025-01-01"
+      ],
+      "evaluation": [
+        "2025-01-01",
+        "2026-10-20"
+      ]
+    },
+    "expected_frozen_entry_count": {
+      "train": 25,
+      "evaluation": 22
+    },
+    "expected_frozen_exit_count": {
+      "train": 25,
+      "evaluation": 22
+    }
+  },
+  "indicator": {
+    "z": "Z[j]=(C[j]-mean(C[j-40:j]))/population_std(C[j-40:j]), computed after candle j fully closes, no current price in mean/std",
+    "raw_target": "hysteretic state: if Z<=-2, desired=1; else if Z>=0, desired=0; between thresholds retain prior raw state. No pre-40 signals.",
+    "momentum30": "At the FIRST BAR of each raw-positive contiguous episode j, admit iff j>=180 and C[j]>=C[j-180]; if rejected keep whole raw episode blocked until raw=0. No delayed episode reentry.",
+    "final_target": "raw state 1 throughout admitted episode, else zero; natural exit when final_target switches from 1 to 0. Place intent at next bar open, not a fill.",
+    "number_type": "high precision Decimal population std core and separate float population std cross-check on original historical price rows; drift or threshold disagreements fail closed",
+    "asof": "No open/low/high of future j+1 bars used to make signals; no unconfirmed or nonmonotonic bars accepted.",
+    "partial_windows": "For comparison, replay entire pinned continuous input once, then restrict first-target transitions to exact pre-registered windows. If boundary carry-in changes event counts, FAIL and investigate, do not trim adaptively."
+  },
+  "acceptance": "Exactly 25/25 train and 22/22 evaluation independent first-target entry and natural-exit signal indices equal SHA-pinned prior ledger (all 94 timing points), with no extras, exact next-open j+1 timestamp alignment, 1:1 match per episode; complete candle history prefix invariance and fail-closed gap/unconfirmed tests. Fail does not authorize any Paper changes.",
+  "scope_limits": [
+    "Event indexes must originate exclusively from market OHLCV, NOT from old decisions, previous positions, old core code or outcome labels.",
+    "Frozen ledger is read only AFTER independent market computations as an oracle.",
+    "This is independent signal/timing parity on seen history, not a profitable strategy, fill, trade, PnL, DD, market impact or source-quality proof.",
+    "Neither Bitget nor LBank public market backup is valid as a Bybit signal execution surrogate."
+  ],
+  "safety": {
+    "paper_500_laptop2_untouched": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "merge": false,
+    "promote": false
+  }
+}
