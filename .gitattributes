@@ -262,3 +262,6 @@ docs/evidence/mr40-trigger-ratchet-20261022/results.json.gz export-ignore
 docs/evidence/mr40-trigger-ratchet-20261022/ledger.jsonl.gz export-ignore
 # Previous byte-pinned historical result data is also non-runtime evidence.
 docs/evidence/mr40-isolated-improvement-20261022/results.json export-ignore
+
+research/nexus_mr40_ratchet_equal_capital_attribution_v1.py text eol=lf
+docs/evidence/mr40-trigger-ratchet-20261022/equal_capital_attribution.json export-ignore
