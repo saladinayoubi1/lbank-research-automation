@@ -1,0 +1,28 @@
+{
+  "schema": "mr40.entry-predictor-rank-stability.v1",
+  "roadmap_issue": 2799,
+  "frozen_before_computation": true,
+  "source": "docs/evidence/mr40-entry-quality-20261022/entry_conditions_audit.json",
+  "source_logical_digest": "f9576b4033ebe15d3485cd3fc65d3c0ada4f1a8bb676a9808105b467b374d614",
+  "windows": [
+    "train",
+    "evaluation"
+  ],
+  "predictors": [
+    "short_drift6_pct",
+    "long_drift60_pct",
+    "trend180_pct",
+    "candle_body_pct",
+    "tr_to_prev_atr"
+  ],
+  "outcome": "binary historical baseline account PNL >0, assigned after holding; never an entry-time feature",
+  "method": "Within each window only, compute pairwise rank AUC that a random winner has a higher feature than a random loser; compute exact two-sided label-permutation p of the Mann-Whitney U distribution by enumerating all ranks. No numeric thresholds, fitted classifiers, model simulations, or post-selection.",
+  "acceptance": "After 10 diagnostic comparisons, require same AUC>0.5 or <0.5 direction across train+evaluation and exact p<=0.005 in BOTH windows. All results exploratory on previously seen data, no forward claim and no trading deployment.",
+  "constraints": {
+    "paper_unchanged": true,
+    "live": false,
+    "real_orders": false,
+    "auto_promote": false,
+    "merge": false
+  }
+}
