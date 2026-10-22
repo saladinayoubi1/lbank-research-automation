@@ -87,6 +87,8 @@ def evaluate(probe,prior_open_ms):
                 raise ValueError("confirmed_before_4h_candle_end")
         okay=bool(has_transport and sample["confirmed_closed"] is True and ts==expected)
         if okay:
+            if accepted:
+                raise ValueError("repeat_closed_market_candle_requires_new_prefix")
             accepted.append({"bar_start_ms":ts,
                              "ohlcv":[str(x) for x in vals],
                              "receipt_utc":sample["received_utc"]})
