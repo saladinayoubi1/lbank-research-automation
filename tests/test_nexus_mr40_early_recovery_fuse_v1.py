@@ -81,3 +81,26 @@ if __name__=="__main__":
     spec=importlib.util.spec_from_file_location("fuse_cli",a.engine)
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
     print(json.dumps({"synthetic_checks":exercise(m),"pass":True}))
+
+
+def test_frozen_early_failure_evidence():
+    """Evidence digest and negative locked-selection stay visible in every CI OS."""
+    import gzip
+    import hashlib
+    root=Path(__file__).resolve().parents[1]
+    evidence=root/"docs"/"evidence"/"mr40-early-recovery-fuse-20261022"
+    rs=evidence/"results.json.gz"
+    led=evidence/"ledger.jsonl.gz"
+    assert hashlib.sha256(rs.read_bytes()).hexdigest()=="5189d4fee06478c4640ef563fd6fc6126f995b9f6fd939ef8bc122f0cadda65c"
+    assert hashlib.sha256(led.read_bytes()).hexdigest()=="de31b327065baa3c5abe1089dd9e828546990b53b1ff8bb3e8296270c4c18cb8"
+    with gzip.open(rs,"rt",encoding="utf-8") as file:
+        x=json.load(file)
+    checksum=x.pop("digest")
+    encoded=json.dumps(x,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(encoded).hexdigest()==checksum=="7c573b72a0907e573b67f4f552ab8fb0b6c131a55f0ec2b2328b42e64f7b67a7"
+    assert x["runs"]==len(x["rows"])==168 and len(x["control_parity"])==24
+    assert x["selection"]["profit"]==x["selection"]["efficiency"]=="baseline"
+    assert x["evaluation_success"]=={"profit":False,"efficiency":False}
+    assert x["research_only"] and x["paper_changed"] is False
+    with gzip.open(led,"rt",encoding="utf-8") as file:
+        assert sum(1 for _ in file)==168
