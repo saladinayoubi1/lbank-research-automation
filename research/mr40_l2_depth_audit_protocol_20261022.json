@@ -1,0 +1,36 @@
+{
+  "schema": "mr40.bybit-spot-historical-l2-crash.v1",
+  "roadmap_issue": 2799,
+  "parent_commit": "c8847461c4045601715044d98c9d7faa87bdb8c7",
+  "focus": "Bybit BTCUSDT spot, 2025-10-10 20:56:14.936 UTC historical stop first trade reference",
+  "source": "https://quote-saver.bycsi.com/orderbook/spot/BTCUSDT/2025-10-10_BTCUSDT_ob200.data.zip",
+  "source_caveat": "Third-party public archival recorder (NOT an official exchange order replay or certified Bybit feed). Proven only HTTP 200 and Content-Length 95584674 before download.",
+  "source_size_bytes": 95584674,
+  "frozen_reference": {
+    "first_cross_ms": 1760129774936,
+    "entry_price": "119075.40795000",
+    "stop_ref": "114312.3916320000",
+    "public_trade_archive_sha256": "df094454ca458a41c0908fa0c15d73286804509b3eeb1330c98a4c53d13f487b",
+    "all_four_hour_ohlc_parity": "FAILED and remains FAILED"
+  },
+  "checks": [
+    "sha256 of complete zip, ZIP central directory CRC, decompressed byte count, true single JSONL payload and expected topic/spot symbol",
+    "stream each JSONL line, verify JSON object, ts/cts where available, snapshot or delta, u/seq presence and monotonicity according to observed schema",
+    "rebuild state from latest full snapshot, apply delta with zero quantity deletes; snapshot refresh replaces state; reject missing history/update gaps when provable",
+    "book crossed/invalid bid>=ask, negative/zero size retained, backward timestamps, staleness >2000ms at reference; reject snapshot/delta ordering ambiguity",
+    "capture states only at or before fixed first-cross timestamp, at first next valid timestamp, and 1s, 5s, 15s after; no lookahead fill assumption",
+    "compare displayed bid liquidity at 20 or 200 top levels to position BTC quantity sourced from the pinned original position entry; compute a mechanically hypothetical zero-latency sell walk on bid levels only if source continuity+book are verified",
+    "for all scenarios note that order book is displayed liquidity and cannot prove actual trade fill, queue, real latency or failure; quantify staleness and missing depth",
+    "if stream lacks reliable continuity/valid state, publish a no-estimate failure, not a made-up fill"
+  ],
+  "time_range": "inspect full-day headers/continuity and concentrate metrics around 20:56:14.936 UTC; do not retain or upload 95MB raw archive to Git, store immutable sha256, compact bounded audit evidence and source URI",
+  "constraints": {
+    "private_keys": false,
+    "real_orders": false,
+    "paper_untouched": true,
+    "live": false,
+    "auto_merge": false,
+    "auto_promotion": false
+  },
+  "labels": "Research-only, strict failure if source unverified. No parameter tuning."
+}
