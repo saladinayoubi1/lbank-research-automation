@@ -16,6 +16,7 @@ STAGED_ENTRY_SUMMARY = "docs/evidence/mr40-staged-entry-20261022/results.json"
 ADAPTIVE_SIZING_SUMMARY = "docs/evidence/mr40-adaptive-sizing-20261022/summary.json"
 PARTIAL_TRIM_LEDGER = "docs/evidence/mr40-partial-loss-trim-20261022/ledger.jsonl.gz"
 PARTIAL_TRIM_RESULTS = "docs/evidence/mr40-partial-loss-trim-20261022/results.json.gz"
+PARTIAL_TRIM_RISK_AUDIT = "docs/evidence/mr40-partial-loss-trim-20261022/risk_attribution.json"
 PREVIOUS_RR_SUMMARY = "docs/evidence/mr40-rr-sizing-20261022/summary.json"
 REQUIRED_RUNTIME_FILES = {
     "requirements.lock",
@@ -51,6 +52,7 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
     assert ADAPTIVE_SIZING_SUMMARY not in names
     assert PARTIAL_TRIM_LEDGER not in names
     assert PARTIAL_TRIM_RESULTS not in names
+    assert PARTIAL_TRIM_RISK_AUDIT not in names
     assert PREVIOUS_RR_SUMMARY not in names
     subprocess.run(
         ["git", "cat-file", "-e", f"HEAD:{SEPARATE_RESEARCH_REPLAY_BUNDLE}"],
@@ -62,7 +64,8 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
 def test_research_evidence_remains_versioned_outside_runtime_archive() -> None:
     for path in (
         STAGED_ENTRY_LEDGER, STAGED_ENTRY_SUMMARY, ADAPTIVE_SIZING_SUMMARY,
-        PARTIAL_TRIM_LEDGER, PARTIAL_TRIM_RESULTS, PREVIOUS_RR_SUMMARY,
+        PARTIAL_TRIM_LEDGER, PARTIAL_TRIM_RESULTS, PARTIAL_TRIM_RISK_AUDIT,
+        PREVIOUS_RR_SUMMARY,
     ):
         subprocess.run(
             ["git", "cat-file", "-e", f"HEAD:{path}"],
