@@ -154,5 +154,74 @@ class TestOct22SourceParityReuse(unittest.TestCase):
             reuse_oct22_only_if_archive_ws_parity_proven(self.cache,self.audit_file)
 
 
+    def test_locked_oct23_shadow_reuses_oct22_but_writes_only_new_oct23(self):
+        """Exercise the real run() cache branch with offline mocked future sources.
+
+        Strategy indicators are mocked here: this tests file choreography,
+        source integrity and no-overwrite, not profitable signal behavior.
+        """
+        from research.nexus_mr40_bybit_forward_shadow_v1 import run as run_shadow
+        from research.nexus_mr40_bybit_forward_shadow_v1 import mark_archive_signals_as_delayed
+        from research.nexus_mr40_bybit_archive_bridge_v1 import STEP4
+        from datetime import datetime,timezone
+        base=epoch("2026-10-19")+5*STEP4
+        original=[[base-(8513-i)*STEP4,"82000","82000","82000","82000","1"]
+                  for i in range(8514)]
+        bridge=[[base+(i+1)*STEP4,"82000","82000","82000","82000","1"]
+                for i in range(12)]
+        next_day=[[epoch("2026-10-23")+i*STEP4,"82000","82000","82000","82000","1"]
+                  for i in range(6)]
+        markers=[{
+            "four_hour_open_utc":datetime.fromtimestamp(r[0]/1000,timezone.utc).isoformat(),
+            "four_hour_end_utc":datetime.fromtimestamp((r[0]+STEP4)/1000,timezone.utc).isoformat(),
+            "first_entry_close_marker":False,
+            "natural_exit_close_marker":False
+        } for r in next_day]
+        lock=self.dir/"protocol.json"
+        lock.write_text(json.dumps({
+            "schema":"nexus.mr40.prospective_spot_archive_shadow_protocol.v1",
+            "fixed_observation_day":"2026-10-23",
+            "prerequisites":{"historical_bridge_oct20_21_logical_digest":EXPECTED_BRIDGE},
+            "constraints":{"orders":0,"promote":False}
+        }))
+        pinned_bridge=self.dir/"pinned_bridge.json";pinned_bridge.write_text("{}")
+        target=self.dir/"oct23_shadow_result.json"
+        today=epoch("2026-10-24")+3600_000
+        def only_oct23(day):
+            if day!="2026-10-23":
+                raise AssertionError("cache must not download Oct22 again")
+            return next_day,{
+                "received_ms":today,"url":"public bybit synthetic oct23",
+                "gzip_sha256":"synthetic_no_source","minutes_verified":1440,
+                "four_hour_candles_verified":6
+            },b"day23-only-test-bytes"
+        initial_sha=hashlib.sha256(self.cache.read_bytes()).hexdigest()
+        with patch("research.nexus_mr40_bybit_forward_shadow_v1.frozen_rows",
+                   return_value=original),patch(
+            "research.nexus_mr40_bybit_forward_shadow_v1.validate_bridge",
+            return_value=bridge),patch(
+            "research.nexus_mr40_bybit_forward_shadow_v1.get_archive",
+            side_effect=only_oct23) as download,patch(
+            "research.nexus_mr40_bybit_forward_shadow_v1.replay_no_orders",
+            return_value=(markers,{"original_entries":47,"original_exits":47})),patch(
+            "research.nexus_mr40_bybit_forward_shadow_v1.urllib.request.urlopen",
+            side_effect=AssertionError("no network in synthetic integration test")):
+            run_shadow(lock,self.dir,pinned_bridge,self.dir,target,
+                       oct22_verified_audit=self.audit_file)
+        self.assertEqual(download.call_count,1)
+        self.assertEqual(download.call_args.args,("2026-10-23",))
+        self.assertEqual(hashlib.sha256(self.cache.read_bytes()).hexdigest(),initial_sha)
+        self.assertEqual((self.dir/"Bybit_BTCUSDT_Spot_2026-10-23.csv.gz").read_bytes(),
+                         b"day23-only-test-bytes")
+        doc=json.loads(target.read_bytes())
+        self.assertTrue(doc["oct22_independently_verified_archive_reused"])
+        self.assertTrue(doc["oct22_archive_was_never_overwritten"])
+        self.assertEqual(len(doc["locked_forward_4h_signals"]),6)
+        self.assertTrue(all(m["signal_not_authorized_for_live_or_paper"]
+                            for m in doc["locked_forward_4h_signals"]))
+        self.assertFalse(doc["paper_modified"])
+        self.assertEqual(doc["real_orders"],0)
+
+
 if __name__=="__main__":
     unittest.main()
