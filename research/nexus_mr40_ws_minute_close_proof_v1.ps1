@@ -50,11 +50,11 @@ try{
  try{[void]$ws.SendAsync([ArraySegment[byte]]::new($pay),[System.Net.WebSockets.WebSocketMessageType]::Text,$true,$sendCts.Token).GetAwaiter().GetResult()}
  finally{$sendCts.Dispose()}
  $deadline=[DateTimeOffset]::UtcNow.AddSeconds(95)
- while([DateTimeOffset]::UtcNow -lt $deadline -and $r.received_topic_frames -lt 24 -and $r.confirmed_valid_minute_count -eq 0){
+ while([DateTimeOffset]::UtcNow -lt $deadline -and $r.received_topic_frames -lt 150 -and $r.confirmed_valid_minute_count -eq 0){
      $remain=($deadline-[DateTimeOffset]::UtcNow).TotalSeconds
      if($remain -le 0){break}
      $buff=New-Object byte[] 65536
-     $recvCts=[System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds([Math]::Max(1,[Math]::Min(10,$remain))))
+     $recvCts=[System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds([Math]::Max(1,$remain)))
      try{
          $resp=$ws.ReceiveAsync([ArraySegment[byte]]::new($buff),$recvCts.Token).GetAwaiter().GetResult()
      }catch [System.OperationCanceledException] {
