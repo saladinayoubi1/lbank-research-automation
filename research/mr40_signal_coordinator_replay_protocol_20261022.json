@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.mr40.closed-signal-to-event-replay.v1",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "intent": "Verify full offline causal chain independently of existing ledger episode indices: SHA pinned Bybit 4h OHLCV -> separate pure closed MR40+Momentum30 signal generator -> EntryEventCoordinator open/close cycle -> 47 entry and 47 natural exit non-executable research markers, ledger only as after-run oracle.",
+  "source": {
+    "market_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "ledger_sha": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e"
+  },
+  "clock": "At each 4h OPEN first inspect only prior confirmed candle queued signals; after OPEN make synthetic NO-MONEY held/flat acknowledgment for event clock only; at current candle CLOSE evaluate independent signal using current fully closed OHLCV, then pass entry_signal=target and exit_signal=natural_exit_transition to coordinator for NEXT OPEN. Pass source_verified=true only because historic input is SHA pinned; not actual live venue verification.",
+  "position": "Synthetic unit Position (quantity=1) with reference OPEN only for deterministic ack tracking; NEVER a fill/order/PnL/commission/capital amount, and no stop/arm2. Do not simulate market execution.",
+  "acceptance": "On frozen full contiguous price input, train and evaluation ledger 25+22 entry markers and 25+22 natural exit markers have identical next OPEN bar indices and no extra intents. The ledger must not be read by the clock runner. Every emitted Event.executable must remain False. Unconfirmed/missing/bad data must produce DATA_BLOCK or exception and NEVER a new entry marker. Require synthetic tests of open/close and no double entry.",
+  "truly_unseen_oos": false,
+  "safety": {
+    "live": false,
+    "private_api": false,
+    "paper_laptop2_500_unchanged": true,
+    "orders": 0,
+    "merge": false,
+    "promote": false
+  }
+}
