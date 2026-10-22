@@ -1,0 +1,44 @@
+{
+  "schema": "mr40.spot-l2-event-marked-risk-envelope.v1",
+  "roadmap_issue": 2799,
+  "parent_head": "4332f84854dd5e0b6b8c1435322ac706401d8f24",
+  "research_goal": "Quantify ACCOUNT-EXPOSURE sensitivity to selected frozen time-separated public displayed-depth marks during October 2025 stop crossing; no orders, no historical strategy rerun, no actual fills.",
+  "sources": {
+    "l2_audit_path": "docs/evidence/mr40-l2-depth-20251022/depth_audit.json",
+    "l2_digest": "5cb72adacf98f0789b3095557234b07fdc21317858b64b685cda9dde3a2738e8",
+    "bybit_quality_ledger": "docs/evidence/mr40-entry-quality-20261022/ledger.jsonl.gz",
+    "ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e"
+  },
+  "entry_match": {
+    "venue": "Bybit",
+    "window": "evaluation",
+    "capital": 10000,
+    "profile": "normal",
+    "case": "baseline",
+    "entry_ms": 1760112000000,
+    "expected_entry_quantity_btc": "0.09461",
+    "expected_filled_entry_price": "119075.40795000",
+    "stop_fraction": 0.04
+  },
+  "fixed_samples": [
+    "before_1s",
+    "first_cross",
+    "after_100ms",
+    "after_1s",
+    "after_5s",
+    "after_15s",
+    "first_recovery_print"
+  ],
+  "reference": "Original static 4pct reference = filled_entry_price * .96; not a realized stop fill.",
+  "accounting": "For each selected existing L2 static displayed 200-level bid-walk VWAP MARK, compute (MARK - static-stop-reference)*original BTC quantity in USDT and as percent of ORIGINAL cash_before_entry. Do not apply costs, size optimization or claim PnL. Snapshot age <=2000ms and zero top-book crossed and book continuity required, otherwise do not mark. Use decimals, no future candles, no alternative stop thresholds.",
+  "risk_budget_diagnostic": "Show pure algebraic hypothetical quantity caps for a 1% or 2% of entry-time cash budget using entry-to-15-second static mark adverse distance only (without fee, realized fill or implementation). Do not recommend deploying either size from one historically seen event.",
+  "hard_limits": "These are hypothetical MARK-TO-REFERENCE sensitivity figures from displayed third-party book at different times, not actual stop execution, slippage, market impact, portfolio simulation, 4h historical parity fix, forward evidence, or strategy profit. Liquidity may cancel before orders arrive; 15-second mark not a worst case.",
+  "constraints": {
+    "paper_500_usdt_untouched": true,
+    "live": false,
+    "real_orders": false,
+    "private_api": false,
+    "automatic_promotion": false,
+    "merge": false
+  }
+}
