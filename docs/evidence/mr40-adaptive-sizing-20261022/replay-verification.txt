@@ -1,0 +1,37 @@
+----------------------------------------------------------------------
+Ran 9 tests in 0.385s
+
+OK
+----------------------------------------------------------------------
+Ran 21 tests in 0.400s
+
+OK
+----------------------------------------------------------------------
+Ran 12 tests in 0.524s
+
+OK
+{"completed_window": "Bybit/training/10000", "ledger_replays": 33}
+{"completed_window": "Bybit/training/500", "ledger_replays": 66}
+{"training_selection_locked": {"profit": "baseline_a100", "efficiency": "b_vol40", "profit_eligible": [], "efficiency_eligible": ["b_vol40"], "scores": {"baseline_a100": 0.3369498441863216, "baseline_a50": 0.3388142431661504, "confirm_natural_a100": 0.20956633823662862, "b_vol30": 0.39071576309478484, "b_vol40": 0.37197917655298185, "b_vol50": 0.2992418296636103, "c_vol40": 0.23988671675461928, "b_dd5_a50": 0.22124492548898678, "b_dd10_a50": 0.2955930773241376, "b_vol40_dd5": 0.2749054873102924, "c_vol40_dd5": 0.16247617307815915}}}
+{"completed_window": "Bybit/evaluation/10000", "ledger_replays": 99}
+{"completed_window": "Bybit/full/10000", "ledger_replays": 132}
+{"completed_window": "Bybit/year2026/10000", "ledger_replays": 165}
+{"completed_window": "Bybit/evaluation/500", "ledger_replays": 198}
+{"completed_window": "Bybit/full/500", "ledger_replays": 231}
+{"completed_window": "Bybit/year2026/500", "ledger_replays": 264}
+{"completed_window": "Bybit/fold0_train/10000", "ledger_replays": 286}
+{"completed_window": "Bybit/fold0_test/10000", "ledger_replays": 308}
+{"completed_window": "Bybit/fold1_train/10000", "ledger_replays": 330}
+{"completed_window": "Bybit/fold1_test/10000", "ledger_replays": 352}
+{"completed_window": "Bybit/fold2_train/10000", "ledger_replays": 374}
+{"completed_window": "Bybit/fold2_test/10000", "ledger_replays": 396}
+{"completed_window": "Bybit/fold3_train/10000", "ledger_replays": 418}
+{"completed_window": "Bybit/fold3_test/10000", "ledger_replays": 440}
+{"completed_window": "Bybit/fold4_train/10000", "ledger_replays": 462}
+{"completed_window": "Bybit/fold4_test/10000", "ledger_replays": 484}
+{"completed_window": "Bybit/fold5_train/10000", "ledger_replays": 506}
+{"completed_window": "Bybit/fold5_test/10000", "ledger_replays": 528}
+{"completed_window": "LBank/lbank30/10000", "ledger_replays": 561}
+{"completed_window": "LBank/lbank30/500", "ledger_replays": 594}
+{"selection": {"profit": "baseline_a100", "efficiency": "b_vol40", "profit_eligible": [], "efficiency_eligible": ["b_vol40"], "scores": {"baseline_a100": 0.3369498441863216, "baseline_a50": 0.3388142431661504, "confirm_natural_a100": 0.20956633823662862, "b_vol30": 0.39071576309478484, "b_vol40": 0.37197917655298185, "b_vol50": 0.2992418296636103, "c_vol40": 0.23988671675461928, "b_dd5_a50": 0.22124492548898678, "b_dd10_a50": 0.2955930773241376, "b_vol40_dd5": 0.2749054873102924, "c_vol40_dd5": 0.16247617307815915}}, "profit_success": false, "efficiency_success": false, "runs": 594, "prefix_checks": 66, "result_digest": "eadbd63b9c70cff99e13de9bfae2c792108e5d1fb3fe825b23cac722bd90b519"}
+{"verified": true, "bundle_files": 30, "independent_ledger_replays": 594, "prefix_checks": 66, "control_parity_checks": 36, "unit_tests": 42, "result_digest": "eadbd63b9c70cff99e13de9bfae2c792108e5d1fb3fe825b23cac722bd90b519", "network_requests": 0}

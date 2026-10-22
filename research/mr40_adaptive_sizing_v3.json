@@ -1,0 +1,38 @@
+{
+  "schema": "nexus.mr40-adaptive-sizing-contract.v3",
+  "parent_study_commit": "d7699341c569b734405f8820123bc4868d64432f",
+  "pinned_v2_sha256": "1fac7df1ecf2a92eae36bd557d2ca48e49b2a105b069b3e26e70bab9f52be2e2",
+  "hypothesis": "Preserve MR40 natural exits and vary only admission-confirmation and the fraction of cash deployed at entry. Test whether volatility targeting and account drawdown throttling retain most baseline return while reducing drawdown. Prior ATR brackets cut recovery trades; do not expand the RR search.",
+  "cases": [
+    {"id":"baseline_a100","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null},
+    {"id":"baseline_a50","entry":"baseline","amount":"0.5","vol_target":null,"dd_threshold":null,"dd_scale":null},
+    {"id":"confirm_natural_a100","entry":"confirm3","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null},
+    {"id":"b_vol30","entry":"baseline","amount":"1","vol_target":"0.30","dd_threshold":null,"dd_scale":null},
+    {"id":"b_vol40","entry":"baseline","amount":"1","vol_target":"0.40","dd_threshold":null,"dd_scale":null},
+    {"id":"b_vol50","entry":"baseline","amount":"1","vol_target":"0.50","dd_threshold":null,"dd_scale":null},
+    {"id":"c_vol40","entry":"confirm3","amount":"1","vol_target":"0.40","dd_threshold":null,"dd_scale":null},
+    {"id":"b_dd5_a50","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":"0.05","dd_scale":"0.5"},
+    {"id":"b_dd10_a50","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":"0.10","dd_scale":"0.5"},
+    {"id":"b_vol40_dd5","entry":"baseline","amount":"1","vol_target":"0.40","dd_threshold":"0.05","dd_scale":"0.5"},
+    {"id":"c_vol40_dd5","entry":"confirm3","amount":"1","vol_target":"0.40","dd_threshold":"0.05","dd_scale":"0.5"}
+  ],
+  "sizing": "At an admitted entry decision j, fraction=min(case amount, vol_target/observed annual volatility if positive, dd_scale if closed account drawdown >= dd_threshold). All caps combine by minimum, not product. Volatility is population standard deviation of the last 180 closed log returns including j, multiplied by sqrt(365.25*6). Drawdown is measured from this account's prior closed-equity peak to its closed equity at j. Before the account starts, both are initial capital. Only source data and account marks at j are used even with two-bar execution lag. Never rebalance while holding; no leverage, adds or averaging down.",
+  "execution": "Unchanged MR40 and Momentum30 admission; optional confirm3. Original natural exit at Z>=0. Use prior desired-target latency semantics identical to the frozen control; next open with 1- or 2-bar lag. Fees/slippage and venue lot/minimum match prior study. Terminal liquidation is explicit. No stops or profit targets are added.",
+  "profiles": [
+    {"id":"normal","fee_bps":10,"slippage_bps":5,"lag_bars":1},
+    {"id":"stress","fee_bps":25,"slippage_bps":15,"lag_bars":1},
+    {"id":"extra_4h_delay","fee_bps":10,"slippage_bps":5,"lag_bars":2}
+  ],
+  "capitals_usdt": [10000,500],
+  "training": ["2023-01-01","2025-01-01"],
+  "evaluation": ["2025-01-01","2026-10-20"],
+  "full": ["2023-01-01","2026-10-20"],
+  "year2026": ["2026-01-01","2026-10-20"],
+  "lbank30": ["2026-09-21","2026-10-21"],
+  "walk_forward": ["2024-01-01","2024-07-01","2025-01-01","2025-07-01","2026-01-01","2026-07-01","2026-10-20"],
+  "selection": "Use the unchanged pinned v2 profit and efficiency selectors on training 10000 only. Exclude baseline_a50 from selection. Profit requires normal PnL >= baseline, stress PnL >=1.05*positive baseline stress PnL (positive if baseline nonpositive), worst DD <=1.10*baseline; maximize stress PnL. Efficiency requires positive stress CAGR, normal CAGR >=0.75*positive baseline CAGR, worst DD <=baseline and score >=1.10*positive baseline score; maximize min(normal CAGR,stress CAGR)/max(normal DD,stress DD). Otherwise retain baseline. Ties use listed order. Evaluation requirements remain unchanged, including 75% PnL retention and 20% lower normal DD for efficiency. Never retune after results.",
+  "validation": "594 main runs: 264 Bybit main-window, 264 anchored train/test walk-forward, 66 LBank. Independent Decimal cashflow and sizing oracle; 36 frozen-control parity comparisons, 66 prefix checks. Six anchored folds select only from their past; geometrically compound independently liquidated fold accounts. Reuse verified input frames, no new exchange calls.",
+  "training_diagnostic": {"positions":25,"winners":19,"losers":6,"median_winner_price_mae_pct":-1.007883240763141,"worst_winner_price_mae_pct":-9.174167245531528,"median_entry_annual_vol_pct":43.27310964601474,"definition":"Low from entry bar through last held bar before open exit, divided by entry reference; excludes exit-open bar and ignores costs. Training-only diagnostic, not a traded fill."},
+  "classification": "Adaptive follow-up chosen after observing earlier studies. All history has already been seen; this is retrospective parameter research, not unseen-data qualification. Eleven paths and overlapping windows are not independent market samples.",
+  "authority": {"research_only":true,"live_enabled":false,"exchange_orders":0,"paper_mutation":false,"automatic_promotion":false}
+}
