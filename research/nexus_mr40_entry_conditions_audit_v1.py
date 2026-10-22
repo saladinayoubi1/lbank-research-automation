@@ -1,11 +1,11 @@
 """Descriptive entry-state comparison; NEVER selects/tunes filters or reruns strategy."""
 import datetime as dt
-import gzip,hashlib,json,statistics
+import gzip,hashlib,json,statistics,os
 from decimal import Decimal as D
 from pathlib import Path
 
-ROOT=Path(r"E:\NEXUS-Research\MR40-Entry-Quality-20261022")
-DATA=Path(r"E:\NEXUS-Research\MR40-Staged-Entry-20261022\source\inputs")
+ROOT=Path(os.environ.get("MR40_ENTRY_AUDIT_ROOT",r"E:\NEXUS-Research\MR40-Entry-Quality-20261022"))
+DATA=Path(os.environ.get("MR40_ENTRY_AUDIT_INPUTS",r"E:\NEXUS-Research\MR40-Staged-Entry-20261022\source\inputs"))
 rows=json.loads((DATA/"bybit_prepared_inputs.json").read_bytes())["rows"]+json.loads((DATA/"bybit_october_input_extension.json").read_bytes())["rows"]
 sha=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
 assert sha=="a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a"
@@ -44,7 +44,7 @@ for win in ("train","evaluation"):
       "median_conditions":{k:med([v[k] for v in subset]) for k in ("short_drift6_pct","long_drift60_pct","trend180_pct","candle_body_pct","tr_to_prev_atr")}}
  out["windows"][win]={"groups":groups,"entries":items}
 out["digest"]=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
-path=ROOT/"entry_conditions_audit.json"
+path=Path(os.environ.get("MR40_ENTRY_AUDIT_OUTPUT",str(ROOT/"entry_conditions_audit.json")))
 assert not path.exists()
 path.write_text(json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False)+"\n",encoding="utf8")
 print(json.dumps({"digest":out["digest"],"summary":{k:v["groups"] for k,v in out["windows"].items()},
