@@ -1,0 +1,201 @@
+{
+  "actual_orders": 0,
+  "alignment": {
+    "bitget_closed_bars": 7,
+    "bybit_feed_replaced_or_verified": false,
+    "closed_bar_compare": [
+      {
+        "absolute_close_difference_usdt": "8.01",
+        "bitget_close": "82936.44",
+        "close_diff_bp_of_mid": "0.9658",
+        "lbank_close": "82928.43",
+        "timestamp_ms": 1792627200000,
+        "utc": "2026-10-22T00:00:00+00:00"
+      },
+      {
+        "absolute_close_difference_usdt": "0.57",
+        "bitget_close": "82242.87",
+        "close_diff_bp_of_mid": "0.0693",
+        "lbank_close": "82243.44",
+        "timestamp_ms": 1792641600000,
+        "utc": "2026-10-22T04:00:00+00:00"
+      },
+      {
+        "absolute_close_difference_usdt": "3.96",
+        "bitget_close": "81758.61",
+        "close_diff_bp_of_mid": "0.4844",
+        "lbank_close": "81754.65",
+        "timestamp_ms": 1792656000000,
+        "utc": "2026-10-22T08:00:00+00:00"
+      },
+      {
+        "absolute_close_difference_usdt": "1.52",
+        "bitget_close": "81682.51",
+        "close_diff_bp_of_mid": "0.1861",
+        "lbank_close": "81680.99",
+        "timestamp_ms": 1792670400000,
+        "utc": "2026-10-22T12:00:00+00:00"
+      }
+    ],
+    "consecutive": true,
+    "lbank_closed_bars": 4,
+    "matching_closed_bars": 4,
+    "read_only_research_backup_source_ready": true
+  },
+  "bybit_live_available": false,
+  "digest": "7ce1758939b412fecb7e533a1c631027d272621d18c88df4f08679fa3ba1a19f",
+  "genuinely_unseen_forward_strategy_sample": false,
+  "historically_seen_session_date": true,
+  "paper_changed": false,
+  "promote": false,
+  "protocol_sha256": "e0db1e27bcfbf4901564b0b8fcf050c8687d59483c25aff2da6bf18d8f08b0c4",
+  "schema": "nexus.mr40.public-backup-source-alignment.results.v1",
+  "sources": {
+    "Bitget": {
+      "endpoint": "https://api.bitget.com/api/v3/market/candles?category=SPOT&symbol=BTCUSDT&interval=4H&limit=8",
+      "http_status": 200,
+      "parsed_bars": 8,
+      "raw_json": {
+        "code": "00000",
+        "data": [
+          [
+            "1792584000000",
+            "83495.86",
+            "84821.66",
+            "83263.96",
+            "84545.78",
+            "1561.952031",
+            "131314372.85678486"
+          ],
+          [
+            "1792598400000",
+            "84545.78",
+            "84899.99",
+            "84177.59",
+            "84497.68",
+            "502.717807",
+            "42514037.75997524"
+          ],
+          [
+            "1792612800000",
+            "84497.68",
+            "84853.2",
+            "84070.65",
+            "84101.19",
+            "286.549985",
+            "24224212.8356439"
+          ],
+          [
+            "1792627200000",
+            "84101.19",
+            "84379.26",
+            "82680.31",
+            "82936.44",
+            "844.180801",
+            "70321736.39683852"
+          ],
+          [
+            "1792641600000",
+            "82936.44",
+            "83006.19",
+            "82125.01",
+            "82242.87",
+            "614.125034",
+            "50721898.82524433"
+          ],
+          [
+            "1792656000000",
+            "82242.87",
+            "82277.97",
+            "81655.59",
+            "81758.61",
+            "748.363914",
+            "61342940.01283807"
+          ],
+          [
+            "1792670400000",
+            "81758.61",
+            "82094.02",
+            "81321.03",
+            "81682.51",
+            "736.520032",
+            "60170587.21895454"
+          ],
+          [
+            "1792684800000",
+            "81682.51",
+            "81767.59",
+            "80936.16",
+            "81358.77",
+            "284.786847",
+            "23150590.76032357"
+          ]
+        ],
+        "msg": "success",
+        "requestTime": 1792690330876
+      },
+      "raw_sha256": "9bc525b466ca6b29f3422d8f82699e2fc8731f1f2b45012af9a4c1280f016ed4",
+      "received_utc_ms": 1792690331062
+    },
+    "LBank": {
+      "endpoint": "https://api.lbank.info/v2/kline.do?symbol=btc_usdt&size=8&type=hour4&time=1792632730",
+      "http_status": 200,
+      "parsed_bars": 5,
+      "raw_json": {
+        "data": [
+          [
+            1792627200,
+            84096.12,
+            84375.88,
+            82681.28,
+            82928.43,
+            913.88683
+          ],
+          [
+            1792641600,
+            82928.43,
+            82994.32,
+            82131.93,
+            82243.44,
+            784.74756
+          ],
+          [
+            1792656000,
+            82243.44,
+            82270.95,
+            81656.39,
+            81754.65,
+            766.37354
+          ],
+          [
+            1792670400,
+            81754.65,
+            82078.57,
+            81340.26,
+            81680.99,
+            1131.02148
+          ],
+          [
+            1792684800,
+            81680.99,
+            81761.68,
+            80941.53,
+            81358.96,
+            418.18795
+          ]
+        ],
+        "error_code": 0,
+        "msg": "Success",
+        "result": "true",
+        "ts": 1792690332098
+      },
+      "raw_sha256": "c8cce0174db60383e99e255b780d20d84374382dd74a4034c47a6074c0bb2eb0",
+      "received_utc_ms": 1792690332264
+    }
+  },
+  "uses_market_data_only": true,
+  "venues": [
+    "Bitget",
+    "LBank"
+  ]
+}
