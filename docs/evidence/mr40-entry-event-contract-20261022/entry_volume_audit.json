@@ -1,0 +1,459 @@
+{
+  "candidate_entry_filter_authorized": false,
+  "digest": "8db2fa23f3b3e109256811fcae2347002f4c260ffd9f10a54011cd512b7a8172",
+  "future_oos_available": false,
+  "paper_changed": false,
+  "promote": false,
+  "protocol_sha256": "8117489163b5d5e78b11b5a1848b189929ef1402524208f4778682120bee5e0f",
+  "real_l2_flow_observed": false,
+  "real_orders": 0,
+  "schema": "nexus.mr40.entry-volume-descriptive.results.v1",
+  "seen_data": true,
+  "shadow_hypothesis_supported": false,
+  "source_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "source_row_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "stability": [
+    {
+      "both_adjusted_exact_p_pass": false,
+      "feature": "relative_base_volume_30",
+      "same_direction": true
+    },
+    {
+      "both_adjusted_exact_p_pass": false,
+      "feature": "signed_candle_volume_proxy",
+      "same_direction": true
+    }
+  ],
+  "windows": {
+    "evaluation": {
+      "entries": [
+        {
+          "entry_ms": 1737950400000,
+          "realized_pnl_usdt": 185.77305675,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.86354972,
+          "signal_index": 4728,
+          "signed_candle_volume_proxy": -0.89227291
+        },
+        {
+          "entry_ms": 1738468800000,
+          "realized_pnl_usdt": 243.0475782,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.16339216,
+          "signal_index": 4764,
+          "signed_candle_volume_proxy": -1.33840372
+        },
+        {
+          "entry_ms": 1739304000000,
+          "realized_pnl_usdt": 205.15580346,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.77485893,
+          "signal_index": 4822,
+          "signed_candle_volume_proxy": -1.61201576
+        },
+        {
+          "entry_ms": 1748548800000,
+          "realized_pnl_usdt": 56.55409283,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.64928524,
+          "signal_index": 5464,
+          "signed_candle_volume_proxy": -1.38638373
+        },
+        {
+          "entry_ms": 1749153600000,
+          "realized_pnl_usdt": 301.147845,
+          "realized_winner": true,
+          "relative_base_volume_30": 4.2455289,
+          "signal_index": 5506,
+          "signed_candle_volume_proxy": -3.68747208
+        },
+        {
+          "entry_ms": 1751385600000,
+          "realized_pnl_usdt": 125.51181333,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.65176026,
+          "signal_index": 5661,
+          "signed_candle_volume_proxy": -1.08778491
+        },
+        {
+          "entry_ms": 1753416000000,
+          "realized_pnl_usdt": 227.80041012,
+          "realized_winner": true,
+          "relative_base_volume_30": 3.15572521,
+          "signal_index": 5802,
+          "signed_candle_volume_proxy": -2.95809171
+        },
+        {
+          "entry_ms": 1754006400000,
+          "realized_pnl_usdt": -67.72106963,
+          "realized_winner": false,
+          "relative_base_volume_30": 2.21503157,
+          "signal_index": 5843,
+          "signed_candle_volume_proxy": -1.50050055
+        },
+        {
+          "entry_ms": 1760112000000,
+          "realized_pnl_usdt": -872.6100637,
+          "realized_winner": false,
+          "relative_base_volume_30": 3.07260653,
+          "signal_index": 6267,
+          "signed_candle_volume_proxy": -1.9072388
+        },
+        {
+          "entry_ms": 1768896000000,
+          "realized_pnl_usdt": -250.61515627,
+          "realized_winner": false,
+          "relative_base_volume_30": 2.63995938,
+          "signal_index": 6877,
+          "signed_candle_volume_proxy": -1.95333525
+        },
+        {
+          "entry_ms": 1774612800000,
+          "realized_pnl_usdt": 208.56351069,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.83283508,
+          "signal_index": 7274,
+          "signed_candle_volume_proxy": -1.40092902
+        },
+        {
+          "entry_ms": 1777377600000,
+          "realized_pnl_usdt": 154.00795594,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.60806538,
+          "signal_index": 7466,
+          "signed_candle_volume_proxy": -1.22421535
+        },
+        {
+          "entry_ms": 1777478400000,
+          "realized_pnl_usdt": 133.84896982,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.22009496,
+          "signal_index": 7473,
+          "signed_candle_volume_proxy": -1.96530499
+        },
+        {
+          "entry_ms": 1778688000000,
+          "realized_pnl_usdt": 301.1251069,
+          "realized_winner": true,
+          "relative_base_volume_30": 3.64266555,
+          "signal_index": 7557,
+          "signed_candle_volume_proxy": -3.39884835
+        },
+        {
+          "entry_ms": 1778860800000,
+          "realized_pnl_usdt": -222.73842141,
+          "realized_winner": false,
+          "relative_base_volume_30": 3.51249578,
+          "signal_index": 7569,
+          "signed_candle_volume_proxy": -2.59344681
+        },
+        {
+          "entry_ms": 1785211200000,
+          "realized_pnl_usdt": 213.15467028,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.64918169,
+          "signal_index": 8010,
+          "signed_candle_volume_proxy": -1.42393516
+        },
+        {
+          "entry_ms": 1785513600000,
+          "realized_pnl_usdt": 137.1620295,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.03957457,
+          "signal_index": 8031,
+          "signed_candle_volume_proxy": -1.59732101
+        },
+        {
+          "entry_ms": 1788350400000,
+          "realized_pnl_usdt": 617.1465413,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.63368036,
+          "signal_index": 8228,
+          "signed_candle_volume_proxy": -0.8288943
+        },
+        {
+          "entry_ms": 1789056000000,
+          "realized_pnl_usdt": 61.25123731,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.95416847,
+          "signal_index": 8277,
+          "signed_candle_volume_proxy": -1.33754846
+        },
+        {
+          "entry_ms": 1789502400000,
+          "realized_pnl_usdt": 149.13588309,
+          "realized_winner": true,
+          "relative_base_volume_30": 4.0287796,
+          "signal_index": 8308,
+          "signed_candle_volume_proxy": -0.55337321
+        },
+        {
+          "entry_ms": 1791417600000,
+          "realized_pnl_usdt": 47.37689991,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.13232411,
+          "signal_index": 8441,
+          "signed_candle_volume_proxy": -0.25467981
+        },
+        {
+          "entry_ms": 1791993600000,
+          "realized_pnl_usdt": 94.7456539,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.94138535,
+          "signal_index": 8481,
+          "signed_candle_volume_proxy": -2.28843511
+        }
+      ],
+      "features": {
+        "relative_base_volume_30": {
+          "all_permutations": 7315,
+          "exact_two_sided_p": 0.34203691,
+          "feature_ties_present": false,
+          "loser_median": 2.85628296,
+          "tail_permutations": 2502,
+          "winner_higher_auc": 0.33333333,
+          "winner_median": 2.19174356
+        },
+        "signed_candle_volume_proxy": {
+          "all_permutations": 7315,
+          "exact_two_sided_p": 0.19521531,
+          "feature_ties_present": false,
+          "loser_median": -1.93028703,
+          "tail_permutations": 1428,
+          "winner_higher_auc": 0.72222222,
+          "winner_median": -1.39365637
+        }
+      },
+      "losers": 4,
+      "positions": 22,
+      "winners": 18
+    },
+    "train": {
+      "entries": [
+        {
+          "entry_ms": 1675915200000,
+          "realized_pnl_usdt": -165.95133684,
+          "realized_winner": false,
+          "relative_base_volume_30": 2.75759591,
+          "signal_index": 420,
+          "signed_candle_volume_proxy": -2.13692737
+        },
+        {
+          "entry_ms": 1677081600000,
+          "realized_pnl_usdt": -33.23466113,
+          "realized_winner": false,
+          "relative_base_volume_30": 1.69998124,
+          "signal_index": 501,
+          "signed_candle_volume_proxy": -1.24915542
+        },
+        {
+          "entry_ms": 1679932800000,
+          "realized_pnl_usdt": 400.44273974,
+          "realized_winner": true,
+          "relative_base_volume_30": 4.45779366,
+          "signal_index": 699,
+          "signed_candle_volume_proxy": -3.10488928
+        },
+        {
+          "entry_ms": 1681732800000,
+          "realized_pnl_usdt": 247.03244231,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.57034375,
+          "signal_index": 824,
+          "signed_candle_volume_proxy": -1.18123078
+        },
+        {
+          "entry_ms": 1681905600000,
+          "realized_pnl_usdt": -391.24202292,
+          "realized_winner": false,
+          "relative_base_volume_30": 8.09001861,
+          "signal_index": 836,
+          "signed_candle_volume_proxy": -5.78018935
+        },
+        {
+          "entry_ms": 1688140800000,
+          "realized_pnl_usdt": 106.56092289,
+          "realized_winner": true,
+          "relative_base_volume_30": 6.91610814,
+          "signal_index": 1269,
+          "signed_candle_volume_proxy": -3.49099189
+        },
+        {
+          "entry_ms": 1688688000000,
+          "realized_pnl_usdt": 288.87880568,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.98117392,
+          "signal_index": 1307,
+          "signed_candle_volume_proxy": -1.69987487
+        },
+        {
+          "entry_ms": 1695600000000,
+          "realized_pnl_usdt": 174.37159239,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.19813999,
+          "signal_index": 1787,
+          "signed_candle_volume_proxy": -1.09087343
+        },
+        {
+          "entry_ms": 1696996800000,
+          "realized_pnl_usdt": 24.8761209,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.29485168,
+          "signal_index": 1884,
+          "signed_candle_volume_proxy": -1.87288858
+        },
+        {
+          "entry_ms": 1699992000000,
+          "realized_pnl_usdt": 632.38917342,
+          "realized_winner": true,
+          "relative_base_volume_30": 5.27034179,
+          "signal_index": 2092,
+          "signed_candle_volume_proxy": -2.47659604
+        },
+        {
+          "entry_ms": 1702310400000,
+          "realized_pnl_usdt": 253.07295719,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.53001042,
+          "signal_index": 2253,
+          "signed_candle_volume_proxy": -1.13594342
+        },
+        {
+          "entry_ms": 1703606400000,
+          "realized_pnl_usdt": 248.60769263,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.40671578,
+          "signal_index": 2343,
+          "signed_candle_volume_proxy": -0.72423081
+        },
+        {
+          "entry_ms": 1708516800000,
+          "realized_pnl_usdt": 165.80400834,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.39550256,
+          "signal_index": 2684,
+          "signed_candle_volume_proxy": -1.46576575
+        },
+        {
+          "entry_ms": 1708675200000,
+          "realized_pnl_usdt": 128.62295306,
+          "realized_winner": true,
+          "relative_base_volume_30": 0.66543378,
+          "signal_index": 2695,
+          "signed_candle_volume_proxy": -0.27365815
+        },
+        {
+          "entry_ms": 1710619200000,
+          "realized_pnl_usdt": 132.45754525,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.88785024,
+          "signal_index": 2830,
+          "signed_candle_volume_proxy": -1.57864829
+        },
+        {
+          "entry_ms": 1711987200000,
+          "realized_pnl_usdt": 7.89763482,
+          "realized_winner": true,
+          "relative_base_volume_30": 3.12134187,
+          "signal_index": 2925,
+          "signed_candle_volume_proxy": -1.98528466
+        },
+        {
+          "entry_ms": 1717171200000,
+          "realized_pnl_usdt": 150.13111834,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.2728296,
+          "signal_index": 3285,
+          "signed_candle_volume_proxy": -0.78498151
+        },
+        {
+          "entry_ms": 1718078400000,
+          "realized_pnl_usdt": 194.16271427,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.97048869,
+          "signal_index": 3348,
+          "signed_candle_volume_proxy": -1.8435245
+        },
+        {
+          "entry_ms": 1718294400000,
+          "realized_pnl_usdt": -91.57465134,
+          "realized_winner": false,
+          "relative_base_volume_30": 3.77583142,
+          "signal_index": 3363,
+          "signed_candle_volume_proxy": -2.29379547
+        },
+        {
+          "entry_ms": 1722484800000,
+          "realized_pnl_usdt": -912.33039594,
+          "realized_winner": false,
+          "relative_base_volume_30": 2.0110718,
+          "signal_index": 3654,
+          "signed_candle_volume_proxy": -1.28547032
+        },
+        {
+          "entry_ms": 1727798400000,
+          "realized_pnl_usdt": -18.57920492,
+          "realized_winner": false,
+          "relative_base_volume_30": 2.56360159,
+          "signal_index": 4023,
+          "signed_candle_volume_proxy": -1.39879369
+        },
+        {
+          "entry_ms": 1728590400000,
+          "realized_pnl_usdt": 453.43931818,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.86536897,
+          "signal_index": 4078,
+          "signed_candle_volume_proxy": -0.94653725
+        },
+        {
+          "entry_ms": 1729684800000,
+          "realized_pnl_usdt": 303.40914715,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.53448946,
+          "signal_index": 4154,
+          "signed_candle_volume_proxy": -0.75411405
+        },
+        {
+          "entry_ms": 1732651200000,
+          "realized_pnl_usdt": 624.93578443,
+          "realized_winner": true,
+          "relative_base_volume_30": 1.54433072,
+          "signal_index": 4360,
+          "signed_candle_volume_proxy": -0.5618384
+        },
+        {
+          "entry_ms": 1734638400000,
+          "realized_pnl_usdt": 106.0658191,
+          "realized_winner": true,
+          "relative_base_volume_30": 2.27801156,
+          "signal_index": 4498,
+          "signed_candle_volume_proxy": -1.59723264
+        }
+      ],
+      "features": {
+        "relative_base_volume_30": {
+          "all_permutations": 177100,
+          "exact_two_sided_p": 0.22117448,
+          "feature_ties_present": false,
+          "loser_median": 2.66059875,
+          "tail_permutations": 39170,
+          "winner_higher_auc": 0.3245614,
+          "winner_median": 2.19813999
+        },
+        "signed_candle_volume_proxy": {
+          "all_permutations": 177100,
+          "exact_two_sided_p": 0.19775268,
+          "feature_ties_present": false,
+          "loser_median": -1.76786053,
+          "tail_permutations": 35022,
+          "winner_higher_auc": 0.68421053,
+          "winner_median": -1.46576575
+        }
+      },
+      "losers": 6,
+      "positions": 25,
+      "winners": 19
+    }
+  }
+}
