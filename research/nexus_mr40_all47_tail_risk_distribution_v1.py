@@ -149,13 +149,10 @@ def run(protocol,risk_file,out):
     all_records=groups["combined_chronological_2023_2026oct19"][GROUP]["per_position"]
     train_records=groups["train_2023_2024"][GROUP]["per_position"]
     eval_records=groups["evaluation_2025_2026oct19"][GROUP]["per_position"]
-    if (len(all_records)!=47 or len(train_records)!=25 or len(eval_records)!=22
-        or all_records!=train_records+[{**x,"trade_index":x["trade_index"]+25} if False else x for x in eval_records]):
-        # split per-position position_index may start over; verify market
-        # timestamps and signal identities below instead of equality of
-        # split-local indices.
-        if not (len(all_records)==47 and len(train_records)==25 and len(eval_records)==22):
-            raise ValueError("source_window_count_changed")
+    # Each window's per-position trade_index restarts at 1.  Do not
+    # mistakenly equate those indices with the combined chronological rank.
+    if not (len(all_records)==47 and len(train_records)==25 and len(eval_records)==22):
+        raise ValueError("source_window_count_changed")
     full=normalize(all_records)
     train=normalize(train_records)
     evals=normalize(eval_records)
