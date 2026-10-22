@@ -1,0 +1,31 @@
+{
+  "schema": "nexus.mr40.public_spot_ws_minute_close_proof.v1",
+  "issue": 2799,
+  "pr": 2808,
+  "locked_date": "2026-10-22",
+  "objective": "One one-shot, public-only official Bybit Spot 1-minute WebSocket subscription to seek at least one ACTUAL confirm===true message. This is an isolated check of server-confirmation semantics, NOT a 4h MR40 close proof, not a trade or demo signal, and cannot repair the 4h historical gap.",
+  "official_docs": "https://bybit-exchange.github.io/docs/v5/websocket/public/kline",
+  "url": "wss://stream.bybit.com/v5/public/spot",
+  "subscription": {
+    "op": "subscribe",
+    "args": [
+      "kline.1.BTCUSDT"
+    ]
+  },
+  "time_budget_seconds": 95,
+  "max_frames": 24,
+  "data_contract": "Every 1m bar must contain strict bool confirm, start/end UTC milliseconds where end=start+59999, 1m aligned start, valid finite positive OHLC and volume>=0, message.ts and last-execution timestamp non-negative; a TRUE can count only if both WS ts and local receipt UTC are at/after start+60000ms. Invalid frame refuses whole proof.",
+  "acceptance": "Subscribed public Spot 1m with ACK and at least ONE valid and properly timestamped confirm=true for a FULL 1m candle. Save UTC receipt, official WS timestamp and raw response evidence in an immutable research file. Do NOT feed any 1m event to MR40 4h engine, do NOT infer confirmed 4h or filled order.",
+  "read_only": true,
+  "market_only": true,
+  "constraints": {
+    "Bybit_execution_venue_unchanged": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "paper500_untouched": true,
+    "promote": false,
+    "merge": false,
+    "no_background_service": true
+  }
+}
