@@ -114,6 +114,15 @@ def simulate(rows,data,signals,case,start,end,profile,capital=10000,*,liquidate=
         if units<LOT or units*reference<1:skips+=1;return
         before=cash
         tp_value,tp_fee=quote(units,price(take),fee) if take is not None else (D(0),D(0))
+        # The planned reward of a scale-out is the sum of its two legs, not
+        # the final 3R target applied to the entire initial quantity.
+        if mode=="partial50":
+            half=(units/2/LOT).to_integral_value(rounding=ROUND_DOWN)*LOT
+            first_target=fill_price+distance
+            if half>=LOT and half*first_target>=1 and units-half>=LOT:
+                first_value,first_fee=quote(half,price(first_target),fee)
+                last_value,last_fee=quote(units-half,price(take),fee)
+                tp_value,tp_fee=first_value+last_value,first_fee+last_fee
         net_rr=(tp_value-tp_fee-cost-commission)/planned if planned and planned>0 else None
         item=event("buy",i,reference,units,"episode_entry","open",j,
             allocation_budget=str(budget),risk_budget=None if risk_budget is None else str(risk_budget),

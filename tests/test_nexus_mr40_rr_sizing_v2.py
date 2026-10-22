@@ -135,6 +135,12 @@ class RewardRiskTests(unittest.TestCase):
         self.assertAlmostEqual(result["positions"][0]["net_pnl_usdt"],result["metrics"]["net_pnl_usdt"],places=7)
         self.assertGreater(D(sales[-1]["active_stop"]),D(buy["price"]))
 
+    def test_scaleout_planned_reward_weights_both_legs(self):
+        self.profile.update(fee_bps=0,slippage_bps=0)
+        result=self.run_case("b_partial3_r1")
+        # Half at 1R plus half at 3R gives 2R before costs.
+        self.assertEqual(result["metrics"]["median_net_planned_rr"],2)
+
     def test_partial_stop_stays_at_initial_level_until_next_closed_bar(self):
         self.bar(240,hi=105,lo=99,cl=100)
         result=self.run_case("b_partial3_r1")
