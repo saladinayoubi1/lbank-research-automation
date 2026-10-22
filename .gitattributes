@@ -317,3 +317,11 @@ tests/test_nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
 research/mr40_bybit_public_spot_archive_day_parity_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
+
+# No-money Bybit archived daily bridge and future-only shadow research: never ship into runtime archive.
+research/mr40_bybit_archive_bridge_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_archive_bridge_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_archive_bridge_v1.py text eol=lf export-ignore
+research/mr40_forward_archive_shadow_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
