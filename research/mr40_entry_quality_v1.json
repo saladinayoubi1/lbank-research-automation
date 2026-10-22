@@ -1,0 +1,78 @@
+{
+  "schema": "mr40.entry-quality-v1",
+  "based_on": "22786d64081749d88183bc1c4c43536d443b60ba",
+  "roadmap_issue": 2799,
+  "hypothesis": "A small set of close-confirmed entry-quality vetoes may avoid losing MR40 entry episodes without sacrificing more profitable trades. No modification to RR/stop/sizing; preserve all existing natural exits.",
+  "candidate_filters": [
+    {
+      "id": "baseline",
+      "rule": "none"
+    },
+    {
+      "id": "green_reversal",
+      "rule": "C[j]>O[j] AND C[j]>C[j-1]"
+    },
+    {
+      "id": "short_drift_6",
+      "rule": "C[j]>=C[j-6]"
+    },
+    {
+      "id": "range_quiet_14",
+      "rule": "TR[j]<=1.75*mean(TR[j-14:j]), using immediately preceding 14 completed bars for reference"
+    },
+    {
+      "id": "trend_10d_60",
+      "rule": "C[j]>=C[j-60]"
+    },
+    {
+      "id": "reversal_and_quiet",
+      "rule": "green_reversal AND range_quiet_14"
+    }
+  ],
+  "decision_timing": "Only first positive MR40 target bar in each contiguous episode j; observed after 4h candle j closes. If vetoed, all target bars in that episode disabled until episode ends; original Z>=0 natural exits preserved for accepted episodes. No skipping to a later signal within rejected episode. All decisions at next open i=j+lag, no future data. Keep original cash sizing, fee/slippage, no stop. One independent portfolio path per candidate. Do not permit partial re-entry.",
+  "validation": {
+    "windows": {
+      "train": [
+        "2023-01-01",
+        "2025-01-01"
+      ],
+      "evaluation": [
+        "2025-01-01",
+        "2026-10-20"
+      ],
+      "full": [
+        "2023-01-01",
+        "2026-10-20"
+      ],
+      "lbank": [
+        "2026-09-21",
+        "2026-10-21"
+      ]
+    },
+    "profiles": {
+      "normal": [
+        10,
+        5,
+        1
+      ],
+      "stress": [
+        25,
+        15,
+        1
+      ],
+      "lag": [
+        10,
+        5,
+        2
+      ]
+    },
+    "capitals": [
+      10000,
+      500
+    ],
+    "reference_cash_attribution": "For each baseline entry record win/loss and realized pnl, compare veto decisions at identical first signal. Quantify excluded losing trades AND winning trades, lost winning net profit; do not claim counterfactual per-trade Pnl sums equal compounded filtered portfolio results.",
+    "gates": "Freeze train selection: normal PNL>=baseline; stress PNL>=1.05*baseline; normal DD<=0.9*baseline; >=60% of baseline winners retained and >=70% of summed baseline winning PnL preserved, trade count retained >=40%. Qualified selected by highest stress PNL, else baseline. For evaluation selected must normal PNL>=baseline, stress PNL>=baseline, normal DD<=0.9*baseline, retain >=60% winners and >=70% summed winner PNL, else no promotion. Even success cannot substitute genuinely unseen forward observations.",
+    "input_proof": "Previous pinned Bybit prepared input/extension and LBank native archive, with hashes from MR40 entry-stop engine; assert exact baseline fill/equity parity (existing engine), independently replay each candidate account ledger, temporal prefix consistency."
+  },
+  "restriction": "Research-only. Paper 500 USDT on Laptop2 untouched; Live=false; no exchange private APIs or real orders; no automatic deployment or merge."
+}
