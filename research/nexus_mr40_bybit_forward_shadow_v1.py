@@ -10,6 +10,7 @@ from pathlib import Path
 from research.nexus_mr40_bybit_archive_bridge_v1 import (
     BASE_URL,MAX_BYTES,rollup,epoch,STEP4,canon)
 from research.nexus_mr40_independent_closed_signal_v1 import ClosedMR40,frozen_rows
+from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import (reconcile, LAST_BRIDGE_BAR, WS_SHA as EXPECTED_OCT22_WS_SHA)
 
 EXPECTED_BRIDGE="f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e"
 EXPECTED_BRIDGE_ROWS="a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6"
@@ -130,7 +131,66 @@ def mark_archive_signals_as_delayed(markers,archive_received_ms):
     return seen
 
 
-def run(protocol,source_dir,bridge_file,archive_dir,output):
+
+def reuse_oct22_only_if_archive_ws_parity_proven(archive_file,audit_file):
+    """Read-only reuse of Oct22 official archive validated independently via live Spot WSS.
+
+    This avoids the two preregistered research studies clobbering each other's
+    Oct22 public source artifact. Never trust a raw cached gzip without a full
+    authenticated independent same-venue daily-tick/live-4h parity report.
+    Neither this function nor the caller makes a Paper/Live strategy decision.
+    """
+    if not archive_file.is_file() or not audit_file.is_file():
+        raise ValueError("verified_oct22_archive_and_audit_both_required")
+    a=json.loads(audit_file.read_bytes())
+    digest=a.pop("digest",None)
+    if not isinstance(digest,str) or hashlib.sha256(canon(a)).hexdigest()!=digest:
+        raise ValueError("oct22_public_archive_parity_audit_digest_changed")
+    s=a.get("official_trade_archive",{})
+    if (a.get("schema")!="nexus.mr40.oct22_spot_tick_ws_reconciliation.results.v1"
+        or a.get("bridge_digest")!=EXPECTED_BRIDGE
+        or a.get("prior_spot_WS_capture_sha256")!=EXPECTED_OCT22_WS_SHA
+        or s.get("url")!=BASE_URL+"2026-10-22.csv.gz"
+        or a.get("native_confirm_verified_live_source") is not True
+        or a.get("orders_sent")!=0 or a.get("promote") is not False
+        or a.get("source_reconciliation",{}).get("source_same_venue_reconciliation_pass") is not True):
+        raise ValueError("independent_oct22_public_live_WS_parity_not_proven")
+    # Report source-observation clock, not 4h market candle close clock.
+    read_utc=datetime.fromisoformat(s["received_utc"].replace("Z","+00:00"))
+    if (read_utc.utcoffset()!=timezone.utc.utcoffset(read_utc)
+        or int(read_utc.timestamp()*1000)<epoch("2026-10-23")
+        or int(read_utc.timestamp()*1000)>int(time.time()*1000)):
+        raise ValueError("invalid_oct22_daily_archive_observation_clock")
+    raw=archive_file.read_bytes()
+    if (len(raw)<100000 or len(raw)>MAX_BYTES
+        or len(raw)!=s.get("gz_size_bytes")
+        or hashlib.sha256(raw).hexdigest()!=s.get("gz_sha256")):
+        raise ValueError("oct22_cached_spot_archive_gzip_sha_or_size_changed")
+    uncompressed=gzip.decompress(raw)   # verifies gzip CRC as a prerequisite
+    if hashlib.sha256(uncompressed).hexdigest()!=s.get("csv_sha256"):
+        raise ValueError("oct22_cached_spot_archive_csv_sha_changed")
+    rows,info=rollup(uncompressed,"2026-10-22")
+    if rows!=a.get("source_4h_candles") or info!=a.get("source_validation"):
+        raise ValueError("oct22_cached_spot_1m_4h_source_parity_changed")
+    # Recompute rather than merely trusting the previous report's PASS flag.
+    check=reconcile(rows,{"ohlcv":["81677.3","81761.2","80927.9",
+                                    "81488.6","2951.920267"]},LAST_BRIDGE_BAR)
+    if (not check["source_same_venue_reconciliation_pass"]
+        or check!=a.get("source_reconciliation")):
+        raise ValueError("oct22_spot_tick_vs_independent_live_WS_4h_no_longer_matches")
+    receipt_ms=int(read_utc.timestamp()*1000)
+    info.update({
+        "utc_received":s["received_utc"],"received_ms":receipt_ms,
+        "url":s["url"],"bytes":len(raw),"gzip_sha256":s["gz_sha256"],
+        "csv_sha256":s["csv_sha256"],"server_last_modified":s.get("last_modified_header"),
+        "oct22_reused_without_re_download":True,
+        "oct22_prior_verified_live_WS_same_venue_parity_digest":digest,
+        "oct22_no_local_file_overwrite":True,
+    })
+    return rows,info
+
+
+def run(protocol,source_dir,bridge_file,archive_dir,output,oct22_verified_audit=None):
     if output.exists():raise ValueError("refuse_overwrite_shadow_report")
     p=json.loads(protocol.read_bytes())
     if (p["schema"]!="nexus.mr40.prospective_spot_archive_shadow_protocol.v1"
@@ -148,9 +208,12 @@ def run(protocol,source_dir,bridge_file,archive_dir,output):
     all_days=[];receipts=[];source_blobs={}
     for day in DAYS:
         target=archive_dir/("Bybit_BTCUSDT_Spot_"+day+".csv.gz")
-        if target.exists():raise ValueError("refuse_overwrite_future_archive")
-        rows,metadata,raw=get_archive(day)
-        source_blobs[day]=raw
+        if day=="2026-10-22" and oct22_verified_audit is not None:
+            rows,metadata=reuse_oct22_only_if_archive_ws_parity_proven(target,oct22_verified_audit)
+        else:
+            if target.exists():raise ValueError("refuse_overwrite_future_archive")
+            rows,metadata,raw=get_archive(day)
+            source_blobs[day]=raw
         all_days+=rows
         receipts.append(metadata)
     for i,row in enumerate(bridge+all_days):
@@ -167,6 +230,8 @@ def run(protocol,source_dir,bridge_file,archive_dir,output):
         "bridge_digest":EXPECTED_BRIDGE,
         "source_frozen_4h_sha256":EXPECTED_SOURCE,
         "source_public_spot_archives":receipts,
+        "oct22_independently_verified_archive_reused":oct22_verified_audit is not None,
+        "oct22_archive_was_never_overwritten":True,
         "observation_fixed_full_utc_day":"2026-10-23",
         "data_source_receipt_after_day_end":now>=NOT_BEFORE,
         "forward_closed_market_4h_rows":all_days[6:],
@@ -197,4 +262,6 @@ if __name__=="__main__":
     a=argparse.ArgumentParser()
     for name in ("protocol","source_dir","bridge_file","archive_dir","output"):
         a.add_argument("--"+name,required=True,type=Path)
+    a.add_argument("--oct22_verified_audit",type=Path,default=None,
+                   help="Optional immutable Oct22 audit result; required to reuse a previously downloaded Oct22 archive without overwrite.")
     run(**vars(a.parse_args()))
