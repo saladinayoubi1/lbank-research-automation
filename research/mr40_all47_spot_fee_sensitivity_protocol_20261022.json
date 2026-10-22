@@ -1,0 +1,66 @@
+{
+  "schema": "nexus.mr40.frozen_47_fee_sensitivity_20261022.v1",
+  "purpose": "Recompute ALL 47 already-observed independent Bybit Spot 4h MR40+Momentum30 completed LONG next-open pairs, with explicit gross and 2026 Bybit public tier Spot two-sided taker fees; never claim fills, live execution, unseen OOS or account-specific rates.",
+  "repo": "saladinayoubi1/lbank-research-automation",
+  "pr": 2808,
+  "issue": 2799,
+  "data": {
+    "venue": "Bybit Spot BTCUSDT no leverage",
+    "market_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "previous_comparison_ledger_gzip_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "market_4h_rows": 8514,
+    "total_completed_long_pairs": 47,
+    "train_2023_2024_positions": 25,
+    "evaluation_2025_to_2026oct19_positions": 22,
+    "entry_at_next_4h_open_after_signal": true,
+    "natural_exit_at_next_4h_open_after_signal": true,
+    "close_only_MR40_signal_engine": "research/nexus_mr40_independent_closed_signal_v1.py",
+    "no_lookahead_signal_driven_by_ledger": false
+  },
+  "public_fee_source": {
+    "url": "https://www.bybit.com/en/help-center/article/Trading-Fee-Structure",
+    "last_updated_utc": "2026-09-02",
+    "fact": "Bybit regular crypto-crypto Spot VIP0 taker .1000%/side; VIP3 taker .0750%/side. Actual regional/VIP account rates are UNKNOWN, do not claim measured actual account fees.",
+    "scenarios": [
+      {
+        "name": "ZERO_FEE_UPPER_BOUND",
+        "buy_taker": "0",
+        "sell_taker": "0"
+      },
+      {
+        "name": "OFFICIAL_SPOT_VIP3_TAKER_REFERENCE",
+        "buy_taker": "0.00075",
+        "sell_taker": "0.00075"
+      },
+      {
+        "name": "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE",
+        "buy_taker": "0.001",
+        "sell_taker": "0.001"
+      }
+    ]
+  },
+  "account_model": {
+    "starting_quote_usdt": "500",
+    "full_available_quote_compounded_each_nonoverlapping_trade": true,
+    "buy_fee_deducted_from_received_BTC": true,
+    "sell_fee_deducted_from_proceeds_USDT": true,
+    "model_formula": "Q_after=Q_before*(1-f_buy)*(exit_4h_OPEN / entry_4h_OPEN)*(1-f_sell)",
+    "entry_exit_prices": "only frozen same-market OHLCV 4h next open for signal boundaries; not order fills",
+    "scope": "All 47 pairs, same count and dates for ALL three fee scenarios; train/eval separately plus chronological full combined. Max drawdown computed only on CLOSED-TRADE equity curve, not mark-to-market intra-trade or time underwater.",
+    "fixed_notional_comparison": "Separately compute per trade fixed 500 quote net markout and sum without compounding; this is NOT an account balance simulation; compounded curve is account illustrative, both source prices are not proven executable.",
+    "limitations": "No trade-specific L2 spread/book at 47 entry/exits, no actual fee tier verification, slippage, volatility or latency distribution; zero fee scenario is mathematical upper bound conditional on assumed Open prices; all history used previously, not genuinely unseen strategy edge."
+  },
+  "fail_closed": {
+    "no_reused_ledger_signals": true,
+    "ledger_only_post_hoc_compare": true,
+    "require_each_signal_index_and_ledger_fill_time_match": true,
+    "require_47_natural_nonoverlap": true,
+    "no_orders": true,
+    "no_private_api": true,
+    "live": false,
+    "Bybit_Paper500_untouched": true,
+    "merge": false,
+    "promote": false,
+    "no_sched": true
+  }
+}
