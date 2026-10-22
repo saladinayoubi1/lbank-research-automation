@@ -86,7 +86,7 @@ def capture(policy_file,output):
     anchors={
         "Bitget":"https://api.bitget.com/api/v3/market/candles?category=SPOT&symbol=BTCUSDT&interval=4H&limit=8",
         "LBank":("https://api.lbank.info/v2/kline.do?symbol=btc_usdt&size=8&type=hour4&time="
-                 +str(now//1000-48*3600))
+                 +str(now//1000-16*3600))
     }
     sources={}
     rows={}
