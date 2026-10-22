@@ -152,6 +152,7 @@ class TestPinnedOct22Reconcile(unittest.TestCase):
         future=int(DAY_END/1000)+7200
         with tempfile.TemporaryDirectory() as folder:
             base=Path(folder)
+            (base/"protocol.json").write_text(json.dumps(protocol()))
             with patch("research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.load_pinned_files",
                        return_value=(protocol(),LAST_BRIDGE_BAR,ws_fixed(),{"snapshots":49})),patch(
                 "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.time.time",
