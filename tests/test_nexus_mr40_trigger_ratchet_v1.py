@@ -77,3 +77,27 @@ def test_trigger_ratchet_synthetic_in_pytest():
     mod=importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert run(mod)==10
+
+
+def test_frozen_ratchet_evidence_in_pytest():
+    """Check 144 results and full ledgers remain authentic and nonpromotable."""
+    from pathlib import Path
+    import gzip
+    import hashlib
+    root=Path(__file__).resolve().parents[1]
+    bundle=root/"docs"/"evidence"/"mr40-trigger-ratchet-20261022"
+    result=bundle/"results.json.gz"
+    ledger=bundle/"ledger.jsonl.gz"
+    assert hashlib.sha256(result.read_bytes()).hexdigest()=="9ee629491c1d76273a12dc72f736f211f594dd465464af9b3ca98e1f1e415664"
+    assert hashlib.sha256(ledger.read_bytes()).hexdigest()=="11d951fb67afbfaf39e6cf83d5f76a6d2c277a8f972f25e4f3266e41a14e63e8"
+    with gzip.open(result,"rt",encoding="utf-8") as f:
+        report=json.load(f)
+    logical_digest=report.pop("digest")
+    canonical=json.dumps(report,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(canonical).hexdigest()==logical_digest=="56623e1509ccc3a88a1fba1bb47d1a87a699cf953d8a661b71e49db4e18cd5b3"
+    assert report["runs"]==len(report["rows"])==144
+    assert len(report["control_parity"])==24
+    assert report["evaluation_success"]=={"profit":False,"efficiency":False}
+    assert report["paper_changed"] is False
+    with gzip.open(ledger,"rt",encoding="utf-8") as f:
+        assert sum(1 for _ in f)==144
