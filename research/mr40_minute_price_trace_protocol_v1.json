@@ -1,0 +1,23 @@
+{
+  "schema": "mr40.20251010.minute-price-trace.v1",
+  "scope": "Post hoc DESCRIPTIVE follow-up after stricter 4h OHLC parity test failed. This is NOT an amendment or success of the original pre-registered price-fill audit.",
+  "parent_primary_result_digest": "555dce436bb17c454bcb3bf17f10ced98e5e19ebcf70c34d9f29dae1001b7368",
+  "raw_api_sha256": "b6c9b7aa60334f72c7fc9218f9edfa7d1c506aaf45c2d8ef74783887fbd4f096",
+  "minutely_product": "Bybit BTCUSDT category=spot interval=1 UTC 2025-10-10T16:00Z to 2025-10-11T04:00Z",
+  "entry_price": "119075.40795000",
+  "stop_reference": "entry_price*0.96, prior recorded static 4% candidate, no re-optimization",
+  "definitions": [
+    "first 1m interval whose LOW<=reference 4%-below-entry threshold",
+    "previous fully closed minute OHLC close, triggering minute OPEN/HIGH/LOW/CLOSE and BTC/quote volume",
+    "relative LOW under stop, close under stop, 5-minute minimum low and minute at trough",
+    "minute CLOSE at +1 and +5 and +15 minutes after breach, if available",
+    "no fill price/PnL inference, no market liquidity assertions"
+  ],
+  "constraint": "Findings descriptive ONLY: raw 1m source and historical 4h source already observed had OHLC OPEN differences 1.30 USDT and 0.10 USDT; original all-four-price parity failed. HLC matched, but no claimed full reconciliation.",
+  "restrictions": {
+    "real_orders": false,
+    "private_exchange_api": false,
+    "paper_changed": false,
+    "auto_promote": false
+  }
+}
