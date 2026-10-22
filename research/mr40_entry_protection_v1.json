@@ -1,0 +1,94 @@
+{
+  "schema": "mr40.entry_protection.v1",
+  "based_on": "dd77e737a15d8d91652048cd3fc856e1fd35b1be",
+  "intent": "Freeze entry-time protective stops BEFORE historical backtesting; compare to original MR40 and arm2_be, preserving all natural exits.",
+  "cases": [
+    {
+      "id": "baseline",
+      "initial_stop": null,
+      "arm2": false
+    },
+    {
+      "id": "arm2_be",
+      "initial_stop": null,
+      "arm2": true
+    },
+    {
+      "id": "entry_stop_4",
+      "initial_stop": 0.04,
+      "arm2": false
+    },
+    {
+      "id": "entry_stop_6",
+      "initial_stop": 0.06,
+      "arm2": false
+    },
+    {
+      "id": "entry_stop_8",
+      "initial_stop": 0.08,
+      "arm2": false
+    },
+    {
+      "id": "entry_stop_4_arm2",
+      "initial_stop": 0.04,
+      "arm2": true
+    },
+    {
+      "id": "entry_stop_6_arm2",
+      "initial_stop": 0.06,
+      "arm2": true
+    },
+    {
+      "id": "entry_stop_8_arm2",
+      "initial_stop": 0.08,
+      "arm2": true
+    }
+  ],
+  "rule": "An entry-time stop is derived from the actual buy fill, active at the buy candle's OPEN immediately AFTER the entry fill. If the first 4h candle LOW <= stop, execute stop less slip; later candles gap through stop execute at OPEN less slip, otherwise at stop less slip. If natural MR40 sell is scheduled at a later OPEN, sell first; no retroactive stop. If arm2 is enabled, use prior fully closed 4h candle CLOSE >= actual entry fill*1.02 to raise stop to actual buy fill from the NEXT OPEN onward. Never lower stop. Upon stop exit, block same signal episode re-entry. No high-trigger, no leverage, same frozen Bybit/LBank inputs.",
+  "windows": {
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation": [
+      "2025-01-01",
+      "2026-10-20"
+    ],
+    "full": [
+      "2023-01-01",
+      "2026-10-20"
+    ],
+    "lbank": [
+      "2026-09-21",
+      "2026-10-21"
+    ]
+  },
+  "profiles": {
+    "normal": [
+      10,
+      5,
+      1
+    ],
+    "stress": [
+      25,
+      15,
+      1
+    ],
+    "extra_delay": [
+      10,
+      5,
+      2
+    ]
+  },
+  "capitals": [
+    10000,
+    500
+  ],
+  "locked_selection": "Profit gate training normal PNL >= baseline; stress PNL >= 1.05*baseline; worst DD <=1.1*baseline. Efficiency training normal CAGR >=.75*base, stress CAGR>0, worst DD <=.9*base and stress CAGR/worst DD >=1.1*base. Evaluation must have normal and stress PNL each >=.75*base and worst DD <=.8*base and stress CAGR/worst DD>=1.1*base. Evaluate all candidates and report no promotion if none meets held-window thresholds. Previously observed prices mean no true blind future validation.",
+  "constraints": {
+    "paper_change": false,
+    "real_orders": false,
+    "live": false,
+    "auto_merge": false
+  }
+}
