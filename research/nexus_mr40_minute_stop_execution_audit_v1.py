@@ -37,7 +37,8 @@ def main(protocol,inputs,ledger,output):
     if buy["side"]!="buy" or buy["fill_ms"]!=req["start"]:raise ValueError("entry_reconciliation")
     qty=D(buy["quantity"]);entry=D(buy["price"])
     cash_after_buy=D(buy["cash_after"]);initial_cash=D(buy["cash_before"])
-    if abs(float(entry)-119075.40795)>0.000001 or abs(initial_cash-cash_after_buy-D(buy["notional"])-D(buy["fee"]))>D("0.00000001"):\n        raise ValueError("original_entry_ledger_accounting_mismatch")
+    if abs(float(entry)-119075.40795)>0.000001 or abs(initial_cash-cash_after_buy-D(buy["notional"])-D(buy["fee"]))>D("0.00000001"):
+        raise ValueError("original_entry_ledger_accounting_mismatch")
     stop=entry*D(".96")
     params=urllib.parse.urlencode(req)
     url=cfg["source_uri"]+"?"+params
