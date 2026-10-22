@@ -299,3 +299,20 @@
 - `private_API=false`، `orders=0`، `Paper500_unchanged=true`، `Live=false`، `NO_PROMOTE/NO_MERGE`.
 
 **قدم بعدی دارای اولویت:** با انتشار فایل رسمی روز ۲۲ اکتبر، شش کندل آن روز را فقط از معاملات واقعی Bybit به‌صورت ۱m→۴h بازسازی و به روزهای قبل متصل کنیم. بعد از گیت صحت، دریافت واقعی `confirm=true` مربوط به `kline.240.BTCUSDT` باید با timestamp دریافت و اعتبار پیوستگی جداگانه ثبت شود؛ دریافت ۱m به‌هیچ‌وجه جای آن را نمی‌گیرد.
+
+
+## ۲۲ اکتبر — قفل پروتکل V2 کندل ۴ساعتهٔ زنده؛ اثبات عدم پذیرش دادهٔ زودهنگام
+
+**هدف این گام:** پس از اتصال موفق Spot WS بای‌بیت و اثبات دریافت یک `confirm=true` واقعی در تایم‌فریم ۱دقیقه‌ای، ضعف کد نمونهٔ قبلی را جداگانه برطرف کنیم. در `nexus_mr40_bybit_public_spot_ws_probe_v1.ps1` مقدار `confirmed_closed=($bar.confirm -eq $true)` پیش از ذخیره می‌تواند نوع اولیهٔ فیلد JSON را از بین ببرد؛ همچنین آزمون ۲۵ثانیه‌ای قدیمی پس از فقط دو پیام کندل باز قطع می‌شد، نه پس از دریافت کندل بسته‌شده. **آن شواهد قبلی را تغییر یا موفق بازتعبیر نکردیم.**
+
+**منبع رسمی قرارداد:** `https://bybit-exchange.github.io/docs/v5/websocket/public/kline` صریحاً `confirm=true` را بسته‌شدن کندل و `ts` را زمان تولید پیام سرور معرفی می‌کند؛ `data.timestamp` آخرین معاملهٔ متناظر است، نه مبنای ضروری تأیید کندل. `https://bybit-exchange.github.io/docs/v5/ws/connect` مسیر عمومی `wss://stream.bybit.com/v5/public/spot`، اشتراک و پیام‌های Ping را معرفی می‌کند؛ احراز هویت برای Topic عمومی لازم نیست.
+
+**پروتکل پیش از کدنویسی** در commit `893203e1a21f2b45ee882758b84b6002bf281490` قفل شد: `research/mr40_public_spot_4h_close_v2_protocol_20261022.json`. **فقط یک کندل از پیش انتخاب‌شده: BTCUSDT Spot 4h بازهٔ 2026-10-22 16:00–20:00 UTC**؛ شروع یک‌بارهٔ نمونه‌بردار فقط میان ۱۹:۵۸ تا ۲۰:۰۲ UTC مجاز؛ حداکثر ۱۸۰ ثانیه؛ بدون Scheduler، سرویس پس‌زمینه، API خصوصی، سفارش، Paper یا تغییر Live.
+
+**کد تفکیک نقش‌ها:**
+- `research/nexus_mr40_bybit_public_4h_raw_capture_v2.ps1`: پیام خام WebSocket را **بدون تبدیل و بدون دستکاری فیلد `confirm`** همراه رسید UTC ذخیره می‌کند. نگهبان پنجرهٔ زمان *پیش از اولین درخواست شبکه* کار می‌کند. این اسکریپت حتی اگر `confirm=true` ببیند، `MR40_source_authorized=false` باقی می‌گذارد. خروجی موجود را Overwrite نمی‌کند.
+- `research/nexus_mr40_bybit_4h_raw_close_gate_v2.py`: مستقل از شبکه، JSON خام را با الزام `type(confirm) is bool`، `confirm is True`، Topic دقیق Spot، شروع و پایان ثابت کندل، OHLCV معتبر، ساعت تولید پیام و رسید مستقل پس از Close، و عدم رویداد بسته‌شدن تکراری بررسی می‌کند. اگر `data.timestamp` کمی پس از پایان کندل باشد، آن را هشدار متادیتا ثبت می‌کند نه دلیل مثبت‌سازی یا رد خودکار `confirm`. حتی یک `confirm=true` واقعی برای این کندل **به‌خاطر چهار کندل ۴ساعتهٔ مفقود از ۰۰/۰۴/۰۸/۱۲ UTC اکتبر ۲۲ تا آخرین آرشیو معتبر** نمی‌تواند به موتور MR40 وارد شود.
+
+**آزمایش واقعی انجام‌شده در لپ‌تاپ پژوهشی:** ۱۲ از ۱۲ تست مصنوعی parser/gate پاس؛ از جمله رد `"true"` متنی و `1` عددی، پیام تأیید زودرس، تاریخ اشتباه، OHLC ناسازگار، تکرار پیام True، اشتراک ناقص. فایل PS1 نیز در Windows PowerShell با **صفر خطای parser** بارگیری و بررسی شد. در `2026-10-22T19:44:42Z` اجرای واقعیِ فایل در خارج پنجره با `outside_fixed_one_shot_capture_window_no_network` **رد شد**؛ در کنترل بعدی `V2_PROOF_FILE_EXISTS=False`. بنابراین شواهد اجرای زندهٔ V2 هنوز وجود ندارد و **هیچ ادعایی دربارهٔ دریافت چهار‌ساعتهٔ `confirm=true` در این مرحله نمی‌کنیم**.
+
+**وضعیت گیت:** `bybit_spot_public_ws_connected_earlier=true`، `ws_confirm_true_1m_observed_earlier=true`، `v2_4h_confirm_true_observed=false`، `four_missing_4h_bar_source_gap=true`، `paper_untouched=true`، `live=false`، `orders=0`، `promote=false`، `merge=false`. پرکردن شکاف فقط با دادهٔ معتبر خود Bybit و بعد سنجش سیگنال آینده‌نگر قابل قبول است؛ Bitget/LBank جایگزین سیگنال Bybit نیستند.
