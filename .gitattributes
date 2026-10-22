@@ -183,3 +183,15 @@ docs/evidence/mr40-continuous-account-20261021/july-identity/original_reports.zi
 docs/research/MR40_JULY_PLATFORM_CONTROL_20261021_FA.md text eol=lf
 docs/evidence/mr40-continuous-account-20261021/july-platform/*.json text eol=lf
 docs/evidence/mr40-continuous-account-20261021/july-platform/*.md text eol=lf
+
+# Isolated model development: full replay evidence is a separate downloadable bundle.
+research/mr40_isolated_improvement_v1.json text eol=lf
+research/nexus_mr40_isolated_improvement_v1.py text eol=lf
+tests/test_nexus_mr40_isolated_improvement_v1.py text eol=lf
+docs/evidence/mr40-isolated-improvement-20261022/*.json text eol=lf
+docs/evidence/mr40-isolated-improvement-20261022/*.md text eol=lf
+docs/evidence/mr40-isolated-improvement-20261022/*.txt text eol=lf
+docs/evidence/mr40-isolated-improvement-20261022/*.zip export-ignore
+docs/evidence/mr40-isolated-improvement-20261022/*.png export-ignore
+docs/evidence/mr40-isolated-improvement-20261022/*.py text eol=lf
+docs/research/MR40_ISOLATED_IMPROVEMENT_20261022_FA.md text eol=lf

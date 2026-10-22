@@ -1,0 +1,41 @@
+{
+  "schema": "nexus.mr40-isolated-improvement-contract.v1",
+  "baseline": "mean_reversion_40_m2_momentum30_entry_v1",
+  "research_only": true,
+  "live_enabled": false,
+  "exchange_orders": 0,
+  "paper_mutation": false,
+  "automatic_promotion": false,
+  "capitals_usdt": [10000, 500],
+  "fixed_core": {"previous_closes": 40, "entry_z": -2, "exit_z": 0, "momentum_bars": 180},
+  "variants": [
+    {"id": "baseline", "rule": "Frozen MR40 plus nonnegative 30-day momentum on the first eligible raw episode decision."},
+    {"id": "confirm3", "rule": "Baseline admission, then require close > previous close within the first three eligible episode decisions; otherwise reject that episode."},
+    {"id": "trend200", "rule": "Baseline plus close >= the mean of the previous 200 closed bars on episode admission; no later admission."},
+    {"id": "exit_m05", "rule": "Baseline entry; exit at z >= -0.5, and do not reenter until the original episode resets."},
+    {"id": "stop5", "rule": "Baseline plus a close-only stop at 95% of the actual entry reference open; execute at the next available modeled open, with no guaranteed 5% loss cap and no episode reentry."},
+    {"id": "vol20", "rule": "Baseline signals; allocate min(1, 0.20 / annualized population volatility of the last 180 closed-bar log returns) at entry only; 365.25*6 annualization, no leverage or resizing."},
+    {"id": "confirm3_stop5", "rule": "Exactly the predeclared confirm3 entry and stop5 exit together; no other combinations."},
+    {"id": "cash50_control", "rule": "Baseline with 50% of cash allocated at each entry; diagnostic risk control, excluded from variant selection."}
+  ],
+  "profiles": [
+    {"id": "normal", "fee_bps": 10, "slippage_bps": 5, "lag_bars": 1},
+    {"id": "stress", "fee_bps": 25, "slippage_bps": 15, "lag_bars": 1},
+    {"id": "extra_4h_delay", "fee_bps": 10, "slippage_bps": 5, "lag_bars": 2}
+  ],
+  "execution": "Spot long/cash, closed-bar decisions and next-open fills; lot step 0.00001 BTC, minimum quantity 0.00001 BTC, minimum reference notional 1 USDT, quote fees and 8-decimal price/money rounding. Venue limits are current-rule assumptions applied historically. Forced terminal sells are explicit. Independent accounts per window; no monthly resets.",
+  "training": ["2023-01-01", "2025-01-01"],
+  "locked_evaluation": ["2025-01-01", "2026-10-20"],
+  "full_window": ["2023-01-01", "2026-10-20"],
+  "latest_lbank_window": ["2026-09-21", "2026-10-21"],
+  "selection": "Use 10000-USDT training results only. Score = minimum normal/stress CAGR divided by maximum normal/stress close drawdown. Require positive stress CAGR, stress CAGR >= baseline, worst drawdown <= baseline, and score >= 1.10 times positive baseline score. Pick highest score, tie by listed order; otherwise keep baseline. cash50_control is ineligible.",
+  "locked_success_rule": "Selected variant must beat baseline normal net PnL, have stress net PnL >= baseline, and reduce normal close drawdown by at least 20% in the locked 2025-onward evaluation. Also report 500-USDT and delayed-fill results without using them for selection.",
+  "walk_forward": "Six anchored training-only selections: 2024-H1, 2024-H2, 2025-H1, 2025-H2, 2026-H1, 2026-07-01 through 2026-10-20. Report independent fold accounts and geometrically compounded fold returns; fold handoffs explicitly liquidate positions and charge costs. These overlap the fixed evaluation and are not independent samples.",
+  "data": {
+    "bybit_base_digest": "fba66860376d9ad24af7a2388e878db0dfdbae16468de9381ef6a95f95563ffe",
+    "bybit_october_digest": "17f3101579ebd301cda074174ed4154e772d15d6b2ef2e17513d73b1dc31798c",
+    "long_lbank_history": "An attempted bounded public intake failed the existing OHLC integrity validator on its third page. Do not repair, drop, impute or use this history for strategy testing. Retain rejection evidence; use the prior validated Bybit frame for long-history tests and the frozen LBank 30-day frame for transfer diagnostics."
+  },
+  "checks": ["frozen baseline replay", "Decimal signal agreement", "prefix invariance", "independent ledger cashflow and equity replay", "entry/exit delay and no-reentry fixtures", "lot/minimum/budget checks", "all variants reported", "no retuning after evaluation"],
+  "classification": "Retrospective model development. Historical baseline data were already studied; chronological holdouts are protected from this run's selection but are not pristine unseen market data. Eight predeclared paths including two controls; no parameter grid, no independent economic qualification."
+}
