@@ -29,7 +29,7 @@ def run(m):
     assert not any(f["reason"]=="episode_entry" for f in a["fills"][2:]) # no reentry same signal episode
     checks=4
 
-    g=[v[:] for v in p];g[5][1]=90 # opening below active stop: negative gap
+    g=[v[:] for v in p];g[5][0]=90 # opening below active stop: negative gap
     b=simulate(m,g,signals,staged)
     exit=b["positions"][0]["exit"]
     assert exit["reason"]=="stop_gap" and float(exit["reference"])==90
