@@ -75,3 +75,17 @@ def test_frozen_entry_quality_evidence():
     assert len(entries)==144
     assert all(x["decisions"] for x in entries)
     assert all(x["key"]["case"]=="baseline" or x["key"]["case"] in data["candidate_evaluation_gates"] for x in entries)
+
+def test_descriptive_entry_feature_audit_provenance():
+    """The trade-level observed labels must agree with frozen entry conditions."""
+    import hashlib
+    source=Path(__file__).resolve().parents[1]/"docs"/"evidence"/"mr40-entry-quality-20261022"/"entry_conditions_audit.json"
+    data=json.loads(source.read_bytes())
+    original=data.pop("digest")
+    check=json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+    assert hashlib.sha256(check).hexdigest()==original=="f9576b4033ebe15d3485cd3fc65d3c0ada4f1a8bb676a9808105b467b374d614"
+    train=data["windows"]["train"];eval_group=data["windows"]["evaluation"]
+    assert len(train["entries"])==25 and len(eval_group["entries"])==22
+    assert train["groups"]["winners"]["count"]==19 and train["groups"]["losers"]["count"]==6
+    assert eval_group["groups"]["winners"]["count"]==18 and eval_group["groups"]["losers"]["count"]==4
+    assert data["limitation"].startswith("Labels realized from future holding outcomes")
