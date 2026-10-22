@@ -192,4 +192,6 @@ docs/evidence/mr40-isolated-improvement-20261022/*.json text eol=lf
 docs/evidence/mr40-isolated-improvement-20261022/*.md text eol=lf
 docs/evidence/mr40-isolated-improvement-20261022/*.txt text eol=lf
 docs/evidence/mr40-isolated-improvement-20261022/*.zip export-ignore
+docs/evidence/mr40-isolated-improvement-20261022/*.png export-ignore
+docs/evidence/mr40-isolated-improvement-20261022/*.py text eol=lf
 docs/research/MR40_ISOLATED_IMPROVEMENT_20261022_FA.md text eol=lf
