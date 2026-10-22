@@ -1,0 +1,207 @@
+{
+  "archival_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-19.csv.gz",
+  "archive_server_last_modified": "Tue, 20 Oct 2026 02:01:45 GMT",
+  "decompressed_csv_sha256": "326d774bb97b61824d8ca332da3f91e3306e9deb972cb28043f5f0010dab9b6c",
+  "digest": "d88b3a7db02cb105a4f08f84e6889510481b127910d81e37cbb7589f694657b6",
+  "download_source": "PUBLIC Bybit Spot trade archive, no REST V5",
+  "frozen_source_4h_rows_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "live": false,
+  "merge": false,
+  "paper_modified": false,
+  "private_api": false,
+  "promote": false,
+  "protocol_sha256": "4fd66d70b06225ee58a2d54f03bde7c7a619c45250d77cd2c368523e2e66464e",
+  "raw_archive_gz_size_bytes": 6221547,
+  "raw_archive_sha256": "7e092815d5be383a04156be15e7f679decb05811b769ea8b8826d36247b934ec",
+  "real_orders": 0,
+  "result": {
+    "L2_parity_proven": false,
+    "OOS_edge_proven": false,
+    "all_1440_minutes_contiguous": true,
+    "all_6_frozen_4h_present": true,
+    "bybit_public_REST_restored": false,
+    "expected_four_hour_buckets": 6,
+    "expected_one_minute_buckets": 1440,
+    "four_hour_buckets_present": 6,
+    "futures_data_used": false,
+    "historical_previously_seen": true,
+    "one_minute_buckets_present": 1440,
+    "per_bar": [
+      {
+        "base_volume_abs_diff": "1.823E-10",
+        "base_volume_rel_diff": "1.085023706327515904538974191E-13",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "82110.8",
+          "82811.9",
+          "82011.5",
+          "82525.1",
+          "1680.1476220001823"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "82110.8",
+          "82811.9",
+          "82011.5",
+          "82525.1",
+          "1680.147622"
+        ],
+        "raw_trades_4h": 166324,
+        "utc_start": "2026-10-19T00:00:00+00:00"
+      },
+      {
+        "base_volume_abs_diff": "2.199E-10",
+        "base_volume_rel_diff": "1.641689074148527976430761947E-13",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "82525.1",
+          "83164.8",
+          "82481.7",
+          "82723.7",
+          "1339.4741029997801"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "82525.1",
+          "83164.8",
+          "82481.7",
+          "82723.7",
+          "1339.474103"
+        ],
+        "raw_trades_4h": 134425,
+        "utc_start": "2026-10-19T04:00:00+00:00"
+      },
+      {
+        "base_volume_abs_diff": "1.9E-9",
+        "base_volume_rel_diff": "5.853105797822128922663520570E-13",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "82723.8",
+          "83097.9",
+          "82117.4",
+          "82360.4",
+          "3246.1398540019"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "82723.8",
+          "83097.9",
+          "82117.4",
+          "82360.4",
+          "3246.139854"
+        ],
+        "raw_trades_4h": 187361,
+        "utc_start": "2026-10-19T08:00:00+00:00"
+      },
+      {
+        "base_volume_abs_diff": "3.592E-10",
+        "base_volume_rel_diff": "1.588372977498998053232010461E-13",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "82360.3",
+          "82766.0",
+          "81752.0",
+          "81938.3",
+          "2261.4335870003592"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "82360.3",
+          "82766",
+          "81752",
+          "81938.3",
+          "2261.433587"
+        ],
+        "raw_trades_4h": 254756,
+        "utc_start": "2026-10-19T12:00:00+00:00"
+      },
+      {
+        "base_volume_abs_diff": "5.45E-11",
+        "base_volume_rel_diff": "3.373222289339580284359457640E-14",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "81938.2",
+          "82150.8",
+          "81728.0",
+          "81873.4",
+          "1615.6658329999455"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "81938.2",
+          "82150.8",
+          "81728",
+          "81873.4",
+          "1615.665833"
+        ],
+        "raw_trades_4h": 163065,
+        "utc_start": "2026-10-19T16:00:00+00:00"
+      },
+      {
+        "base_volume_abs_diff": "9.45E-11",
+        "base_volume_rel_diff": "9.879480871480863050372706709E-14",
+        "candidate_4h_source_parity": true,
+        "frozen_4h_ohlcv": [
+          "81873.4",
+          "82269.5",
+          "81844.0",
+          "81932.9",
+          "956.5279919999055"
+        ],
+        "minute_rebuilt_matches_trade_4h": true,
+        "price_abs_diffs_usdt": [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "raw_trade_ohlcv": [
+          "81873.4",
+          "82269.5",
+          "81844",
+          "81932.9",
+          "956.527992"
+        ],
+        "raw_trades_4h": 84341,
+        "utc_start": "2026-10-19T20:00:00+00:00"
+      }
+    ],
+    "profit_or_fill_proven": false,
+    "same_venue": "Bybit Spot BTCUSDT",
+    "six_4h_reconstructed_from_1m": 6,
+    "source_day": "2026-10-19",
+    "strict_day_ohlcv_source_parity_pass": true,
+    "trade_count": 990272
+  },
+  "schema": "nexus.mr40.bybit_spot_archive_day_parity.results.v1"
+}
