@@ -1,0 +1,37 @@
+{
+  "schema":"nexus.mr40-time-exits-contract.v4",
+  "parent_study_commit":"571a75624abe070c4ea7adc3b2dea78da86ea03a",
+  "hypothesis":"Limit capital lockup and long holding losses without replacing the original mean-reversion exit. Test six new time-based overlays and three frozen controls; no expanded RR search.",
+  "cases":[
+    {"id":"baseline_a100","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":null,"losing_only":false},
+    {"id":"b_vol40","entry":"baseline","amount":"1","vol_target":"0.40","dd_threshold":null,"dd_scale":null,"timeout_hours":null,"losing_only":false},
+    {"id":"confirm_natural_a100","entry":"confirm3","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":null,"losing_only":false},
+    {"id":"b_time48","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":48,"losing_only":false},
+    {"id":"b_time96","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":96,"losing_only":false},
+    {"id":"b_time144","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":144,"losing_only":false},
+    {"id":"b_losing96","entry":"baseline","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":96,"losing_only":true},
+    {"id":"b_vol40_time96","entry":"baseline","amount":"1","vol_target":"0.40","dd_threshold":null,"dd_scale":null,"timeout_hours":96,"losing_only":false},
+    {"id":"c_time96","entry":"confirm3","amount":"1","vol_target":null,"dd_threshold":null,"dd_scale":null,"timeout_hours":96,"losing_only":false}
+  ],
+  "controls":["baseline_a100","b_vol40","confirm_natural_a100"],
+  "clock":"Measured from actual modeled entry OPEN to each subsequent decision bar CLOSE. Exit at the first available close with elapsed time >= timeout, executed at the configured later OPEN. One-bar latency gives 48/96/144 hours; two-bar latency can add four hours. Original natural exit takes priority when both triggers occur at the same decision. No intrabar clock execution.",
+  "losing_only":"After at least 96 hours, exit on the first closed decision bar whose cost-adjusted per-BTC liquidation value <= its entry cost: round8(close*(1-slip))*(1-fee) <= round8(entry_open*(1+slip))*(1+fee). This is a per-unit price/fee condition, not quantity-rounded account PnL. Winners may remain open beyond 96 hours and later trigger after turning nonpositive. Gaps at execution may change realized outcome.",
+  "episode_block":"Once a time exit is decided, set the desired target to zero for the current original raw episode, preventing same-episode reentry. A later raw episode is eligible again. Preserve inherited target-lag semantics for other entries; no same-bar reentry after an exit. The causal target overlay models expected entry OPENs; reject any run with minimum-order entry skips or mismatch between expected and actual entry bars.",
+  "sizing":"Unchanged pinned v3 allocation and optional 40% annualized volatility cap, no rebalancing while held, no leverage or averaging down. No new stop-loss or profit target. Cashflow, fees, lot floors and minimum orders use the pinned v3 engine and independent oracle.",
+  "profiles":[
+    {"id":"normal","fee_bps":10,"slippage_bps":5,"lag_bars":1},
+    {"id":"stress","fee_bps":25,"slippage_bps":15,"lag_bars":1},
+    {"id":"extra_4h_delay","fee_bps":10,"slippage_bps":5,"lag_bars":2}
+  ],
+  "capitals_usdt":[10000,500],
+  "training":["2023-01-01","2025-01-01"],
+  "evaluation":["2025-01-01","2026-10-20"],
+  "full":["2023-01-01","2026-10-20"],
+  "year2026":["2026-01-01","2026-10-20"],
+  "lbank30":["2026-09-21","2026-10-21"],
+  "walk_forward":["2024-01-01","2024-07-01","2025-01-01","2025-07-01","2026-01-01","2026-07-01","2026-10-20"],
+  "selection":"Use unchanged pinned v2 profit/efficiency selection on training 10000 only, with the six new overlays eligible and original baseline as fallback. b_vol40 and confirm_natural_a100 are comparison-only controls. Profit: normal PnL >= baseline, stress PnL >=1.05*positive baseline (positive if base nonpositive), worst DD <=1.10*base; maximize stress PnL. Efficiency: positive stress CAGR, normal CAGR >=0.75*positive baseline, worst DD <=base, score min(normal CAGR,stress CAGR)/max(normal DD,stress DD) >=1.10*positive baseline score. Evaluation profit requires both PnLs >=base and worst DD <=1.10*base. Evaluation efficiency requires >=1.10*base score, >=0.75*base normal PnL and <=0.80*base normal DD. No retuning after results.",
+  "validation":"486 ledgers: 216 Bybit main-window, 216 anchored train/test folds, 54 LBank; independent pinned accounting plus independent timeout-condition replay, 36 control parity comparisons, 54 prefix checks. Select each fold using its past; compound independently liquidated fold returns geometrically. Reuse hash-verified frames; no new exchange requests.",
+  "classification":"Retrospective follow-up after earlier model searches. All history has already been observed; chronological splits are not pristine unseen-data qualification. Nine paths include repeated controls, and runs/windows are not independent market samples.",
+  "authority":{"research_only":true,"live_enabled":false,"exchange_orders":0,"paper_mutation":false,"automatic_promotion":false}
+}
