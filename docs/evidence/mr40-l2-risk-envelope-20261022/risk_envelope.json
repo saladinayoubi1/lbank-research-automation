@@ -1,0 +1,119 @@
+{
+  "algebraic_size_diagnostic_not_deployable": {
+    "after_15s_entry_to_static_mark_distance_usdt_per_btc": "6007.91916100",
+    "budgets": {
+      "1pct": {
+        "algebraic_btc_cap": "0.01877067",
+        "hypothetical_loss_budget_usdt": "112.77269530"
+      },
+      "2pct": {
+        "algebraic_btc_cap": "0.03754135",
+        "hypothetical_loss_budget_usdt": "225.54539060"
+      }
+    },
+    "excludes": "Fees, queue, fill probability, latency, and subsequent adverse motion."
+  },
+  "data_bias": "Historical event previously seen; not truly out of sample.",
+  "entry": {
+    "cash_before_entry_usdt": "11277.26953006",
+    "entry_ms": 1760112000000,
+    "filled_entry_price_usdt": "119075.40795000",
+    "quantity_btc": "0.09461",
+    "static_stop_reference_usdt": "114312.39163200"
+  },
+  "merge": false,
+  "paper_changed": false,
+  "promotion": "NO_PROMOTE",
+  "provenance": {
+    "l2_logical_digest": "5cb72adacf98f0789b3095557234b07fdc21317858b64b685cda9dde3a2738e8",
+    "ledger_compressed_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "protocol_git_blob_sha1": "2ffb76b6dec3ea96eddc877c87a303ac04c332f1"
+  },
+  "real_fill_verified": false,
+  "research_only": true,
+  "risk_limits": "Static third-party displayed books, not actual fills, executable price, impact, latency, or worst case.",
+  "samples": [
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "0.078225",
+      "delta_vs_stop_reference_usdt": "8.82160272",
+      "displayed_bid_walk_levels": 4,
+      "displayed_book_age_ms": 72,
+      "label": "before_1s",
+      "mark_minus_static_4pct_stop_reference_usdt": "93.24175800",
+      "static_book_walk_vwap_mark_usdt_per_btc": "114405.633390",
+      "target_utc": "2025-10-10T20:56:13.936+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "0.024910",
+      "delta_vs_stop_reference_usdt": "2.80918973",
+      "displayed_bid_walk_levels": 6,
+      "displayed_book_age_ms": 72,
+      "label": "first_cross",
+      "mark_minus_static_4pct_stop_reference_usdt": "29.69231300",
+      "static_book_walk_vwap_mark_usdt_per_btc": "114342.083945",
+      "target_utc": "2025-10-10T20:56:14.936+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "0.024910",
+      "delta_vs_stop_reference_usdt": "2.80918973",
+      "displayed_bid_walk_levels": 6,
+      "displayed_book_age_ms": 172,
+      "label": "after_100ms",
+      "mark_minus_static_4pct_stop_reference_usdt": "29.69231300",
+      "static_book_walk_vwap_mark_usdt_per_btc": "114342.083945",
+      "target_utc": "2025-10-10T20:56:15.036+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "-0.096182",
+      "delta_vs_stop_reference_usdt": "-10.84664822",
+      "displayed_bid_walk_levels": 3,
+      "displayed_book_age_ms": 72,
+      "label": "after_1s",
+      "mark_minus_static_4pct_stop_reference_usdt": "-114.64589600",
+      "static_book_walk_vwap_mark_usdt_per_btc": "114197.745736",
+      "target_utc": "2025-10-10T20:56:15.936+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "-0.334945",
+      "delta_vs_stop_reference_usdt": "-37.77267589",
+      "displayed_bid_walk_levels": 51,
+      "displayed_book_age_ms": 72,
+      "label": "after_5s",
+      "mark_minus_static_4pct_stop_reference_usdt": "-399.24612500",
+      "static_book_walk_vwap_mark_usdt_per_btc": "113913.145507",
+      "target_utc": "2025-10-10T20:56:19.936+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "-1.044404",
+      "delta_vs_stop_reference_usdt": "-117.78025798",
+      "displayed_bid_walk_levels": 6,
+      "displayed_book_age_ms": 72,
+      "label": "after_15s",
+      "mark_minus_static_4pct_stop_reference_usdt": "-1244.90284300",
+      "static_book_walk_vwap_mark_usdt_per_btc": "113067.488789",
+      "target_utc": "2025-10-10T20:56:29.936+00:00"
+    },
+    {
+      "actual_fill": false,
+      "delta_vs_stop_reference_pct_of_entry_time_cash": "-0.021523",
+      "delta_vs_stop_reference_usdt": "-2.42720593",
+      "displayed_bid_walk_levels": 4,
+      "displayed_book_age_ms": 67,
+      "label": "first_recovery_print",
+      "mark_minus_static_4pct_stop_reference_usdt": "-25.65485600",
+      "static_book_walk_vwap_mark_usdt_per_btc": "114286.736776",
+      "target_utc": "2025-10-10T20:56:57.331+00:00"
+    }
+  ],
+  "schema": "mr40.l2-risk-envelope.offline.v1",
+  "source_gates": {
+    "frozen_4h_1m_full_ohlc_parity": "FAILED",
+    "l2_full_day_date_only_scope": "FAILED"
+  }
+}
