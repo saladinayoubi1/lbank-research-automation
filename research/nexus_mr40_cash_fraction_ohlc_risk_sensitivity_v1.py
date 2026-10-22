@@ -38,7 +38,7 @@ def possible_equity(quote_before, fraction, entry, price, fee=FEE):
     return quote_before*((D(1)-fraction)+fraction*(D(1)-fee)**2*price/entry)
 
 
-def evaluate_fraction(rows,pairs,fraction):
+def evaluate_fraction(rows,pairs,fraction,fee=FEE):
     if not pairs or fraction not in FRACTIONS:
         raise ValueError("fraction_or_positions_not_preregistered")
     cash=START
@@ -71,8 +71,8 @@ def evaluate_fraction(rows,pairs,fraction):
             close=D(str(k[4]))
             if not (low>0 and low<=min(op,close) and high>=max(op,close)):
                 raise ValueError("corrupt_ohlcv_high_or_low")
-            hi_eq=possible_equity(before,fraction,entry,high)
-            lo_eq=possible_equity(before,fraction,entry,low)
+            hi_eq=possible_equity(before,fraction,entry,high,fee)
+            lo_eq=possible_equity(before,fraction,entry,low,fee)
             # High from a completed PRIOR candle is guaranteed to precede
             # the low of the CURRENT candle, even without intra-bar sequencing.
             bound_lower=max(bound_lower,dd_fraction(preceding_high_peak,lo_eq))
@@ -82,7 +82,7 @@ def evaluate_fraction(rows,pairs,fraction):
             bound_upper=max(bound_upper,dd_fraction(high_first_peak,lo_eq))
             lifetime_bars+=1
         # Already flat at exit candle OPEN, so never use exit candle high/low.
-        cash=possible_equity(before,fraction,entry,exit_price)
+        cash=possible_equity(before,fraction,entry,exit_price,fee)
         realized_peak=max(realized_peak,cash)
         realized_dd=max(realized_dd,dd_fraction(realized_peak,cash))
         preceding_high_peak=max(preceding_high_peak,cash)
@@ -108,6 +108,11 @@ def evaluate_fraction(rows,pairs,fraction):
 
 
 def locked_protocol(config):
+    if not isinstance(config,dict) or not all(
+        isinstance(config.get(name),dict)
+        for name in ("source","fixed_scenarios","safety","verification")
+    ):
+        raise ValueError("preregistered_fraction_protocol_changed")
     if (
         config.get("schema")!=PROTOCOL
         or config["source"]["market_rows_sha256"]!=ROWS_SHA
