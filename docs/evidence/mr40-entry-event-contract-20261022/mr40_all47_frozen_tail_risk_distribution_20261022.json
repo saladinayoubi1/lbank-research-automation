@@ -1,0 +1,341 @@
+{
+  "digest": "e018de05f85709d11a3c93f1ea357e89f8c298330bdc6c49e0ca1ebb6786f1ff",
+  "fee_scenario_ref": "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE",
+  "groups": {
+    "all_47": {
+      "MAE_count_at_or_above_percent": {
+        "10": 2,
+        "15": 1,
+        "20": 1,
+        "3": 18,
+        "5": 9
+      },
+      "adverse_price_MAE_nearest_rank_pct": {
+        "0.5": "1.764842086182875976281688220",
+        "0.75": "3.947802291514271744939225220",
+        "0.9": "8.005404400287279358705127530",
+        "0.95": "9.174167245531529487278949480"
+      },
+      "hold_duration_categories": {
+        "48_to_119_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 3,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 16
+        },
+        "gte_120_hours": {
+          "MAE_at_or_above_10_pct": 2,
+          "MAE_at_or_above_15_pct": 1,
+          "MAE_at_or_above_5_pct": 5,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 10
+        },
+        "lt_48_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 1,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 21
+        }
+      },
+      "holding_count_at_or_above_hours": {
+        "120": 10,
+        "168": 3,
+        "24": 42,
+        "72": 21
+      },
+      "holding_hours_nearest_rank": {
+        "0.5": 56,
+        "0.75": 116,
+        "0.9": 160,
+        "0.95": 180
+      },
+      "max_adverse_price_MAE_pct": "23.39651835345841867164113269",
+      "max_holding_hours": 228,
+      "mean_adverse_price_MAE_pct": "3.199970560934573076436826349",
+      "mean_holding_hours": "76.34042553191489361702127660",
+      "n_positions": 47,
+      "not_an_order_fill_or_stop_simulation": true,
+      "not_unseen_out_of_sample": true
+    },
+    "evaluation_2025_to_2026_oct19": {
+      "MAE_count_at_or_above_percent": {
+        "10": 1,
+        "15": 0,
+        "20": 0,
+        "3": 7,
+        "5": 3
+      },
+      "adverse_price_MAE_nearest_rank_pct": {
+        "0.5": "1.516183695676428469233323750",
+        "0.75": "3.518019137044811119791947940",
+        "0.9": "5.588629488835902351710205080",
+        "0.95": "8.069031336423739057613070830"
+      },
+      "hold_duration_categories": {
+        "48_to_119_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 0,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 9
+        },
+        "gte_120_hours": {
+          "MAE_at_or_above_10_pct": 1,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 2,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 4
+        },
+        "lt_48_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 1,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 9
+        }
+      },
+      "holding_count_at_or_above_hours": {
+        "120": 4,
+        "168": 2,
+        "24": 20,
+        "72": 10
+      },
+      "holding_hours_nearest_rank": {
+        "0.5": 56,
+        "0.75": 108,
+        "0.9": 156,
+        "0.95": 184
+      },
+      "max_adverse_price_MAE_pct": "14.02031157181519444040670196",
+      "max_holding_hours": 228,
+      "mean_adverse_price_MAE_pct": "2.749253640244690014886639538",
+      "mean_holding_hours": "78",
+      "n_positions": 22,
+      "not_an_order_fill_or_stop_simulation": true,
+      "not_unseen_out_of_sample": true
+    },
+    "train_2023_2024": {
+      "MAE_count_at_or_above_percent": {
+        "10": 1,
+        "15": 1,
+        "20": 1,
+        "3": 11,
+        "5": 6
+      },
+      "adverse_price_MAE_nearest_rank_pct": {
+        "0.5": "1.775021971667470011542992280",
+        "0.75": "4.425228070920520563224489100",
+        "0.9": "8.005404400287279358705127530",
+        "0.95": "9.174167245531529487278949480"
+      },
+      "hold_duration_categories": {
+        "48_to_119_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 3,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 7
+        },
+        "gte_120_hours": {
+          "MAE_at_or_above_10_pct": 1,
+          "MAE_at_or_above_15_pct": 1,
+          "MAE_at_or_above_5_pct": 3,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 6
+        },
+        "lt_48_hours": {
+          "MAE_at_or_above_10_pct": 0,
+          "MAE_at_or_above_15_pct": 0,
+          "MAE_at_or_above_5_pct": 0,
+          "descriptive_no_causal_holding_rule": true,
+          "n_positions": 12
+        }
+      },
+      "holding_count_at_or_above_hours": {
+        "120": 6,
+        "168": 1,
+        "24": 22,
+        "72": 11
+      },
+      "holding_hours_nearest_rank": {
+        "0.5": 56,
+        "0.75": 116,
+        "0.9": 160,
+        "0.95": 164
+      },
+      "max_adverse_price_MAE_pct": "23.39651835345841867164113269",
+      "max_holding_hours": 180,
+      "mean_adverse_price_MAE_pct": "3.596601451141670170600990738",
+      "mean_holding_hours": "74.88",
+      "n_positions": 25,
+      "not_an_order_fill_or_stop_simulation": true,
+      "not_unseen_out_of_sample": true
+    }
+  },
+  "live": false,
+  "merge": false,
+  "no_stop_or_sizing_rule_chosen_from_posthoc_distribution": true,
+  "orders": 0,
+  "paper_modified": false,
+  "pinned_full_previous_risk_sha256": "c401f4920d8f51abe2ed77c11aa3a9616df8cde2d0dd958d7dfd0a59c6cac051",
+  "private_api": false,
+  "promote": false,
+  "promotion_gate": {
+    "live_trading_disabled": true,
+    "missing_unseen_forward_execution_and_fill_evidence": true,
+    "missing_user_approved_risk_budget": true,
+    "ready_for_paper_strategy_change": false,
+    "reason": "Observed severe underwater tail cannot justify unapproved risk/stop tuning or automatic Paper promotion."
+  },
+  "protocol_sha256": "33480a7e58fd4ba9db968d7ce610109f24bdc27477321cecdb103958198967b3",
+  "schema": "nexus.mr40.all47_frozen_adverse_MAE_holding_descriptive_v1",
+  "signals_changed": false,
+  "top_5_longest_hold": [
+    {
+      "entry_open_utc": "2025-10-10T16:00:00+00:00",
+      "entry_price": "119015.9",
+      "exit_open_utc": "2025-10-20T04:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 228,
+      "hours_until_start_of_worst_candle": 4,
+      "lowest_held_candle_open_utc": "2025-10-10T20:00:00+00:00",
+      "lowest_spot_bar_price": "102329.5",
+      "price_MAE_adverse_pct": "14.02031157181519444040670196",
+      "price_MFE_favorable_pct": "0.364321069705812416660295000",
+      "trade_index": 34,
+      "window": "evaluation"
+    },
+    {
+      "entry_open_utc": "2026-01-20T08:00:00+00:00",
+      "entry_price": "91176.2",
+      "exit_open_utc": "2026-01-28T00:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 184,
+      "hours_until_start_of_worst_candle": 132,
+      "lowest_held_candle_open_utc": "2026-01-25T20:00:00+00:00",
+      "lowest_spot_bar_price": "86080.7",
+      "price_MAE_adverse_pct": "5.588629488835902351710205080",
+      "price_MFE_favorable_pct": "0.310826728905130944259576500",
+      "trade_index": 35,
+      "window": "evaluation"
+    },
+    {
+      "entry_open_utc": "2024-08-01T04:00:00+00:00",
+      "entry_price": "63931.82",
+      "exit_open_utc": "2024-08-08T16:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 180,
+      "hours_until_start_of_worst_candle": 96,
+      "lowest_held_candle_open_utc": "2024-08-05T04:00:00+00:00",
+      "lowest_spot_bar_price": "48974.0",
+      "price_MAE_adverse_pct": "23.39651835345841867164113269",
+      "price_MFE_favorable_pct": "2.709683534740603349005237100",
+      "trade_index": 20,
+      "window": "train"
+    },
+    {
+      "entry_open_utc": "2024-06-13T16:00:00+00:00",
+      "entry_price": "66460.47",
+      "exit_open_utc": "2024-06-20T12:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 164,
+      "hours_until_start_of_worst_candle": 120,
+      "lowest_held_candle_open_utc": "2024-06-18T16:00:00+00:00",
+      "lowest_spot_bar_price": "64044.12",
+      "price_MAE_adverse_pct": "3.635770255612095430561956600",
+      "price_MFE_favorable_pct": "1.366030062682373446952752500",
+      "trade_index": 19,
+      "window": "train"
+    },
+    {
+      "entry_open_utc": "2023-02-22T16:00:00+00:00",
+      "entry_price": "23724.0",
+      "exit_open_utc": "2023-03-01T08:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 160,
+      "hours_until_start_of_worst_candle": 76,
+      "lowest_held_candle_open_utc": "2023-02-25T20:00:00+00:00",
+      "lowest_spot_bar_price": "22750.0",
+      "price_MAE_adverse_pct": "4.105547125273984151070645760",
+      "price_MFE_favorable_pct": "3.663631765300961052099140100",
+      "trade_index": 2,
+      "window": "train"
+    }
+  ],
+  "top_5_price_MAE": [
+    {
+      "entry_open_utc": "2024-08-01T04:00:00+00:00",
+      "entry_price": "63931.82",
+      "exit_open_utc": "2024-08-08T16:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 180,
+      "hours_until_start_of_worst_candle": 96,
+      "lowest_held_candle_open_utc": "2024-08-05T04:00:00+00:00",
+      "lowest_spot_bar_price": "48974.0",
+      "price_MAE_adverse_pct": "23.39651835345841867164113269",
+      "price_MFE_favorable_pct": "2.709683534740603349005237100",
+      "trade_index": 20,
+      "window": "train"
+    },
+    {
+      "entry_open_utc": "2025-10-10T16:00:00+00:00",
+      "entry_price": "119015.9",
+      "exit_open_utc": "2025-10-20T04:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 228,
+      "hours_until_start_of_worst_candle": 4,
+      "lowest_held_candle_open_utc": "2025-10-10T20:00:00+00:00",
+      "lowest_spot_bar_price": "102329.5",
+      "price_MAE_adverse_pct": "14.02031157181519444040670196",
+      "price_MFE_favorable_pct": "0.364321069705812416660295000",
+      "trade_index": 34,
+      "window": "evaluation"
+    },
+    {
+      "entry_open_utc": "2024-03-16T20:00:00+00:00",
+      "entry_price": "66898.17",
+      "exit_open_utc": "2024-03-21T00:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 100,
+      "hours_until_start_of_worst_candle": 80,
+      "lowest_held_candle_open_utc": "2024-03-20T04:00:00+00:00",
+      "lowest_spot_bar_price": "60760.82",
+      "price_MAE_adverse_pct": "9.174167245531529487278949480",
+      "price_MFE_favorable_pct": "3.116677182649390857776827100",
+      "trade_index": 15,
+      "window": "train"
+    },
+    {
+      "entry_open_utc": "2025-02-02T04:00:00+00:00",
+      "entry_price": "99205.96",
+      "exit_open_utc": "2025-02-03T20:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 40,
+      "hours_until_start_of_worst_candle": 20,
+      "lowest_held_candle_open_utc": "2025-02-03T00:00:00+00:00",
+      "lowest_spot_bar_price": "91201.0",
+      "price_MAE_adverse_pct": "8.069031336423739057613070830",
+      "price_MFE_favorable_pct": "2.693991369066939123415569000",
+      "trade_index": 27,
+      "window": "evaluation"
+    },
+    {
+      "entry_open_utc": "2023-04-19T12:00:00+00:00",
+      "entry_price": "29309.45",
+      "exit_open_utc": "2023-04-26T00:00:00+00:00",
+      "historical_only_no_stop_or_fill": true,
+      "holding_hours": 156,
+      "hours_until_start_of_worst_candle": 124,
+      "lowest_held_candle_open_utc": "2023-04-24T16:00:00+00:00",
+      "lowest_spot_bar_price": "26963.11",
+      "price_MAE_adverse_pct": "8.005404400287279358705127530",
+      "price_MFE_favorable_pct": "0.650131612841592046251294400",
+      "trade_index": 5,
+      "window": "train"
+    }
+  ],
+  "underlying_fee_only_closed_trade_dd_pct": "10.22924661117586234881992445",
+  "underlying_model_true_global_equity_ohlc_dd_pct": "25.41746891798068870740313933"
+}
