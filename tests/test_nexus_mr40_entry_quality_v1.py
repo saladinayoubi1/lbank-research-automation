@@ -89,3 +89,27 @@ def test_descriptive_entry_feature_audit_provenance():
     assert train["groups"]["winners"]["count"]==19 and train["groups"]["losers"]["count"]==6
     assert eval_group["groups"]["winners"]["count"]==18 and eval_group["groups"]["losers"]["count"]==4
     assert data["limitation"].startswith("Labels realized from future holding outcomes")
+
+def test_early_excursion_audit_is_frozen_and_descriptive():
+    """Read pinned ORIGINAL trade outcomes, never use outcome labels as signals."""
+    import hashlib
+    evidence=Path(__file__).resolve().parents[1]/"docs"/"evidence"/"mr40-entry-quality-20261022"/"excursion_audit.json"
+    data=json.loads(evidence.read_bytes())
+    expected=data.pop("digest")
+    canonical=json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(canonical).hexdigest()==expected=="7668ccee045daf90da0b2b267298c24b681a1867d4f97e1c789cacba6f638bd2"
+    assert data["limitation"].startswith("Future outcome labels")
+    assert data["evidence"]["quality_ledger_sha256"]=="2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e"
+    assert data["evidence"]["entry_stop_ledger_sha256"]=="138beb278daf2d0f83f015e06b9be80eac406f590b28a0581d3341e8dc2f52e3"
+    train=data["windows"]["train"]
+    evaluate=data["windows"]["evaluation"]
+    assert len(train["positions"])==25 and len(evaluate["positions"])==22
+    assert evaluate["groups"]["baseline_winners"]["positions"]==18
+    assert evaluate["groups"]["baseline_losers"]["positions"]==4
+    assert evaluate["groups"]["baseline_losers"]["recorded_stop4_exits"]==2
+    assert evaluate["groups"]["baseline_winners"]["recorded_stop4_exits"]==1
+    assert evaluate["groups"]["baseline_losers"]["plus2_usable_to_protect"]==0
+    crash=next(x for x in evaluate["positions"] if x["entry_utc"].startswith("2025-10-10T16:00:00"))
+    assert crash["max_adverse_low_pct"]>14
+    assert crash["reached_plus2_closed"] is False
+    assert crash["observed_entry4_stop_hit"] is True
