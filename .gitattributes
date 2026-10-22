@@ -325,3 +325,10 @@ tests/test_nexus_mr40_bybit_archive_bridge_v1.py text eol=lf export-ignore
 research/mr40_forward_archive_shadow_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
+
+# Strict read-only official Bybit Spot WebSocket one-shot confirmation and history-continuity gate.
+research/mr40_bybit_public_spot_ws_probe_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_ws_probe_v1.ps1 text eol=lf export-ignore
+research/mr40_public_ws_close_gate_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
