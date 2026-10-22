@@ -14,8 +14,8 @@ P={"schema":"nexus.mr40.bybit_public_spot_orderbook50_cost_snapshot.v1",
 
 
 def source(bids=None,asks=None):
-    bids=bids if bids is not None else [["100","1.0"],["99","2.0"]]
-    asks=asks if asks is not None else [["101","1.0"],["102","2.0"]]
+    bids=bids if bids is not None else [["100","2.0"],["99","5.0"]]
+    asks=asks if asks is not None else [["101","2.0"],["102","5.0"]]
     ts=1792600000000
     payload={"topic":"orderbook.50.BTCUSDT","type":"snapshot","ts":ts,
              "data":{"s":"BTCUSDT","b":bids,"a":asks,"u":5,"seq":7}}
