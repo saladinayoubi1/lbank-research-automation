@@ -289,3 +289,8 @@ docs/evidence/mr40-entry-event-contract-20261022/*.json text eol=lf export-ignor
 research/mr40_structure_break_audit_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
+
+# MR40 two-feature OHLCV entry-volume audit remains strictly retrospective research.
+research/mr40_entry_volume_audit_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_entry_volume_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_entry_volume_audit_v1.py text eol=lf export-ignore
