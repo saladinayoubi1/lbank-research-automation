@@ -332,3 +332,11 @@ research/nexus_mr40_bybit_public_spot_ws_probe_v1.ps1 text eol=lf export-ignore
 research/mr40_public_ws_close_gate_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
+
+# Public one-shot Spot 1m confirmed-close source proof and postcapture forensic tooling (never runtime).
+research/mr40_ws_minute_close_proof_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_ws_minute_close_proof_v1.ps1 text eol=lf export-ignore
+research/mr40_ws_raw_minute_diagnostic_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_ws_raw_minute_diagnostic_v1.ps1 text eol=lf export-ignore
+research/nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
