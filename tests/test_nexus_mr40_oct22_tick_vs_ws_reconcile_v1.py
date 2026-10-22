@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from decimal import Decimal as D
 from pathlib import Path
+from datetime import datetime
 from unittest.mock import patch
 
 from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import (
@@ -123,6 +124,83 @@ class TestPinnedOct22Reconcile(unittest.TestCase):
     def test_wrong_prefix_cannot_move_start_of_day(self):
         with self.assertRaisesRegex(ValueError,"missing_or_out_of_order"):
             reconcile(fixed_day_rows(),ws_fixed(),LAST_BRIDGE_BAR-14400000)
+
+
+    def test_archive_receipt_follows_full_GET_not_premature_request_start(self):
+        """A source is not truly accessible until all archive bytes arrive.
+
+        Source and time are mocked. This is NOT real Oct22 archive data.
+        """
+        import hashlib
+        from unittest.mock import MagicMock
+        from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import URL
+        fake_raw=b"f"*110000
+        fake_csv=b"fixture_csv_for_time_test"
+        day_rows=fixed_day_rows()
+        def mkresp(status,headers,data=b""):
+            resp=MagicMock()
+            resp.status=status;resp.headers=headers;resp.read.return_value=data
+            resp.__enter__.return_value=resp
+            resp.__exit__.return_value=False
+            return resp
+        http_head=mkresp(200,{"Content-Length":str(len(fake_raw)),"Last-Modified":"test"})
+        http_get=mkresp(200,{},fake_raw)
+        def fake_get(request,*args,**kwargs):
+            if request.get_method()=="HEAD":return http_head
+            if request.get_method()=="GET":return http_get
+            raise AssertionError("unknown HTTP operation")
+        future=int(DAY_END/1000)+7200
+        with tempfile.TemporaryDirectory() as folder:
+            base=Path(folder)
+            with patch("research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.load_pinned_files",
+                       return_value=(protocol(),LAST_BRIDGE_BAR,ws_fixed(),{"snapshots":49})),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.time.time",
+                side_effect=[future,future+7]),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.urllib.request.urlopen",
+                side_effect=fake_get) as requests,patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.gzip.decompress",
+                return_value=fake_csv),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.rollup",
+                return_value=(day_rows,{"minutes_verified":1440,
+                                        "four_hour_candles_verified":6,
+                                        "exact_1m_to_4h":True})):
+                execute(base/"protocol.json",base/"bridge.json",
+                        base/"raw.json",base/"gate.json",base/"archive.gz",
+                        base/"audit.json")
+            report=json.loads((base/"audit.json").read_text())
+            receipt=report["official_trade_archive"]
+            self.assertEqual(receipt["url"],URL)
+            self.assertTrue(receipt["data_availability_clock_is_post_full_GET"])
+            self.assertEqual(int(datetime.fromisoformat(receipt["request_started_utc"]).timestamp()),future)
+            self.assertEqual(int(datetime.fromisoformat(receipt["received_utc"]).timestamp()),future+7)
+            self.assertEqual((base/"archive.gz").read_bytes(),fake_raw)
+            self.assertEqual(requests.call_count,2)
+            self.assertFalse(report["paper_changed"])
+            self.assertEqual(report["orders_sent"],0)
+
+    def test_nonmonotone_post_GET_receipt_clock_blocks_evidence(self):
+        from unittest.mock import MagicMock
+        fake_raw=b"x"*110000
+        def mkresp(status,headers,data=b""):
+            resp=MagicMock();resp.status=status;resp.headers=headers
+            resp.read.return_value=data
+            resp.__enter__.return_value=resp
+            resp.__exit__.return_value=False
+            return resp
+        with tempfile.TemporaryDirectory() as folder:
+            base=Path(folder)
+            with patch("research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.load_pinned_files",
+                       return_value=(protocol(),LAST_BRIDGE_BAR,ws_fixed(),{})),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.time.time",
+                side_effect=[DAY_END/1000+100,DAY_END/1000+99]),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.urllib.request.urlopen",
+                side_effect=[mkresp(200,{"Content-Length":"110000"}),
+                             mkresp(200,{},fake_raw)]):
+                with self.assertRaisesRegex(ValueError,"receipt_before_request_started"):
+                    execute(base/"p",base/"bridge",base/"raw",base/"gate",
+                            base/"archive.gz",base/"audit.json")
+            self.assertFalse((base/"archive.gz").exists())
+            self.assertFalse((base/"audit.json").exists())
 
 
 if __name__=="__main__":
