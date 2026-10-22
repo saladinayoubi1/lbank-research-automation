@@ -277,3 +277,25 @@
 **نتیجهٔ گیت:** ۹/۹ تست مصنوعی از جمله unconfirmed، gap، پیام تأیید زودهنگام، نوع نادرست confirm، تکرار Close، Topic اشتباه، قیمت نامعتبر و عدم ACK **PASS**. روی دو پیام واقعی، `source_transport_read_only=true` اما `confirmed_closed_samples_seen=0` و `may_feed_mr40_from_this_probe=false`؛ `missing_completed_4h_bars_before_latest_ws_bar=4`. شواهد `docs/evidence/mr40-entry-event-contract-20261022/bybit_public_ws_closed_gate_20261022.json`، digest `a3d5fffc320fd3a0c7d81782b491231f8a1f47897ef8e727796f1e343892f01b`، SHA256 فایل محلی `75ac461e37a2a1211ff747c4e3f50e60d2e1a9399393361f3d67719109cacc7e`.
 
 **نتیجهٔ اجرایی:** برای اولین بار یک مسیر خواندنی زندهٔ **خود Bybit Spot** تأیید شد و ریسکِ «سیگنال زودرس» با گیت صریح مهار شد. اما **هیچ کندل بسته‌شدهٔ پیوسته‌ای هنوز از WebSocket به موتور MR40 تحویل داده نشده**؛ این، راه‌اندازی زندهٔ Paper و تأیید مزیت ورود MR40 نیست. مسیر بعدی: پرکردن معتبر شکاف ۰۰ تا ۱۲ UTC از آرشیو Bybit پس از انتشار، سپس شاهد `confirm=true` در یک کندل بعدی با رسید UTC مستقل. پروتکل ثابت آزمایش روز ۲۳ اکتبر نباید دستکاری شود. بدون WebSocket watcher دائمی، Scheduler، API خصوصی، Live، سفارش یا تغییر دمو.
+
+
+## شواهد مستقل Close واقعی ۱دقیقه‌ای Bybit Spot — ۲۲ اکتبر، بدون سیگنال ۴ساعته
+
+**مسئله:** آزمون قبلی در `kline.240.BTCUSDT` WebSocket فقط `confirm=false` دیده بود؛ همچنین بین دادهٔ منجمد ۲۱ اکتبر و کندل فعلی ۲۲ اکتبر چهار کندل ۴ساعتهٔ معتبر موجود نبود. با وجود اتصال زنده، **هیچ رویداد بسته‌شدن ۴h معتبر** تا این مرحله به `ClosedMR40` وارد نشده و کد سفارش فعال نیست.
+
+**قرارداد آزمایش جداگانهٔ ۱دقیقه‌ای:** طبق مستندات رسمی Bybit `https://bybit-exchange.github.io/docs/v5/websocket/public/kline`، موضوع `kline.1.BTCUSDT` مجاز و `confirm=true` به‌معنی پایان کندل است. پیش از اتصال پژوهشی، محدودهٔ یک‌بارهٔ حداکثر ۹۵ثانیه‌ای در `research/mr40_ws_minute_close_proof_protocol_20261022.json` قفل شد؛ این **صرفاً اثبات رفتار بستن کندل ۱m** است نه گیت سیگنال ۴h یا اتصال Paper. اجرای اولیهٔ `research/nexus_mr40_ws_minute_close_proof_v1.ps1` با ACK و دو پیام `confirm=false` معتبر آغاز شد، ولی سر کندل بعدی با خطای `invalid_public_spot_minute_market_payload` بسته شد؛ نتیجهٔ اولیهٔ **FAIL حفظ شد**.
+
+**ریشه‌یابی صریح، بدون تغییر نتیجهٔ اولیه:** برای تشخیص، یک بار دیگر فقط پیام خام همان جریان عمومی با قرارداد «دادهٔ خام، بدون تصمیم ورود» در commit `432d39f9a278165facdb2a6485c5ee88297eed06` قفل و اجرا شد. آرشیو شواهد `docs/evidence/mr40-entry-event-contract-20261022/bybit_spot_raw_minute_confirm_20261022.json` شامل **۱۲ به‌روزرسانی واقعی** Bybit Spot، ۱۱ بار `confirm=false` و **یک بار `confirm=true`** است؛ WebSocket، تأیید اشتراک و اعتبار زمانی رسید پیام واقعی بودند. آخرین نمونه:
+- کندل BTCUSDT Spot 1m از **2026-10-22 19:23:00 UTC** تا **19:23:59.999 UTC**؛ `confirm=true`.
+- timestamp تولید پیام سرور `1792697040563` یعنی **19:24:00.563 UTC**؛ رسید مستقل روی لپ‌تاپ **19:24:02.7286683 UTC**.
+- OHLCV پیام: `open=81418.8`، `high=81437.5`، `low=81412`، `close=81437.5`، `volume=3.508463 BTC`.
+- فیلد **جانبی** `data.timestamp=1792697040563`، به‌میزان **۵۶۴ میلی‌ثانیه بعد از end همان کندل** گزارش شد. فرض اولیهٔ کد که این فیلد همیشه <= پایان کندل است، با همین مشاهدهٔ واقعی ناسازگار بود؛ مستندات عمومی، آزمون ما را مجاز به استفاده از این فیلد به‌جای `confirm` و ساعت دریافت نمی‌کند.
+
+**تحلیل پس از برداشت، با برچسب Post-hoc:** `research/nexus_mr40_ws_minute_raw_forensics_v1.py` و تست‌های `tests/test_nexus_mr40_ws_minute_raw_forensics_v1.py`، **۶/۶ تست مصنوعی PASS**. تحلیل روی فایل خام زمان‌دار: یک کندل کامل ۱m با `confirm=true`، زمان پیام و دریافت **پس از پایان کندل** تأیید شد؛ اختلاف `data.timestamp` به‌عنوان **هشدار ساختار منبع** ثبت شد. شواهد `docs/evidence/mr40-entry-event-contract-20261022/bybit_spot_ws_minute_forensics_20261022.json`، digest منطقی `5023f6ea3bef6fc6ab5053d20e5f28f9e9b66cb1bf6659052eeaa90734063367`. کد پژوهشی اولیه بعداً اصلاح شد تا فیلد جانبی دیررس را گزارش کند، نه اینکه صرفاً به‌خاطر آن پایان کندل را اشتباه رد کند؛ **بدون اجرای دوبارهٔ آزمون اولیه یا تغییر معیارهای آن بعد از دیدن نتیجه**. PowerShell نسخهٔ اصلاح‌شده `PARSER_ERROR_COUNT=0` دارد.
+
+**مرز ادعا:**
+- `bybit_public_spot_websocket_connected=true`؛ **دریافت یک `confirm=true` واقعی در تایم‌فریم ۱ دقیقه تأیید شد**.
+- `MR40_closed_4h_accepted=false`؛ هیچ تأیید چهار‌ساعتهٔ واقعی و پیوسته از منبع به موتور MR40 داده نشده؛ **چهار کندل مفقود ۲۲ اکتبر هنوز با آرشیو رسمی تکمیل نشده‌اند** (`public.bybit.com` فایل روز ۲۲ در آخرین کنترل HTTP 404).
+- `private_API=false`، `orders=0`، `Paper500_unchanged=true`، `Live=false`، `NO_PROMOTE/NO_MERGE`.
+
+**قدم بعدی دارای اولویت:** با انتشار فایل رسمی روز ۲۲ اکتبر، شش کندل آن روز را فقط از معاملات واقعی Bybit به‌صورت ۱m→۴h بازسازی و به روزهای قبل متصل کنیم. بعد از گیت صحت، دریافت واقعی `confirm=true` مربوط به `kline.240.BTCUSDT` باید با timestamp دریافت و اعتبار پیوستگی جداگانه ثبت شود؛ دریافت ۱m به‌هیچ‌وجه جای آن را نمی‌گیرد.
