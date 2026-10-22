@@ -390,3 +390,5 @@ tests/test_nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf expo
 research/mr40_all47_adversity_timing_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
+# Source archive cache-reuse synthetic integrity and nontrading integration suite only.
+tests/test_nexus_mr40_bybit_forward_oct22_reuse_v1.py text eol=lf export-ignore
