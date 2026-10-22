@@ -271,3 +271,16 @@ docs/evidence/mr40-entry-stop-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/results.json.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/excursion_audit.json export-ignore
+
+# MR40 Phase 2/3 research-only coordinator, replay oracles and bounded ablation.
+# GitHub retains all protocols/evidence, but none ship in the strict runtime source archive.
+research/mr40_entry_event_contract_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_entry_event_contract_v1.py text eol=lf export-ignore
+research/nexus_mr40_entry_event_baseline_parity_v1.py text eol=lf export-ignore
+research/mr40_accounting_reconciliation_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_accounting_reconciliation_v1.py text eol=lf export-ignore
+research/mr40_one_combination_ablation_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_one_combination_ablation_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_entry_event_contract_v1.py text eol=lf export-ignore
+docs/research/MR40_ENTRY_EVENT_CONTRACT_20261022_FA.md text eol=lf export-ignore
+docs/evidence/mr40-entry-event-contract-20261022/*.json text eol=lf export-ignore
