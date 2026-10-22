@@ -79,6 +79,11 @@ def verified_raw_ws(raw_bytes,gate):
         raise ValueError("not_previously_observed_unchanged_websocket_capture")
     if gate.get("digest")!=WS_GATE_DIGEST or gate.get("gate",{}).get("confirmed_4h_closed_seen") is not True:
         raise ValueError("previous_websocket_closed_source_proof_missing")
+    copied=dict(gate)
+    copied.pop("digest",None)
+    if (hashlib.sha256(canonical(copied)).hexdigest()!=WS_GATE_DIGEST
+        or gate.get("raw_capture_sha256")!=WS_SHA):
+        raise ValueError("original_websocket_source_gate_payload_or_sha_changed")
     rec=json.loads(raw_bytes)
     source=classify_capture(rec)  # strict native Boolean + distinct UTC clocks + 49 source messages
     if source.get("confirmed_4h_closed_seen") is not True or source.get("snapshots")!=49:
