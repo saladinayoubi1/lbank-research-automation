@@ -157,7 +157,7 @@ class EntryEventCoordinator:
         return Event("NO_INTRABAR_EXIT", index)
 
     def close(self, index, close_price, entry_signal, exit_signal, position=None,
-              *, confirmed=False, source_ok=True, quality_allowed=True):
+              *, high_price, low_price, confirmed=False, source_ok=True, quality_allowed=True):
         """Only CLOSED-bar predicates queue next-open intents (no immediate trades)."""
         if index != self.last_open_index:
             return self._block(index, "close_not_matching_open")
@@ -170,8 +170,15 @@ class EntryEventCoordinator:
             px = dec(close_price)
         except (TypeError, ValueError, ArithmeticError):
             return self._block(index, "bad_close")
-        if px <= 0:
-            return self._block(index, "nonpositive_close")
+        try:
+            hi, lo = dec(high_price), dec(low_price)
+        except (TypeError, ValueError, ArithmeticError):
+            return self._block(index, "invalid_closed_ohlc")
+        if (px <= 0 or hi <= 0 or lo <= 0 or self.last_open_price is None
+                or hi < max(self.last_open_price, px)
+                or lo > min(self.last_open_price, px)
+                or lo > hi):
+            return self._block(index, "inconsistent_closed_ohlc")
 
         # Verified neutral signal after data outage releases suspension.
         if self.bad_data_latched:
@@ -192,7 +199,7 @@ class EntryEventCoordinator:
             self.pending_entry_for = None
             if exit_signal and not self.await_exit_ack:
                 self.pending_natural_exit_for = index + 1
-            if (self.arm2 and self.gross_entry_stop_floor is None
+            if (self.arm2 and not self.await_exit_ack and self.gross_entry_stop_floor is None
                     and self.arm_at_next_open is None
                     and px >= dec(position.entry_price) * Decimal("1.02")):
                 self.arm_at_next_open = dec(position.entry_price)
