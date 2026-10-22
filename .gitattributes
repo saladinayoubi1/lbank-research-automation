@@ -365,3 +365,8 @@ research/mr40_bybit_spot_orderbook50_snapshot_cost_protocol_20261022.json text e
 research/nexus_mr40_bybit_public_spot_ob50_snapshot_capture_v1.ps1 text eol=lf export-ignore
 research/nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
+
+# Research-only all-47 fee sensitivity based on official public Bybit Spot VIP taker rates; never runtime.
+research/mr40_all47_spot_fee_sensitivity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_frozen_47_spot_fee_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_frozen_47_spot_fee_audit_v1.py text eol=lf export-ignore
