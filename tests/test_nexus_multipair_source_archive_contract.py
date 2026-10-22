@@ -17,6 +17,9 @@ ADAPTIVE_SIZING_SUMMARY = "docs/evidence/mr40-adaptive-sizing-20261022/summary.j
 PARTIAL_TRIM_LEDGER = "docs/evidence/mr40-partial-loss-trim-20261022/ledger.jsonl.gz"
 PARTIAL_TRIM_RESULTS = "docs/evidence/mr40-partial-loss-trim-20261022/results.json.gz"
 PARTIAL_TRIM_RISK_AUDIT = "docs/evidence/mr40-partial-loss-trim-20261022/risk_attribution.json"
+TRIGGER_RATCHET_LEDGER = "docs/evidence/mr40-trigger-ratchet-20261022/ledger.jsonl.gz"
+TRIGGER_RATCHET_RESULTS = "docs/evidence/mr40-trigger-ratchet-20261022/results.json.gz"
+OLDER_RESEARCH_RESULTS = "docs/evidence/mr40-isolated-improvement-20261022/results.json"
 PREVIOUS_RR_SUMMARY = "docs/evidence/mr40-rr-sizing-20261022/summary.json"
 REQUIRED_RUNTIME_FILES = {
     "requirements.lock",
@@ -53,6 +56,9 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
     assert PARTIAL_TRIM_LEDGER not in names
     assert PARTIAL_TRIM_RESULTS not in names
     assert PARTIAL_TRIM_RISK_AUDIT not in names
+    assert TRIGGER_RATCHET_LEDGER not in names
+    assert TRIGGER_RATCHET_RESULTS not in names
+    assert OLDER_RESEARCH_RESULTS not in names
     assert PREVIOUS_RR_SUMMARY not in names
     subprocess.run(
         ["git", "cat-file", "-e", f"HEAD:{SEPARATE_RESEARCH_REPLAY_BUNDLE}"],
@@ -65,7 +71,8 @@ def test_research_evidence_remains_versioned_outside_runtime_archive() -> None:
     for path in (
         STAGED_ENTRY_LEDGER, STAGED_ENTRY_SUMMARY, ADAPTIVE_SIZING_SUMMARY,
         PARTIAL_TRIM_LEDGER, PARTIAL_TRIM_RESULTS, PARTIAL_TRIM_RISK_AUDIT,
-        PREVIOUS_RR_SUMMARY,
+        PREVIOUS_RR_SUMMARY, TRIGGER_RATCHET_LEDGER,
+        TRIGGER_RATCHET_RESULTS, OLDER_RESEARCH_RESULTS,
     ):
         subprocess.run(
             ["git", "cat-file", "-e", f"HEAD:{path}"],
