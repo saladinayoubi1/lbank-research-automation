@@ -150,8 +150,12 @@ def main(archive,minute_source,policy_path,output):
     report["digest"]=hashlib.sha256(canon(report)).hexdigest()
     output.mkdir(parents=True)
     (output/"summary.json").write_bytes(canon(report)+b"\n")
-    with gzip.open(output/"one_minute_trade_tape.csv.gz","wt",encoding="utf-8",newline="",mtime=None) as f:
-        writer=csv.writer(f);writer.writerow(report["cutout"]["columns"]);writer.writerows(focus_rows)
+    with (output/"one_minute_trade_tape.csv.gz").open("wb") as raw_dest:
+        with gzip.GzipFile(filename="",fileobj=raw_dest,mode="wb",mtime=0) as gz_dest:
+            with io.TextIOWrapper(gz_dest,encoding="utf-8",newline="") as text_dest:
+                writer=csv.writer(text_dest)
+                writer.writerow(report["cutout"]["columns"])
+                writer.writerows(focus_rows)
     print(json.dumps({"source_sha":DAY_SHA,"day_trades":count,"focus_trades":event_count,
       "parity":parity,"diffs":[str(z) for z in price_diffs],
       "below":event_below_count,"below_btc":str(event_below_volume),
