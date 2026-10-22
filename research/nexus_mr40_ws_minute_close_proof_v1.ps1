@@ -24,6 +24,7 @@ $r=[ordered]@{
  received_topic_frames=0
  confirmed_valid_minute_count=0
  invalid_frame_count=0
+ source_timestamp_after_bar_end_count=0
  confirmations=@()
  observed_unconfirmed_count=0
  first_unconfirmed=@()
@@ -89,7 +90,7 @@ try{
                  [decimal]::Parse([string]$bar.close,[System.Globalization.CultureInfo]::InvariantCulture),
                  [decimal]::Parse([string]$bar.volume,[System.Globalization.CultureInfo]::InvariantCulture))
          if($start -le 0 -or $start%60000 -ne 0 -or $end -ne $start+59999 -or
-           $ms -lt $start -or $traded -lt $start -or $traded -gt $end -or
+           $ms -lt $start -or $traded -lt $start -or 
            $vals[0] -le 0 -or $vals[1] -le 0 -or $vals[2] -le 0 -or $vals[3] -le 0 -or $vals[4] -lt 0 -or
            $vals[1] -lt [Math]::Max($vals[0],$vals[3]) -or $vals[2] -gt [Math]::Min($vals[0],$vals[3])){
              throw 'invalid_public_spot_minute_market_payload'
@@ -99,11 +100,13 @@ try{
            topic=$obj.topic
            bybit_message_ms=$ms
            last_trade_ms=$traded
+           last_trade_timestamp_after_end_ms=([Math]::Max(0,$traded-$end))
            start_ms=$start
            end_ms=$end
            open=[string]$bar.open;high=[string]$bar.high;low=[string]$bar.low;close=[string]$bar.close;volume=[string]$bar.volume
            confirmed=[bool]$bar.confirm
          }
+         if($traded -gt $end){$r.source_timestamp_after_bar_end_count++}
          if($bar.confirm -eq $true){
              if($ms -lt $start+60000 -or $received.ToUnixTimeMilliseconds() -lt $start+60000){throw 'premature_confirm_true'}
              if(-not $r.subscribe_ack){throw 'confirmed_data_without_subscription_ack'}
