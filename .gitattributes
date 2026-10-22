@@ -307,3 +307,8 @@ tests/test_nexus_mr40_independent_closed_signal_v1.py text eol=lf export-ignore
 research/mr40_signal_coordinator_replay_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_signal_coordinator_replay_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_signal_coordinator_replay_v1.py text eol=lf export-ignore
+
+# MR40 public backup 240x1min -> 4h strict OHLCV integrity diagnostic (research only).
+research/mr40_backup_1m_4h_integrity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
