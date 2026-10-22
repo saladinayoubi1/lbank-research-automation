@@ -312,3 +312,8 @@ tests/test_nexus_mr40_signal_coordinator_replay_v1.py text eol=lf export-ignore
 research/mr40_backup_1m_4h_integrity_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
+
+# Official Bybit Spot archive one-day trade-print to frozen 4h research proof; not runtime.
+research/mr40_bybit_public_spot_archive_day_parity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
