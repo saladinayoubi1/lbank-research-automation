@@ -72,5 +72,9 @@
   },
   "criteria": "Train profit: normal PnL >= base, stress PnL >= base*1.05 and worst close DD <= base*1.10. Train efficiency: normal CAGR >= base*.75, stress CAGR positive, DD <= base*.90 and score=min(normal,stress CAGR)/max(normal,stress DD) >= base*1.10. Frozen evaluation success for selected: both normal/stress profits >= base*.75, close DD <= base*.80, efficiency >= base*1.10. If none train-qualify, retain baseline. Do not retune.",
   "validation": "Pinned old input hashes and baseline exact parity, independent accounting replay, time-prefix invariance, case-specific synthetic tests. All prior data already seen.",
-  "permissions": "Research files only; do not interact with active Paper or Live environments."
+  "permissions": "Research files only; do not interact with active Paper or Live environments.",
+  "capitals": [
+    10000,
+    500
+  ]
 }
