@@ -1,0 +1,26 @@
+{
+  "schema": "mr40.bybit-spot-ticks.20251010.v1",
+  "purpose": "Historical public trades audit, not strategy tuning or executable stop-fill estimate",
+  "archive_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2025-10-10.csv.gz",
+  "market": "Bybit SPOT BTCUSDT",
+  "expected_head_bytes": 16190304,
+  "focus_utc": "2025-10-10T20:56:00Z",
+  "fixed_window_start_utc": "2025-10-10T20:54:00Z",
+  "fixed_window_end_utc": "2025-10-10T21:04:00Z",
+  "entry_fill": "119075.40795000",
+  "existing_stop_price": "114312.3916320000",
+  "prior_minute_source_sha256": "b6c9b7aa60334f72c7fc9218f9edfa7d1c506aaf45c2d8ef74783887fbd4f096",
+  "prior_strict_parity": "FAILED, must remain failed",
+  "validation": "Check gzip/CSV header, UTC timestamps, SPOT identity, full day integrity, 20:56 trade OHLC parity against pinned 1-minute market data within 0.01 USDT. Never relax parity. No missing crossing minute. Do not infer an executable stop fill.",
+  "measurements": "First public trade at/below existing stop, prior trade and timestamps, seconds below, prints and BTC volume below, observed largest printed price gap and second-bucket price ranges between 20:54-21:04 UTC. Never estimate slippage or PNL from prints.",
+  "constraints": {
+    "paper_changed": false,
+    "live": false,
+    "real_orders": false,
+    "private_api": false,
+    "auto_promote": false,
+    "merge": false
+  },
+  "parent": "aa12d7a2373aefc80593baac0e13c29d775e06ec",
+  "roadmap_issue": 2799
+}
