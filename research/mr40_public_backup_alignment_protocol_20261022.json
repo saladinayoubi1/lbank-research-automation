@@ -1,0 +1,34 @@
+{
+  "schema": "nexus.mr40.public-backup-source-alignment.v1",
+  "issue": 2799,
+  "venue_role": "Bitget/LBank SPOT BTCUSDT public MARKET DATA only; Bybit remains sole Paper/Demo execution reference. These different venues must never be treated as verified Bybit order execution or authoritative Bybit candles.",
+  "pilot_notice": "Endpoint availability and one shared 2026-10-22T04:00Z historical candle were already inspected before this protocol. All captured same-day bars are source-readiness evidence, NOT pristine forward strategy observations.",
+  "endpoint_contracts": [
+    {
+      "venue": "Bitget",
+      "method": "GET",
+      "url_template": "https://api.bitget.com/api/v3/market/candles?category=SPOT&symbol=BTCUSDT&interval=4H&limit=8",
+      "format": "rows [ts_ms, O,H,L,C,base_vol,quote_vol]",
+      "expected_code": "00000"
+    },
+    {
+      "venue": "LBank",
+      "method": "GET",
+      "url_template": "https://api.lbank.info/v2/kline.do?symbol=btc_usdt&size=8&type=hour4&time={UTC_UNIX_SECONDS_MINUS_48H}",
+      "format": "rows [ts_s,O,H,L,C,base_vol]",
+      "expected_result": "true"
+    }
+  ],
+  "qualification": "Only *closed* 4h candles, closed at least 2 min before receipt, with strictly valid OHLCV and aligned UTC 4h epoch. Require 2+ shared complete bars and no 4h gaps in shared overlap for readiness. List absolute close differences and cross-venue bps at matched timestamps, never call price similarity parity or Bybit equivalence. No trading threshold or activation from the result.",
+  "source_proof": "Save HTTP response raw bytes SHA256, UTC receipt timestamp and raw payload (public only). Produce immutable canonical JSON with record digest. Refuse overwrite and fail closed if any feed unavailable or malformed.",
+  "interpretation": "Cross-venue matching timestamps make *research-only backups* available but do not prove Bybit 4h-to-1m source parity, L2 executable liquidity, nor actual spreads and fill prices. Do not synthesize 1m data.",
+  "schedule": "One manually invoked, read-only snapshot only. Not a background monitor or operational dependency. Later true forward observations require independently timestamped collection after pre-registered experiment and genuinely new bars.",
+  "safety": {
+    "paper_500_usdt_laptop2_unchanged": true,
+    "live": false,
+    "orders": 0,
+    "private_api": false,
+    "auto_merge": false,
+    "promote": false
+  }
+}
