@@ -234,3 +234,15 @@ docs/evidence/mr40-staged-entry-20261022/ledger.jsonl.gz export-ignore
 # Adaptive study aggregate is already separately hash-pinned in Git; keep
 # its full summary outside the limited runtime-only archive as well.
 docs/evidence/mr40-adaptive-sizing-20261022/summary.json text eol=lf export-ignore
+
+# Partial-loss MR40 source and tests stay cross-platform LF; historical ledgers
+# are Git-tracked but not duplicated in the strict 8-MiB runtime transport.
+research/mr40_partial_loss_trim_v1.json text eol=lf
+research/nexus_mr40_partial_loss_trim_v1.py text eol=lf
+research/verify_mr40_partial_loss_trim_temporal_v1.py text eol=lf
+tests/test_nexus_mr40_partial_loss_trim_v1.py text eol=lf
+docs/research/MR40_PARTIAL_LOSS_TRIM_20261022_FA.md text eol=lf
+docs/evidence/mr40-partial-loss-trim-20261022/results.json.gz export-ignore
+docs/evidence/mr40-partial-loss-trim-20261022/ledger.jsonl.gz export-ignore
+# Already hash-pinned historical study summary: keep in Git, outside transport.
+docs/evidence/mr40-rr-sizing-20261022/summary.json text eol=lf export-ignore
