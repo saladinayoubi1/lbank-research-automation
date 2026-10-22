@@ -1,0 +1,296 @@
+{
+    "schema":  "nexus.mr40.bybit_spot_raw_minute_diagnostic.results.v1",
+    "protocol_sha256":  "dd5d2e95272cdff0eafcee1b9310e9c950b22d2cbbc311f69a6706972eb12c23",
+    "started_utc":  "2026-10-22T19:23:33.4281009+00:00",
+    "finished_utc":  "2026-10-22T19:24:02.7336691+00:00",
+    "endpoint":  "wss://stream.bybit.com/v5/public/spot",
+    "topic":  "kline.1.BTCUSDT",
+    "connected":  true,
+    "subscription_ack":  true,
+    "captured_topic_count":  12,
+    "observed_confirm_true":  true,
+    "raw_frames":  [
+                       {
+                           "received_utc":  "2026-10-22T19:23:34.8814646+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81420.4",
+                                                            "high":  "81420.4",
+                                                            "low":  "81412",
+                                                            "volume":  "2.393243",
+                                                            "turnover":  "194850.3426397",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697014562
+                                                        }
+                                                    ],
+                                           "ts":  1792697014562
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:35.7877351+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81420.5",
+                                                            "high":  "81420.5",
+                                                            "low":  "81412",
+                                                            "volume":  "2.394962",
+                                                            "turnover":  "194990.3044792",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697015563
+                                                        }
+                                                    ],
+                                           "ts":  1792697015563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:36.7829900+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81420.5",
+                                                            "high":  "81420.5",
+                                                            "low":  "81412",
+                                                            "volume":  "2.395023",
+                                                            "turnover":  "194995.2711297",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697016562
+                                                        }
+                                                    ],
+                                           "ts":  1792697016562
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:42.7880534+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81426.1",
+                                                            "high":  "81426.1",
+                                                            "low":  "81412",
+                                                            "volume":  "2.724048",
+                                                            "turnover":  "221785.2450582",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697022563
+                                                        }
+                                                    ],
+                                           "ts":  1792697022563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:45.7893664+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81426.9",
+                                                            "high":  "81426.9",
+                                                            "low":  "81412",
+                                                            "volume":  "2.810259",
+                                                            "turnover":  "228805.1395341",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697025563
+                                                        }
+                                                    ],
+                                           "ts":  1792697025563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:46.7781296+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81427",
+                                                            "high":  "81427",
+                                                            "low":  "81412",
+                                                            "volume":  "2.822271",
+                                                            "turnover":  "229783.2406581",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697026563
+                                                        }
+                                                    ],
+                                           "ts":  1792697026563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:48.7876276+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81433",
+                                                            "high":  "81433",
+                                                            "low":  "81412",
+                                                            "volume":  "3.295278",
+                                                            "turnover":  "268299.5266169",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697028563
+                                                        }
+                                                    ],
+                                           "ts":  1792697028563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:49.7912171+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81434",
+                                                            "high":  "81434",
+                                                            "low":  "81412",
+                                                            "volume":  "3.306278",
+                                                            "turnover":  "269195.3006169",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697029563
+                                                        }
+                                                    ],
+                                           "ts":  1792697029563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:50.7798536+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81434",
+                                                            "high":  "81434",
+                                                            "low":  "81412",
+                                                            "volume":  "3.314278",
+                                                            "turnover":  "269846.7726169",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697030563
+                                                        }
+                                                    ],
+                                           "ts":  1792697030563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:23:57.1263974+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81437.5",
+                                                            "high":  "81437.5",
+                                                            "low":  "81412",
+                                                            "volume":  "3.493977",
+                                                            "turnover":  "284480.3900973",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697036562
+                                                        }
+                                                    ],
+                                           "ts":  1792697036562
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:24:02.7266471+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81437.5",
+                                                            "high":  "81437.5",
+                                                            "low":  "81412",
+                                                            "volume":  "3.500463",
+                                                            "turnover":  "285008.5937223",
+                                                            "confirm":  false,
+                                                            "timestamp":  1792697039563
+                                                        }
+                                                    ],
+                                           "ts":  1792697039563
+                                       }
+                       },
+                       {
+                           "received_utc":  "2026-10-22T19:24:02.7286683+00:00",
+                           "payload":  {
+                                           "type":  "snapshot",
+                                           "topic":  "kline.1.BTCUSDT",
+                                           "data":  [
+                                                        {
+                                                            "start":  1792696980000,
+                                                            "end":  1792697039999,
+                                                            "interval":  "1",
+                                                            "open":  "81418.8",
+                                                            "close":  "81437.5",
+                                                            "high":  "81437.5",
+                                                            "low":  "81412",
+                                                            "volume":  "3.508463",
+                                                            "turnover":  "285660.0937223",
+                                                            "confirm":  true,
+                                                            "timestamp":  1792697040563
+                                                        }
+                                                    ],
+                                           "ts":  1792697040563
+                                       }
+                       }
+                   ],
+    "error":  null,
+    "allow_feed_to_mr40":  false,
+    "paper_unchanged":  true,
+    "orders_sent":  0,
+    "private_api":  false,
+    "live":  false
+}
