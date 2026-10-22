@@ -55,5 +55,15 @@ class TestBackupDataIntegrity(unittest.TestCase):
                 self.assertNotIn("apiKey",url)
 
 
+    def test_lbank_low_above_open_fails_even_if_four_hour_aggregate_matches(self):
+        from research.nexus_mr40_backup_1m_4h_integrity_v1 import parse
+        minute=[[i*60,81661.67,81693.32,81660.00,81691.78,1.06833] for i in range(240)]
+        # The 12:59 UTC source anomaly: LOW > OPEN, impossible OHLC.
+        minute[59][3]=81663.44
+        blob={"result":"true","error_code":0,"data":minute}
+        with self.assertRaisesRegex(ValueError,"invalid_ohlcv"):
+            parse(blob,"LBank","1m")
+
+
 if __name__=="__main__":
     unittest.main()
