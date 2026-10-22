@@ -32,13 +32,14 @@
   "cost_free_tick_proxy": {
     "reference": "FIRST trade print at or after exact 4h boundary (historical 4h OPEN as first print)",
     "latency_cases_ms": [
-      816,
+      817,
       1500
     ],
     "delayed_proxy": "FIRST actual Bybit Spot trade print at or after boundary+latency_ms. Not a guaranteed achievable market order fill, nor quote or midpoint.",
     "price_delta_bps": "(delayed_trade_price - reference_first_trade_price)/reference_first_trade_price * 10000; positive means higher price (adverse to hypothetical buy), negative adverse to sell",
     "coverage": "Fail if any of the 12 selected fixed 4h starts lacks either a baseline or a delayed trade in the same 4h bin. Report lag-to-first-trade after threshold, absolute and signed bp differences, max, mean absolute, zero/nonzero counts; do not optimize threshold or trade direction.",
-    "nonfill": "Cannot derive executable price, spread, fees, order book, available liquidity, size slippage or actual broker fills from last-sale trade prints."
+    "nonfill": "Cannot derive executable price, spread, fees, order book, available liquidity, size slippage or actual broker fills from last-sale trade prints.",
+    "threshold_reason": "A measured confirmation receipt +816.2316ms cannot be used at +816ms on integer-millisecond trade timestamps; ceil to +817ms. Chosen BEFORE running any latency tick metrics, no result seen."
   },
   "safety": {
     "offline": true,
