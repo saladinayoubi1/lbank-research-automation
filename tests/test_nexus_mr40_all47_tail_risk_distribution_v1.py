@@ -47,7 +47,7 @@ class TestPinnedTailDistribution(unittest.TestCase):
         self.assertEqual(s["hold_duration_categories"]["lt_48_hours"]["n_positions"],1)
         self.assertEqual(s["hold_duration_categories"]["48_to_119_hours"]["n_positions"],1)
         self.assertEqual(s["hold_duration_categories"]["gte_120_hours"]["n_positions"],2)
-        self.assertEqual(s["adverse_price_MAE_nearest_rank_pct"]["0.95"],"20")
+        self.assertEqual(D(s["adverse_price_MAE_nearest_rank_pct"]["0.95"]),D("20"))
 
     def test_malformed_entry_to_low_price_percent_refused(self):
         x=row(1)
