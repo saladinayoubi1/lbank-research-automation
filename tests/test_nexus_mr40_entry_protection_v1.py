@@ -58,3 +58,24 @@ def test_frozen_protocol_and_no_live_imports():
     assert cfg["schema"]=="mr40.entry_protection.v1"
     assert len(cfg["cases"])==8
     assert cfg["constraints"]=={"paper_change":False,"real_orders":False,"live":False,"auto_merge":False}
+
+def test_192_frozen_entry_stop_evidence_integrity():
+    from pathlib import Path
+    import gzip, hashlib
+    root=Path(__file__).resolve().parents[1]
+    bundle=root/"docs"/"evidence"/"mr40-entry-stop-20261022"
+    result=bundle/"results.json.gz"
+    ledger=bundle/"ledger.jsonl.gz"
+    assert hashlib.sha256(result.read_bytes()).hexdigest()=="93eb5afbab9e94dddfc236a304df1f067a8d69d66d5c4edec081c3cfcb7b394b"
+    assert hashlib.sha256(ledger.read_bytes()).hexdigest()=="138beb278daf2d0f83f015e06b9be80eac406f590b28a0581d3341e8dc2f52e3"
+    with gzip.open(result,"rt",encoding="utf8") as f:
+        data=json.load(f)
+    logical_digest=data.pop("digest")
+    c=json.dumps(data,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()
+    assert hashlib.sha256(c).hexdigest()==logical_digest=="8420f3a6f9135469f433020ee61e99606733dead0e5bcfa90065adbaa6f535d3"
+    assert data["runs"]==len(data["rows"])==192
+    assert len(data["control_parity"])==24
+    assert data["evaluation_success"]=={"profit":False,"efficiency":False}
+    assert data["paper_changed"] is False
+    with gzip.open(ledger,"rt",encoding="utf8") as f:
+        assert sum(1 for line in f)==192
