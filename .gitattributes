@@ -380,3 +380,8 @@ tests/test_nexus_mr40_all47_intratrade_ohlc_equity_bounds_v1.py text eol=lf expo
 research/mr40_frozen47_tail_risk_distribution_protocol_20261022.json text eol=lf export-ignore
 research/nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
+
+# Historical research only: precommitted fixed cash-reserve fraction 47-position risk study, excluded from runtime.
+research/mr40_preregistered_cash_fraction_risk_sensitivity_20261022.json text eol=lf export-ignore
+research/nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
