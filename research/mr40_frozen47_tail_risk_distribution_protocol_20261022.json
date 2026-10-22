@@ -1,0 +1,74 @@
+{
+  "schema": "nexus.mr40.frozen47_tail_risk_exposure_distribution_v1",
+  "scope": "2026-10-22 retained all 47 MR40 LONG Bybit Spot BTCUSDT signal pairs, no new strategy optimization",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "source": {
+    "full_risk_report_local_path": "E:\\NEXUS-Research\\MR40-Entry-Event-20261022\\results\\mr40_all47_intratrade_drawdown_bounds_20261022.json",
+    "full_risk_file_sha256": "c401f4920d8f51abe2ed77c11aa3a9616df8cde2d0dd958d7dfd0a59c6cac051",
+    "full_risk_logical_digest": "6ec8b21dc24ef1de962c4b439f870420493cecab570c53311eb836dbe7240ba9",
+    "market_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "fee_scenario": "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE",
+    "expected_pairs": 47,
+    "train": 25,
+    "eval": 22,
+    "prior_ohlc_risk_max_global_percent": "25.41746891798068870740313933"
+  },
+  "precommitted_descriptive_metrics": {
+    "trade_price_adverse_MAE_pct": "max(0,-min_held_4h_low_relative_to_entry_open_pct). Compute only per-position; DO NOT confuse global equity-peak-to-low DD with entry-relative MAE.",
+    "tail_thresholds_price_MAE_pct": [
+      3,
+      5,
+      10,
+      15,
+      20
+    ],
+    "long_holding_thresholds_hours": [
+      24,
+      72,
+      120,
+      168
+    ],
+    "quantile_probabilities": [
+      0.5,
+      0.75,
+      0.9,
+      0.95
+    ],
+    "nearest_rank_quantile": "sort ascending and take 1-indexed ceil(p*n). No quantile interpolation.",
+    "duration_groups": [
+      {
+        "key": "lt_48_hours",
+        "min_inclusive": 0,
+        "max_exclusive": 48
+      },
+      {
+        "key": "48_to_119_hours",
+        "min_inclusive": 48,
+        "max_exclusive": 120
+      },
+      {
+        "key": "gte_120_hours",
+        "min_inclusive": 120,
+        "max_exclusive": null
+      }
+    ],
+    "cross_classification": "For each duration bucket report n, number with price_MAE>=5%, >=10%, >=15%; descriptive only and NO evidence of causal effect of holding time.",
+    "early_adversity": "For each selected position report earliest UTC four-hour OPEN of bar containing lowest LOW, and offset hours from entry to start of that bar. It does not prove when within the four-hour bar the low occurred.",
+    "worst_trade_listing": "Top 5 positions ordered by descending adverse MAE, tie break ascending trade index; separately longest 5 by descending duration; all originally frozen dates.",
+    "always_report": "Gross and fee-only realized PnL are historical Open-price proxies only; observed MAE and time-underwater independent of selection; no executable stops or fills.",
+    "risk_promotion_rule": "Output ONLY a diagnostic decision state NO_AUTOMATIC_PROMOTION: user-specific risk limit was never approved and true forward source/receipt latency + actual order execution not verified. Do not choose a stop or allocation rule based on this already seen sample."
+  },
+  "constraints": {
+    "no_new_strategy_parameters": true,
+    "stop_rr_grid_search": false,
+    "source_is_post_hoc": true,
+    "paper_500_USDT_unchanged": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  }
+}
