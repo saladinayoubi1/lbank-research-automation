@@ -1,0 +1,103 @@
+{
+  "schema": "nexus.mr40-staged-entry-contract.v1",
+  "parent_commit": "571a75624abe070c4ea7adc3b2dea78da86ea03a",
+  "hypothesis": "Use an early partial fill then add only on recovery, with original MR40+Momentum30 admission and Z>=0 natural exit. Unlike tested delayed confirmation, first tranche retains early recovery exposure; unlike tested static 50% sizing, a second tranche uses otherwise idle cash. No stop, RR bracket, trailing, or drawdown throttle.",
+  "cases": [
+    {
+      "id": "baseline_a100",
+      "first": "1",
+      "condition": "none",
+      "max_decision_bars": 0,
+      "control": true
+    },
+    {
+      "id": "control_a50",
+      "first": "0.5",
+      "condition": "none",
+      "max_decision_bars": 0,
+      "control": true
+    },
+    {
+      "id": "stage25_rebound3",
+      "first": "0.25",
+      "condition": "rebound",
+      "max_decision_bars": 3
+    },
+    {
+      "id": "stage50_rebound3",
+      "first": "0.5",
+      "condition": "rebound",
+      "max_decision_bars": 3
+    },
+    {
+      "id": "stage75_rebound3",
+      "first": "0.75",
+      "condition": "rebound",
+      "max_decision_bars": 3
+    },
+    {
+      "id": "stage50_rebound6",
+      "first": "0.5",
+      "condition": "rebound",
+      "max_decision_bars": 6
+    },
+    {
+      "id": "stage50_zreclaim6",
+      "first": "0.5",
+      "condition": "zreclaim",
+      "max_decision_bars": 6
+    }
+  ],
+  "execution": "For all cases initial admission remains frozen baseline signal and Momentum30. Fill first fraction of starting episode cash at the first post-close eligible open. Additional fill occurs at next open only, at most once, and only while same episode is active: decision j satisfies 1<=j-initial_signal_index<=max_decision_bars, close[j]>close[j-1], close[j]>=initial actually executed buy reference. zreclaim additionally requires z[j]>=-1.5. Add spends up to all remaining cash; never averages down by confirmation close; execution-open gaps can yield worse prices. No add after natural exit, no leverage, no short, no repeated entry within the same signal episode. The exit is unchanged at baseline desired=0. Profile latency 1/2 bars. Rounding 0.00001 BTC, minimum 1 USDT, round prices/fees to 8 decimals; terminal closing included. Pyramiding may compound execution costs.",
+  "profiles": [
+    {
+      "id": "normal",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 1
+    },
+    {
+      "id": "stress",
+      "fee_bps": 25,
+      "slippage_bps": 15,
+      "lag_bars": 1
+    },
+    {
+      "id": "extra_4h_delay",
+      "fee_bps": 10,
+      "slippage_bps": 5,
+      "lag_bars": 2
+    }
+  ],
+  "capitals_usdt": [
+    10000,
+    500
+  ],
+  "training": [
+    "2023-01-01",
+    "2025-01-01"
+  ],
+  "evaluation": [
+    "2025-01-01",
+    "2026-10-20"
+  ],
+  "full": [
+    "2023-01-01",
+    "2026-10-20"
+  ],
+  "lbank30": [
+    "2026-09-21",
+    "2026-10-21"
+  ],
+  "selection": "Lock using Bybit training 10000 normal and stress before reading evaluation. Exclude control_a50. Profit candidate must have normal PnL >= baseline normal, stress PnL >= 1.05*baseline stress when baseline stress positive, worst normal/stress close DD <=1.10*baseline; choose highest training stress PnL. Efficiency candidate requires stress CAGR>0, normal CAGR>=0.75*baseline, worst close DD<=baseline, score=min(normal,stress CAGR)/max(normal,stress DD)>=1.10*baseline; choose highest score. If no candidates, baseline selected. Evaluate frozen profit candidate only if normal PnL>baseline, stress PnL>=baseline and worst DD<=1.10*baseline; frozen efficiency candidate only if normal PnL>=0.75 baseline, normal DD<=0.8 baseline and efficiency score>=1.10 baseline. Never retune after evaluation.",
+  "validation": "Compare baseline and control_a50 exactly against pinned v3 engine for every main window; independent Decimal cash/quantity/price ledger for two buys and exits; signal timing/no future data checks; prefix invariance; baseline full and LBank curves exact. Report # completed episodes, #adds, add-rate, costs, underwater days, worst close drawdown and stress scenario. All source frames hash locked to pinned v3. At least one edge-case synthetic validation for confirmation, expiration, slippage gap, and no second add.",
+  "classification": "Predeclared family, but every historical bar has been observed by earlier research; retrospective selection and held-out calendar splits do not imply unseen external validation. Do not interpret counts as independent samples.",
+  "authority": {
+    "research_only": true,
+    "live_enabled": false,
+    "exchange_orders": 0,
+    "paper_mutation": false,
+    "automatic_promotion": false,
+    "merge": false
+  }
+}
