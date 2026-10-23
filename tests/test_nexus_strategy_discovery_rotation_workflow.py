@@ -269,11 +269,18 @@ def test_terminal_frontier_reports_blocked_without_dispatching_or_moving_cursor(
     assert "--blocked-receipt-on-exhaustion" in decision
     assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in decision
     assert "BLOCKED_NEW_MECHANISM_REQUIRED" in decision
-    for name, next_name in (
-        ("Dispatch reviewed Research workflow", "Commit rotation cursor only after accepted dispatch"),
-        ("Commit rotation cursor only after accepted dispatch", "Obtain only the exact certified prior multi-timeframe outcome"),
-    ):
-        step = text.split(name, 1)[1].split(next_name, 1)[0]
+    assert text.index("Obtain only the exact certified prior multi-timeframe outcome") < text.index(
+        "Verify discovery surface and select one stage"
+    )
+    feedback_start = text.index("Obtain only the exact certified prior multi-timeframe outcome")
+    frontier_upload_action = text.index("uses: actions/upload-artifact@v4", feedback_start)
+    frontier_upload_name = text.index("name: nexus-research-frontier-state", frontier_upload_action)
+    assert frontier_upload_name < text.index("Dispatch reviewed Research workflow")
+    assert text.index("Dispatch reviewed Research workflow") < text.index(
+        "Commit rotation cursor only after accepted dispatch"
+    )
+    for name in ("Dispatch reviewed Research workflow", "Commit rotation cursor only after accepted dispatch"):
+        step = text.split(name, 1)[1].split("\n      - ", 1)[0]
         assert "steps.frontier-selection.outputs.ready == 'true'" in step
 
 
@@ -301,3 +308,109 @@ def test_restore_and_reconciliation_require_feedback_before_any_reset():
         'rm -f "$receipt"', 1
     )[0]
     assert "--require-feedback-state" in command
+
+
+
+def test_all_strategy_stage_completions_wake_the_existing_rotation():
+    text = _text()
+    trigger = text.split("  workflow_run:", 1)[1].split("  push:", 1)[0]
+    expected = (
+        "NEXUS multi-timeframe strategy discovery",
+        "NEXUS Multi-Pair Discovery v2 physical proof",
+        "Bybit strategy search v2",
+        "Bybit portfolio search v3",
+        "Bybit long short search v4",
+        "Bybit consensus search v5",
+        "Bybit regime search v6",
+        "Bybit neighborhood validation v7",
+    )
+    for workflow_name in expected:
+        assert f'- "{workflow_name}"' in trigger
+    assert "types: [completed]" in trigger
+    assert 'cron: "37 2 * * *"' in text  # fallback remains, not the normal continuation path
+    assert '"NEXUS strategy discovery rotation"' not in trigger
+    assert '"Fast Agent Coordinator"' not in trigger
+
+
+def test_successful_main_strategy_dispatch_completion_can_continue_same_rotation():
+    text = _text()
+    dispatch = text.split("  dispatch-one-stage:", 1)[1].split("    needs:", 1)[0]
+    for required in (
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.head_repository.full_name == github.repository",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.event == 'workflow_dispatch'",
+    ):
+        assert required in dispatch
+    # Paper/Demo health triggers keep their separately verified event path.
+    assert "github.event.workflow_run.name == 'NEXUS persistent Paper trading loop'" in dispatch
+    assert "github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge'" in dispatch
+
+
+def test_feedback_only_manual_request_stays_non_dispatching_but_exact_completion_continues():
+    text = _text()
+    env = text.split("      HEALTH_TRIGGER:", 1)[1].split("    steps:", 1)[0]
+    assert "NEXUS persistent Paper trading loop" in env
+    assert "NEXUS Demo regime lifecycle bridge" in env
+    assert "AUTO_CONTINUE:" in text
+    for required in (
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.head_repository.full_name == github.repository",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.event == 'workflow_dispatch'",
+        "github.event.workflow_run.head_sha == github.sha",
+    ):
+        assert required in text.split("      AUTO_CONTINUE:", 1)[1].split("\n", 1)[0]
+    gate = text.split("Decide daily or health-driven dispatch", 1)[1].split(
+        "Restore rotation state", 1
+    )[0]
+    assert 'if [ "$FEEDBACK_REQUESTED" = "true" ]; then' in gate
+    assert 'if [ "$AUTO_CONTINUE" = "true" ]; then' in gate
+    assert 'echo "should_dispatch=true" >> "$GITHUB_OUTPUT"' in gate
+    assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in gate
+    assert "Manual feedback-only request: no subsequent strategy dispatch." in gate
+
+
+
+def test_event_driven_rotation_requires_exact_receipt_and_stops_on_retryable_outcomes():
+    text = _text()
+    env = text.split("      REQUIRE_EXACT_RESEARCH_RECEIPT:", 1)[1].split("\n", 1)[0]
+    assert "github.event_name == 'workflow_run'" in env
+    assert "NEXUS persistent Paper trading loop" in env
+    assert "NEXUS Demo regime lifecycle bridge" in env
+
+    reconcile = text.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert "No prior dispatch receipt for this strategy workflow completion" in reconcile
+    assert '"$run_id" != "$TRIGGER_RUN_ID"' in reconcile
+    assert "was_processed=" in reconcile
+    assert "Triggering research run was already reconciled" in reconcile
+    assert "reconciled_run=" in reconcile
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in reconcile
+
+    selection = text.split("Verify discovery surface and select one stage", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert '"workflow_failed", "evidence_unavailable", "requires_data"' in selection
+    assert 'last.get("stage") == plan.get("stage")' in selection
+    assert "stop rather than create an event loop" in selection
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in selection
+    assert 'echo "recovery_allowed=true" >> "$GITHUB_OUTPUT"' in selection
+    assert 'echo "recovery_allowed=false" >> "$GITHUB_OUTPUT"' in selection
+
+    recovery_step = text.split("Produce exact-source design-review queue when frontier is exhausted", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert "steps.frontier-selection.outputs.recovery_allowed == 'true'" in recovery_step
+    assert "steps.frontier-selection.outputs.ready == 'false'" not in recovery_step
+
+
+
+def test_new_frontier_design_requires_exact_reconciled_run_or_manual_feedback_only():
+    text = _text()
+    source = text.split("Obtain only the exact certified prior multi-timeframe outcome", 1)[1].split(
+        "Restore integrity-bound prior independent research frontier", 1
+    )[0]
+    assert "steps.health-gate.outputs.should_feedback == 'true'" in source
+    assert "github.event_name != 'workflow_run' || steps.outcome.outputs.ready == 'true'" in source

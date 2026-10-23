@@ -137,7 +137,8 @@ def test_workflow_wires_verified_recovery_and_disallows_auto_dispatch():
     recovery_step = text.split("Produce exact-source design-review queue when frontier is exhausted", 1)[1].split(
         "Dispatch reviewed Research workflow", 1
     )[0]
-    assert "steps.frontier-selection.outputs.ready == 'false'" in recovery_step
+    assert "steps.frontier-selection.outputs.recovery_allowed == 'true'" in recovery_step
+    assert "steps.frontier-selection.outputs.ready == 'false'" not in recovery_step
     assert "nexus_strategy_discovery_recovery.py" in recovery_step
     assert "--reviewed-catalog research/reviewed_composite_mechanisms_v1.json" in recovery_step
     assert "nexus-strategy-discovery-recovery-plan" in text

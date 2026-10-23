@@ -15,6 +15,13 @@ on:
       - "NEXUS persistent Paper trading loop"
       - "NEXUS Demo regime lifecycle bridge"
       - "NEXUS multi-timeframe strategy discovery"
+      - "NEXUS Multi-Pair Discovery v2 physical proof"
+      - "Bybit strategy search v2"
+      - "Bybit portfolio search v3"
+      - "Bybit long short search v4"
+      - "Bybit consensus search v5"
+      - "Bybit regime search v6"
+      - "Bybit neighborhood validation v7"
     types: [completed]
   push:
     branches: [main]
@@ -111,9 +118,15 @@ jobs:
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.head_branch == 'main' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
-       github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.name != 'NEXUS multi-timeframe strategy discovery' ||
-        github.event.workflow_run.event == 'workflow_dispatch')) ||
+       (
+         ((github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' ||
+           github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge') &&
+          github.event.workflow_run.conclusion == 'success') ||
+         (github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' &&
+          github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'workflow_dispatch')
+       )) ||
       ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
        github.ref == 'refs/heads/main')
     needs: contract-test
@@ -124,11 +137,13 @@ jobs:
       STATE_ARTIFACT: nexus-strategy-discovery-rotation-state
       PAPER_BOUNDARY_ARTIFACT: nexus-persistent-paper-public-boundary
       DEMO_STATE_ARTIFACT: nexus-demo-strategy-matrix-state
-      HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
+      HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && (github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' || github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge') && 'true' || 'false' }}
+      AUTO_CONTINUE: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_sha == github.sha && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      REQUIRE_EXACT_RESEARCH_RECEIPT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.feedback_source_run_id }}
-      FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
+      FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' && github.event.workflow_run.conclusion == 'success' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -147,7 +162,14 @@ jobs:
           set -euo pipefail
           if [ "$FEEDBACK_REQUESTED" = "true" ]; then
             echo "should_feedback=true" >> "$GITHUB_OUTPUT"
-            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            if [ "$AUTO_CONTINUE" = "true" ]; then
+              echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+              echo "Verified exact-main Research completion: reconcile feedback, then dispatch the next eligible stage in this same serialized rotation."
+            else
+              # Manual feedback-only requests must never dispatch another stage.
+              echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+              echo "Manual feedback-only request: no subsequent strategy dispatch."
+            fi
             echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -247,12 +269,30 @@ jobs:
         if: steps.health-gate.outputs.should_dispatch == 'true'
         run: |
           set -euo pipefail
-          echo "ready=true" >> "$GITHUB_OUTPUT"
           receipt="build/discovery/last-research-run.json"
           if [ ! -f "$receipt" ]; then
+            if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+              echo "No prior dispatch receipt for this strategy workflow completion; do not auto-chain a manually dispatched/untracked run."
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
           run_id="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["research_run_id"])')"
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [ "$run_id" != "$TRIGGER_RUN_ID" ]; then
+            echo "Prior dispatch receipt does not match exact triggering workflow_run; no automatic continuation."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+            was_processed="$(python -c 'import json,sys; s=json.load(open("build/discovery/feedback-state.json")); print(str(sys.argv[1] in {str(x) for x in s["processed_run_ids"]}).lower())' "$run_id")"
+            if [ "$was_processed" = "true" ]; then
+              echo "Triggering research run was already reconciled; refuse duplicate auto-dispatch."
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           stage="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["stage"])')"
           experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["experiment_sha256"])')"
           gh run view "$run_id" --repo "$GITHUB_REPOSITORY"             --json databaseId,status,conclusion,headSha,workflowName             > build/discovery/research-run-status.json
@@ -286,95 +326,22 @@ jobs:
           args=()
           if [ "$artifact_unavailable" = "true" ]; then args+=(--artifact-unavailable); fi
           python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --require-feedback-state             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             "${args[@]}"             --output build/discovery/feedback-state.json
-          rm -f "$receipt"
-
-      - name: Verify discovery surface and select one stage
-        id: frontier-selection
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          python scripts/nexus_strategy_discovery_controller.py             --root . --feedback-state build/discovery/feedback-state.json --output build/discovery/controller-status.json
-          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --require-feedback-state             --output build/discovery/dispatch-plan.json
-          if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
+          reconciled_run="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str(s["outcomes"][-1]["run_id"]) if s["outcomes"] else "")')"
+          outcome="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str(s["outcomes"][-1]["outcome"]) if s["outcomes"] else "")')"
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [ "$reconciled_run" != "$run_id" ]; then
+            echo "Feedback state did not append the exact triggering run; refuse automatic continuation."
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
-          else
-            jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+            rm -f "$receipt"
+            exit 0
           fi
-
-      - name: Produce exact-source design-review queue when frontier is exhausted
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
-        run: |
-          set -euo pipefail
-          python scripts/nexus_strategy_discovery_recovery.py \
-            --controller build/discovery/controller-status.json \
-            --blocked build/discovery/dispatch-plan.json \
-            --rotation-state build/discovery/rotation-state.json \
-            --feedback-state build/discovery/feedback-state.json \
-            --reviewed-catalog research/reviewed_composite_mechanisms_v1.json \
-            --output build/discovery/recovery-review-plan.json
-          echo "Strategy Finder: historical frontiers terminal; generated non-dispatchable research design intake only." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Dispatch reviewed Research workflow
-        id: dispatch
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          workflow="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["workflow"])')"
-          stage="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["stage"])')"
-          experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["experiment_sha256"])')"
-          dispatch_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
-          prior_runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
-            --branch main --event workflow_dispatch --limit 100 --json databaseId)"
-          dispatch_started="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          gh workflow run "$workflow" --ref main
-          research_run_id=""
-          for attempt in $(seq 1 15); do
-            # An old successful run at the same commit must NEVER be mistaken
-            # for the newly accepted dispatch, or the cursor will replay.
-            research_run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
-              --workflow "$workflow" --branch main --event workflow_dispatch --limit 100 \
-              --json databaseId,headSha,createdAt \
-              | jq -r --arg sha "$dispatch_sha" --arg started "$dispatch_started" \
-                --argjson before "$prior_runs" \
-                '[.[] | select(.headSha == $sha and .createdAt >= $started) |
-                    select(.databaseId as $id | ($before | map(.databaseId) | index($id)) == null)]
-                 | if length == 1 then .[0].databaseId else empty end')"
-            if [ -n "$research_run_id" ]; then
-              break
-            fi
-            sleep 2
-          done
-          test -n "$research_run_id"
-          python - "$stage" "$workflow" "$experiment_sha256" "$research_run_id" "$dispatch_sha" <<'PY'
-          import json,sys
-          stage,workflow,experiment_sha256,run_id,source_sha=sys.argv[1:]
-          with open("build/discovery/last-research-run.json","w",encoding="utf-8") as f:
-              json.dump({
-                  "stage":stage,
-                  "workflow":workflow,
-                  "experiment_sha256":experiment_sha256,
-                  "research_run_id":run_id,
-                  "source_sha":source_sha,
-                  "research_only":True,
-                  "paper_only":True,
-                  "automatic_strategy_promotion":False,
-                  "live_trading_authority":False,
-              },f,indent=2,sort_keys=True)
-              f.write("\n")
-          PY
-
-      - name: Commit rotation cursor only after accepted dispatch
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          python nexus_strategy_discovery_rotation.py commit             --state build/discovery/rotation-state.json             --plan build/discovery/dispatch-plan.json             --source-sha "${{ steps.health-gate.outputs.source_sha }}"             --run-id "$GITHUB_RUN_ID"             --output build/discovery/rotation-state.json
-
+          # The next-stage selector may advance to a different eligible stage after a retryable result.
+          # It separately blocks an immediate repeat of the same stage to prevent infinite event loops.
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          rm -f "$receipt"
 
       - name: Obtain only the exact certified prior multi-timeframe outcome
         id: certified-source
-        if: steps.health-gate.outputs.should_feedback == 'true'
+        if: steps.health-gate.outputs.should_feedback == 'true' && (github.event_name != 'workflow_run' || steps.outcome.outputs.ready == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -494,8 +461,113 @@ jobs:
           retention-days: 90
           compression-level: 9
 
+
+      - name: Verify discovery surface and select one stage
+        id: frontier-selection
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          python scripts/nexus_strategy_discovery_controller.py             --root . --feedback-state build/discovery/feedback-state.json --output build/discovery/controller-status.json
+          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --require-feedback-state             --output build/discovery/dispatch-plan.json
+          if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "recovery_allowed=true" >> "$GITHUB_OUTPUT"
+            echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "recovery_allowed=false" >> "$GITHUB_OUTPUT"
+            jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
+            if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+              retry_same_stage="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          feedback = json.loads(Path("build/discovery/feedback-state.json").read_text())
+          plan = json.loads(Path("build/discovery/dispatch-plan.json").read_text())
+          rows = feedback.get("outcomes", [])
+          last = rows[-1] if rows else {}
+          retryable = last.get("outcome") in {"workflow_failed", "evidence_unavailable", "requires_data"}
+          print(str(retryable and last.get("stage") == plan.get("stage")).lower())
+          PY
+              )"
+              if [ "$retry_same_stage" = "true" ]; then
+                echo "The only selected next stage repeats the same retryable/incomplete stage; stop rather than create an event loop."
+                echo "ready=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Produce exact-source design-review queue when frontier is exhausted
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.recovery_allowed == 'true'
+        run: |
+          set -euo pipefail
+          python scripts/nexus_strategy_discovery_recovery.py \
+            --controller build/discovery/controller-status.json \
+            --blocked build/discovery/dispatch-plan.json \
+            --rotation-state build/discovery/rotation-state.json \
+            --feedback-state build/discovery/feedback-state.json \
+            --reviewed-catalog research/reviewed_composite_mechanisms_v1.json \
+            --output build/discovery/recovery-review-plan.json
+          echo "Strategy Finder: historical frontiers terminal; generated non-dispatchable research design intake only." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch reviewed Research workflow
+        id: dispatch
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          workflow="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["workflow"])')"
+          stage="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["stage"])')"
+          experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["experiment_sha256"])')"
+          dispatch_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
+          prior_runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+            --branch main --event workflow_dispatch --limit 100 --json databaseId)"
+          dispatch_started="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          gh workflow run "$workflow" --ref main
+          research_run_id=""
+          for attempt in $(seq 1 15); do
+            # An old successful run at the same commit must NEVER be mistaken
+            # for the newly accepted dispatch, or the cursor will replay.
+            research_run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$workflow" --branch main --event workflow_dispatch --limit 100 \
+              --json databaseId,headSha,createdAt \
+              | jq -r --arg sha "$dispatch_sha" --arg started "$dispatch_started" \
+                --argjson before "$prior_runs" \
+                '[.[] | select(.headSha == $sha and .createdAt >= $started) |
+                    select(.databaseId as $id | ($before | map(.databaseId) | index($id)) == null)]
+                 | if length == 1 then .[0].databaseId else empty end')"
+            if [ -n "$research_run_id" ]; then
+              break
+            fi
+            sleep 2
+          done
+          test -n "$research_run_id"
+          python - "$stage" "$workflow" "$experiment_sha256" "$research_run_id" "$dispatch_sha" <<'PY'
+          import json,sys
+          stage,workflow,experiment_sha256,run_id,source_sha=sys.argv[1:]
+          with open("build/discovery/last-research-run.json","w",encoding="utf-8") as f:
+              json.dump({
+                  "stage":stage,
+                  "workflow":workflow,
+                  "experiment_sha256":experiment_sha256,
+                  "research_run_id":run_id,
+                  "source_sha":source_sha,
+                  "research_only":True,
+                  "paper_only":True,
+                  "automatic_strategy_promotion":False,
+                  "live_trading_authority":False,
+              },f,indent=2,sort_keys=True)
+              f.write("\n")
+          PY
+
+      - name: Commit rotation cursor only after accepted dispatch
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_strategy_discovery_rotation.py commit             --state build/discovery/rotation-state.json             --plan build/discovery/dispatch-plan.json             --source-sha "${{ steps.health-gate.outputs.source_sha }}"             --run-id "$GITHUB_RUN_ID"             --output build/discovery/rotation-state.json
+
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.recovery_allowed == 'true'
         with:
           name: nexus-strategy-discovery-recovery-plan
           path: build/discovery/recovery-review-plan.json
