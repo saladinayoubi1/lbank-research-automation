@@ -1,0 +1,41 @@
+{
+  "schema": "nexus.mr40.forward_closed_trade_numeric_gate_technical_evidence.v1",
+  "utc_day": "2026-10-23",
+  "scope": "Technical acceptance-screen development, not an evaluation of a real forward trade, not source authentication or promotion.",
+  "precommitted_protocol": "research/mr40_forward_closed_trade_decision_gate_protocol_20261023.json",
+  "precommitted_before_code_commit": "0108b20f17e478b34299959b77da3adf4021f9c0",
+  "script": "research/nexus_mr40_forward_closed_trade_decision_gate_v1.py",
+  "tests": "tests/test_nexus_mr40_forward_closed_trade_decision_gate_v1.py",
+  "actual_windows_laptop": "DESKTOP-F4SA4VL",
+  "synthetic_test_result": {
+    "passed": 13,
+    "failed": 0
+  },
+  "requirements_checked": [
+    "at least 12 separate fully closed forward positions in both arms",
+    "same research observation period and venue Bybit Spot",
+    "strict UTC future post-cutoff timestamp and no overlap",
+    "exclusive observed trade IDs with no unfinished positions",
+    "conservative after-cost net profit positive and not inferior to baseline",
+    "modeled intratrade low drawdown at least 20pct lower than baseline in numerical values",
+    "no historical seen 47 mixed in the input",
+    "no promotion even when arithmetic gates pass"
+  ],
+  "security_and_reliability_limitations": [
+    "Synthetic-only data; no actual newly closed forward positions evaluated",
+    "Caller-supplied low drawdown metric is not independently recomputed from raw OHLCV",
+    "Source claims/market prices/fills are not verified by this numeric screen",
+    "Numerical pass is necessary, never sufficient for benefit or implementation"
+  ],
+  "observed_forward_closed_trades": 0,
+  "ready_for_real_evaluation": false,
+  "status": "TECHNICAL_SCREEN_TESTS_PASS; LIVE_FORWARD_DATA_GATE_NOT_MET; NO_PROMOTE",
+  "safety": {
+    "paper500_changed": false,
+    "real_orders": 0,
+    "live": false,
+    "private_api": false,
+    "merge": false,
+    "automation_created": false
+  }
+}
