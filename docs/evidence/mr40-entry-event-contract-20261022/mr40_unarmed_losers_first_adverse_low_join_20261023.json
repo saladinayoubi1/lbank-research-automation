@@ -1,0 +1,192 @@
+{
+  "Live": false,
+  "Paper_500USDT_changed": false,
+  "classification": "ALREADY_OBSERVED_HISTORICAL_PRICE_RISK_DIAGNOSTIC_NO_NEW_BACKTEST",
+  "decision": {
+    "5pct_price_LOW_breach_is_NOT_an_executable_5pct_stop": true,
+    "do_not_select_new_stop_level_from_this_sample": true,
+    "next_valid_research": "Preserve exact historical risk episode identities; prospectively test pre-arm risk limits, with explicit user risk budget and public source continuity before applying to Paper.",
+    "paper_or_live_promotion_authorized": false,
+    "profit_trigger_only_stop_protects_unarmed_4h_losers": false
+  },
+  "digest": "a6635df1f010a57276c465d8abba52b80f72125d42d9008b535d13e62e91ccad",
+  "equity_models_not_interchangeable": true,
+  "merge": false,
+  "orders": 0,
+  "prior_source_SHA256": {
+    "adverse_timing": "a751184655ab27e6381274cd07a48d3ebea8589a8527c1407d804f04f3ce8da1",
+    "overlay_failure_audit": "fc8fe0c2ab55aff7c5ad7ee1cbdae9cb10486992423d84ffa2bbc1b104a89cdf",
+    "prior_ratchet": "423aa9c28fbb3e23ebce62ea1e731db8922a84ee87da04f891473c9a236852bc"
+  },
+  "private_API": false,
+  "promote": false,
+  "research_only": true,
+  "schema": "nexus.mr40.pre_profit_arm_unprotected_loser_4h_low_source_join_v1",
+  "train_and_evaluation_are_not_unseen_OOS": true,
+  "windows": {
+    "evaluation": {
+      "all_prior_baseline_losers": 4,
+      "episodes": [
+        {
+          "closed_bar_gain_never_armed_2pct": -0.142,
+          "entry_open_utc": "2025-08-01T00:00:00+00:00",
+          "exit_open_utc": "2025-08-06T16:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "max_historical_held_price_MAE_pct": "3.309145291539484335946240860",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 33,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -67.721
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": -2.033,
+          "entry_open_utc": "2025-10-10T16:00:00+00:00",
+          "exit_open_utc": "2025-10-20T04:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": {
+              "candle_close_utc": "2025-10-11T00:00:00+00:00",
+              "candle_open_utc": "2025-10-10T20:00:00+00:00",
+              "clock_band": "EARLY_0_TO_24_HOURS",
+              "exact_low_touch_and_real_stop_fill_unknown": true,
+              "hours_from_entry_to_candle_open": 4
+            },
+            "15": null,
+            "5": {
+              "candle_close_utc": "2025-10-11T00:00:00+00:00",
+              "candle_open_utc": "2025-10-10T20:00:00+00:00",
+              "clock_band": "EARLY_0_TO_24_HOURS",
+              "exact_low_touch_and_real_stop_fill_unknown": true,
+              "hours_from_entry_to_candle_open": 4
+            }
+          },
+          "max_historical_held_price_MAE_pct": "14.02031157181519444040670196",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 34,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -872.61
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": 0.001,
+          "entry_open_utc": "2026-01-20T08:00:00+00:00",
+          "exit_open_utc": "2026-01-28T00:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": {
+              "candle_close_utc": "2026-01-25T20:00:00+00:00",
+              "candle_open_utc": "2026-01-25T16:00:00+00:00",
+              "clock_band": "LATE_FROM_120_HOURS",
+              "exact_low_touch_and_real_stop_fill_unknown": true,
+              "hours_from_entry_to_candle_open": 128
+            }
+          },
+          "max_historical_held_price_MAE_pct": "5.588629488835902351710205080",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 35,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -250.615
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": -0.066,
+          "entry_open_utc": "2026-05-15T16:00:00+00:00",
+          "exit_open_utc": "2026-05-22T04:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "max_historical_held_price_MAE_pct": "3.947802291514271744939225220",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 40,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -222.738
+        }
+      ],
+      "unarmed_loser_count_never_reaching_5pct_low": 2,
+      "unarmed_loser_count_with_candle_low_10pct": 1,
+      "unarmed_loser_count_with_candle_low_15pct": 0,
+      "unarmed_loser_count_with_candle_low_5pct": 2,
+      "unarmed_loser_episode_source_matches": 4,
+      "unarmed_prior_baseline_losers": 4
+    },
+    "train": {
+      "all_prior_baseline_losers": 6,
+      "episodes": [
+        {
+          "closed_bar_gain_never_armed_2pct": 0.685,
+          "entry_open_utc": "2023-02-09T04:00:00+00:00",
+          "exit_open_utc": "2023-02-14T20:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": {
+              "candle_close_utc": "2023-02-13T20:00:00+00:00",
+              "candle_open_utc": "2023-02-13T16:00:00+00:00",
+              "clock_band": "MIDDLE_24_TO_120_HOURS",
+              "exact_low_touch_and_real_stop_fill_unknown": true,
+              "hours_from_entry_to_candle_open": 108
+            }
+          },
+          "max_historical_held_price_MAE_pct": "5.149713362078535682091679730",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 1,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -165.951
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": -0.201,
+          "entry_open_utc": "2023-04-19T12:00:00+00:00",
+          "exit_open_utc": "2023-04-26T00:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": {
+              "candle_close_utc": "2023-04-21T08:00:00+00:00",
+              "candle_open_utc": "2023-04-21T04:00:00+00:00",
+              "clock_band": "MIDDLE_24_TO_120_HOURS",
+              "exact_low_touch_and_real_stop_fill_unknown": true,
+              "hours_from_entry_to_candle_open": 40
+            }
+          },
+          "max_historical_held_price_MAE_pct": "8.005404400287279358705127530",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 5,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -391.242
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": 0.817,
+          "entry_open_utc": "2024-06-13T16:00:00+00:00",
+          "exit_open_utc": "2024-06-20T12:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "max_historical_held_price_MAE_pct": "3.635770255612095430561956600",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 19,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -91.575
+        },
+        {
+          "closed_bar_gain_never_armed_2pct": 0.089,
+          "entry_open_utc": "2024-10-01T16:00:00+00:00",
+          "exit_open_utc": "2024-10-06T16:00:00+00:00",
+          "first_diagnostic_LOW_breach": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "max_historical_held_price_MAE_pct": "4.425228070920520563224489100",
+          "not_an_actual_stop_or_trade_fill": true,
+          "previous_47_position_index": 21,
+          "prior_10k_quote_baseline_PnL_not_comparable_to_500_USDT": -18.579
+        }
+      ],
+      "unarmed_loser_count_never_reaching_5pct_low": 2,
+      "unarmed_loser_count_with_candle_low_10pct": 0,
+      "unarmed_loser_count_with_candle_low_15pct": 0,
+      "unarmed_loser_count_with_candle_low_5pct": 2,
+      "unarmed_loser_episode_source_matches": 4,
+      "unarmed_prior_baseline_losers": 4
+    }
+  }
+}
