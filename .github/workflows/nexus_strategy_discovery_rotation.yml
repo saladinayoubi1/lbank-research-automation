@@ -341,7 +341,7 @@ jobs:
 
       - name: Obtain only the exact certified prior multi-timeframe outcome
         id: certified-source
-        if: steps.health-gate.outputs.should_feedback == 'true'
+        if: steps.health-gate.outputs.should_feedback == 'true' && (github.event_name != 'workflow_run' || steps.outcome.outputs.ready == 'true')
         shell: bash
         run: |
           set -euo pipefail
