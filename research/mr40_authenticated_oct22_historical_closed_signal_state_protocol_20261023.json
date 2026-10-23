@@ -1,0 +1,48 @@
+{
+  "schema": "nexus.mr40.authenticated_oct22_historical_closed_signal_state_protocol.v1",
+  "classification": "RETROSPECTIVE_SOURCE_CONFIRMED_HISTORY_BRIDGE_NOT_BLIND_FUTURE_OR_TRADABLE_FILLS",
+  "created_for": "2026-10-23 05:24 UTC observed publication of independent pinned Oct22 archive; protocol before computing Oct22 MR40 signals",
+  "objective": "Apply unmodified MR40/Momentum30 closed 4h state machine, without order/Paper APIs, to six independently verified October 22 2026 Bybit BTCUSDT Spot archive candles. Reconcile all original 8514 closed-bar events (47 entries, 47 exits) and preceding 12 pinned Oct20/21 research bridge market signals before describing Oct22 signal transitions. Do NOT select stop/sizing/RR.",
+  "sources": {
+    "market": "Bybit BTCUSDT Spot (not Bybit linear/perpetual), 4h UTC OHLCV",
+    "original_4h_count": 8514,
+    "original_4h_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "original_closed_entry_count": 47,
+    "original_closed_exit_count": 47,
+    "bridge_4h_count": 12,
+    "bridge_logical_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "bridge_12_rows_digest": "a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6",
+    "oct22_4h_count": 6,
+    "oct22_day": "2026-10-22",
+    "verified_oct22_independent_spot_archive_gzip_sha256": "9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587",
+    "verified_oct22_public_tick_WS_parity_report_sha256": "ea5f020264cb3e307bc142f22a9736c8c5afdd5df16fa9615927f887384c099c",
+    "verified_oct22_public_tick_WS_parity_logical_digest": "59c037de00de8af3b403ea1ca069fe2362d658a71bc428ecae6895b0fe7bc380",
+    "original_native_confirmed_49_frame_WS_sha256": "7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e"
+  },
+  "signal_contract": {
+    "fixed_engine": "research/nexus_mr40_independent_closed_signal_v1.py::ClosedMR40",
+    "lookback_40_prior_closed_candles": true,
+    "entry_z_lte": "-2",
+    "natural_exit_z_gte": "0",
+    "episode_first_momentum30": "close[j]>=close[j-180]",
+    "first_close_markers_only": true,
+    "match_bridge_12_signal_states": true,
+    "output_six_historical_oct22_closed_bar_states": true,
+    "all_sources_asof": "FIRST_AVAILABLE_AT_2026_10_23_AFTER_FULL_ARCHIVE_GET (not live next open)",
+    "include_event_counts_no_performance_labels": true
+  },
+  "safety": {
+    "private_api": false,
+    "orders": 0,
+    "paper_modified": false,
+    "live": false,
+    "promote": false,
+    "merge": false,
+    "required_external_live_fills": false,
+    "write_to_research_only": true,
+    "not_future_OOS": true,
+    "not_a_stop_test": true,
+    "no_scheduler": true,
+    "refuse_overwrite": true
+  }
+}
