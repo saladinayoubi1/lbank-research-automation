@@ -118,10 +118,14 @@ jobs:
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.head_branch == 'main' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
-       github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' ||
-        github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge' ||
-        github.event.workflow_run.event == 'workflow_dispatch')) ||
+       (
+         ((github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' ||
+           github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge') &&
+          github.event.workflow_run.conclusion == 'success') ||
+         (github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' &&
+          github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' &&
+          github.event.workflow_run.event == 'workflow_dispatch')
+       )) ||
       ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
        github.ref == 'refs/heads/main')
     needs: contract-test
@@ -138,7 +142,7 @@ jobs:
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
       REQUIRE_EXACT_RESEARCH_RECEIPT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.feedback_source_run_id }}
-      FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
+      FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' && github.event.workflow_run.conclusion == 'success' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -329,12 +333,8 @@ jobs:
             rm -f "$receipt"
             exit 0
           fi
-          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [[ "$outcome" == "evidence_unavailable" || "$outcome" == "requires_data" || "$outcome" == "workflow_failed" ]]; then
-            echo "Research outcome is retryable or source-incomplete ($outcome); stop the immediate chain instead of looping."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            rm -f "$receipt"
-            exit 0
-          fi
+          # The next-stage selector may advance to a different eligible stage after a retryable result.
+          # It separately blocks an immediate repeat of the same stage to prevent infinite event loops.
           echo "ready=true" >> "$GITHUB_OUTPUT"
           rm -f "$receipt"
 
@@ -350,6 +350,24 @@ jobs:
             echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
           else
             jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
+            if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+              retry_same_stage="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          feedback = json.loads(Path("build/discovery/feedback-state.json").read_text())
+          plan = json.loads(Path("build/discovery/dispatch-plan.json").read_text())
+          rows = feedback.get("outcomes", [])
+          last = rows[-1] if rows else {}
+          retryable = last.get("outcome") in {"workflow_failed", "evidence_unavailable", "requires_data"}
+          print(str(retryable and last.get("stage") == plan.get("stage")).lower())
+          PY
+              )"
+              if [ "$retry_same_stage" = "true" ]; then
+                echo "The only selected next stage repeats the same retryable/incomplete stage; stop rather than create an event loop."
+                echo "ready=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
