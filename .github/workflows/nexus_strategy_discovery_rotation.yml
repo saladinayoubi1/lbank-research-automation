@@ -15,6 +15,13 @@ on:
       - "NEXUS persistent Paper trading loop"
       - "NEXUS Demo regime lifecycle bridge"
       - "NEXUS multi-timeframe strategy discovery"
+      - "NEXUS Multi-Pair Discovery v2 physical proof"
+      - "Bybit strategy search v2"
+      - "Bybit portfolio search v3"
+      - "Bybit long short search v4"
+      - "Bybit consensus search v5"
+      - "Bybit regime search v6"
+      - "Bybit neighborhood validation v7"
     types: [completed]
   push:
     branches: [main]
@@ -112,7 +119,8 @@ jobs:
        github.event.workflow_run.head_branch == 'main' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
        github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.name != 'NEXUS multi-timeframe strategy discovery' ||
+       (github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' ||
+        github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge' ||
         github.event.workflow_run.event == 'workflow_dispatch')) ||
       ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
        github.ref == 'refs/heads/main')
@@ -124,7 +132,8 @@ jobs:
       STATE_ARTIFACT: nexus-strategy-discovery-rotation-state
       PAPER_BOUNDARY_ARTIFACT: nexus-persistent-paper-public-boundary
       DEMO_STATE_ARTIFACT: nexus-demo-strategy-matrix-state
-      HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
+      HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && (github.event.workflow_run.name == 'NEXUS persistent Paper trading loop' || github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge') && 'true' || 'false' }}
+      AUTO_CONTINUE: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_sha == github.sha && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.feedback_source_run_id }}
@@ -147,7 +156,14 @@ jobs:
           set -euo pipefail
           if [ "$FEEDBACK_REQUESTED" = "true" ]; then
             echo "should_feedback=true" >> "$GITHUB_OUTPUT"
-            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            if [ "$AUTO_CONTINUE" = "true" ]; then
+              echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+              echo "Verified exact-main Research completion: reconcile feedback, then dispatch the next eligible stage in this same serialized rotation."
+            else
+              # Manual feedback-only requests must never dispatch another stage.
+              echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+              echo "Manual feedback-only request: no subsequent strategy dispatch."
+            fi
             echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
