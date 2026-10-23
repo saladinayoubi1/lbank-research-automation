@@ -5,7 +5,8 @@ from pathlib import Path
 from unittest.mock import patch
 from research.nexus_mr40_bybit_archive_bridge_v1 import epoch,STEP4
 from research.nexus_mr40_prearm_forward_risk_telemetry_v1 import (
-    compute_day,check_lock,run,LOCK_SCHEMA,NOT_BEFORE
+    compute_day,check_lock,run,LOCK_SCHEMA,NOT_BEFORE,
+    verify_six_markers_against_closed_engine
 )
 
 DAY="2026-10-23"
@@ -15,7 +16,73 @@ def sample():
     marks=[{"first_entry_close_marker":False,"natural_exit_close_marker":False} for _ in rows]
     return rows,marks
 
+
+def fake_closed_market_and_reference_markers():
+    """TEST ONLY: 220 flat pre-Oct22 bars +12 bridge +6 old +6 new.
+
+    These are synthetic and are NEVER accepted as true source data in run().
+    """
+    n=220
+    start=epoch("2026-10-22")-(n+12)*STEP4
+    full=[[start+j*STEP4,"100","101","99","100","1"] for j in range(n+24)]
+    a=full[:n];b=full[n:n+12];old=full[n+12:n+18];new=full[n+18:]
+    old_markers=[{
+      "market_bar_start_ms":row[0],
+      "z_score_of_closed_fourhour_bar":None,
+      "raw_MR40_active":False,"momentum30_episode_admitted":False,
+      "target_long_after_closed_bar":False,
+      "first_new_long_entry_marker_at_close":False,
+      "natural_long_exit_marker_at_close":False,
+    } for row in old]
+    new_markers=[{
+      "market_bar_close_ms":row[0]+STEP4,
+      "z_of_closed_bar":None,"raw_active":False,
+      "momentum_episode_admitted":False,"closed_target":False,
+      "first_entry_close_marker":False,
+      "natural_exit_close_marker":False
+    } for row in new]
+    return a,b,old,new,new_markers,old_markers
+
+
 class TestFixedDayPrearmLowTelemetry(unittest.TestCase):
+    def test_independent_synthetic_closed_engine_rechecks_all_six_markers(self):
+        args=fake_closed_market_and_reference_markers()
+        observed=verify_six_markers_against_closed_engine(*args,expected_prior_pairs=0)
+        self.assertTrue(observed["independent_full_closed_bar_engine_replay"])
+        self.assertEqual(observed["forward_oct23_6_marker_sets_recomputed"],6)
+        self.assertEqual(observed["new_entry_markers"],0)
+
+    def test_spoofed_validly_digested_shadow_entry_marker_must_fail(self):
+        a,b,old,new,marks,old_marks=fake_closed_market_and_reference_markers()
+        marks[2]["first_entry_close_marker"]=True
+        with self.assertRaisesRegex(ValueError,"shadow_marker_does_not_match_recomputed_indicator"):
+            verify_six_markers_against_closed_engine(
+                a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+
+    def test_spoofed_close_z_or_exit_cannot_be_trusted_from_report(self):
+        a,b,old,new,marks,old_marks=fake_closed_market_and_reference_markers()
+        marks[1]["z_of_closed_bar"]="25"
+        with self.assertRaisesRegex(ValueError,"shadow_marker_does_not_match_recomputed_indicator"):
+            verify_six_markers_against_closed_engine(
+                a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+        marks[1]["z_of_closed_bar"]=None
+        marks[5]["natural_exit_close_marker"]=True
+        with self.assertRaisesRegex(ValueError,"shadow_marker_does_not_match_recomputed_indicator"):
+            verify_six_markers_against_closed_engine(
+                a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+
+    def test_fake_historical_oct22_state_or_4h_gap_blocks_forward(self):
+        a,b,old,new,marks,old_marks=fake_closed_market_and_reference_markers()
+        old_marks[4]["target_long_after_closed_bar"]=True
+        with self.assertRaisesRegex(ValueError,"previous_spot_oct22_closed_signal_state_replay_drift"):
+            verify_six_markers_against_closed_engine(
+                a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+        old_marks[4]["target_long_after_closed_bar"]=False
+        new[1][0]+=60000
+        with self.assertRaisesRegex(ValueError,"missing_or_nonmonotonic_4h_candle"):
+            verify_six_markers_against_closed_engine(
+                a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+
     def test_no_new_entry_no_fabricated_PnL_or_risk(self):
         r,m=sample()
         x=compute_day(r,m)
