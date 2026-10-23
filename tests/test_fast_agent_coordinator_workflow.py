@@ -27,6 +27,7 @@ def test_event_trigger_is_limited_to_same_repository_main_runs():
     body = job.group("body")
     assert "github.event_name != 'workflow_run'" in body
     assert "github.event.workflow_run.name == 'NEXUS Runtime Worker'" in body
+    assert "github.event.workflow_run.event == 'workflow_dispatch'" in body
     assert "github.event.workflow_run.head_branch == 'main'" in body
     assert "github.event.workflow_run.head_repository.full_name == github.repository" in body
 
