@@ -73,6 +73,21 @@ class TestFixedDayPrearmLowTelemetry(unittest.TestCase):
         self.assertEqual(out["entry_or_exit_next_open_outside_day_unresolved"],"exit")
         self.assertIsNone(out["realized_net_PnL_only_for_completed_positions_usdt"])
 
+    def test_closed_trade_realized_PnL_remains_visible_if_next_trade_is_open(self):
+        r,m=sample()
+        m[0]["first_entry_close_marker"]=True
+        m[2]["natural_exit_close_marker"]=True
+        r[3]=[r[3][0],"104","105","102","103","1"]
+        m[4]["first_entry_close_marker"]=True
+        r[5]=[r[5][0],"99","101","96","100","1"]
+        result=compute_day(r,m)
+        self.assertEqual(result["natural_exit_completed_positions_with_both_next_open_proxies"],1)
+        self.assertTrue(result["an_open_position_at_day_end"])
+        expected=D("500")*D("0.999")**2*D("1.04")-D("500")
+        self.assertEqual(D(result["realized_net_PnL_only_for_completed_positions_usdt"]),expected)
+        self.assertTrue(result["realized_net_PnL_excludes_any_open_or_pending_position"])
+        self.assertIsNone(result["closed_positions_reference_quote_equity_if_flat_usdt"])
+
     def test_duplicate_entry_on_existing_long_rejected(self):
         r,m=sample();m[0]["first_entry_close_marker"]=True;m[3]["first_entry_close_marker"]=True
         with self.assertRaisesRegex(ValueError,"duplicate_entry"):
