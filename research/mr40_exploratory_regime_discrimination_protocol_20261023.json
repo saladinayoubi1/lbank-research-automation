@@ -1,0 +1,39 @@
+{
+  "schema": "nexus.mr40.exploratory_regime_discrimination.protocol.v1",
+  "date_utc": "2026-10-23",
+  "purpose": "Quantify how weak or strong the fixed ATR14 and 180-bar momentum entry-time descriptors distinguish historic MR40 winners vs losers; reduce fruitless future parameter sweeps, NOT a new entry filter.",
+  "source": {
+    "file": "results/mr40_signal_time_regime_matrix_20261023.json",
+    "SHA256": "5ee377c2be5a954891052fba567cb2a67cb1528661d2696a696766da7ef4081d",
+    "logical_digest": "791b3edce8fc1959a35302fad0cca0e197315729107e7467cf49c0db53913550",
+    "historical_seen_only": true,
+    "train": 25,
+    "evaluation": 22,
+    "wins": 37,
+    "losses": 10
+  },
+  "features": [
+    "ATR14_pct",
+    "return_180_closed_bars_pct"
+  ],
+  "selection_bias": "Features chosen after looking at 47-trade historical medians in earlier phase; outcomes are exploratory, never independent confirmation.",
+  "metrics": {
+    "auc": "Mann-Whitney pairwise P(winning_feature > losing_feature) + 0.5 ties; identical definition for both features.",
+    "p": "Exact two-sided label-permutation within each frozen cohort, full enumeration of C(25,6)=177100 and C(22,4)=7315 assignments; tie-aware via pairwise AUC count.",
+    "multiplicity": "four feature by cohort comparisons; report Bonferroni 4 adjusted p, no optional stopping or feature threshold search.",
+    "direction": "Do not reverse sign post hoc to maximize AUC; high feature value means winner as preregistered direction."
+  },
+  "decision": {
+    "pass": "No promotion or filters regardless of p. Treat adjusted p as exploratory only due to feature selection on the same seen data.",
+    "fail": "Never infer no effect solely from nonsignificance; require prospectively unseen episodes."
+  },
+  "safety": {
+    "paper_changed": false,
+    "orders": 0,
+    "private_api": false,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "new_filter": false
+  }
+}
