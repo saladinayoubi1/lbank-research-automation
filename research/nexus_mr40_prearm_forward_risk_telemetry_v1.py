@@ -110,7 +110,7 @@ def verify_six_markers_against_closed_engine(original,bridge,day22,day23,markers
                 or ref.get("market_bar_close_ms")!=sig.start_ms+STEP4):
                 raise ValueError("new_official_4h_MR40_shadow_marker_does_not_match_recomputed_indicator_"+str(j))
             checked.append((sig.first_entry_close,sig.natural_exit_close))
-    if (entries,exits)!=(expected_prior_pairs,expected_prior_pairs) or
+    if ((entries,exits)!=(expected_prior_pairs,expected_prior_pairs) or
         not all(not bool(x["first_new_long_entry_marker_at_close"]) and
                 not bool(x["natural_long_exit_marker_at_close"]) for x in oct22_states) or
         engine.suspended):
