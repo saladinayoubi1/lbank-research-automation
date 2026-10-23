@@ -10,7 +10,7 @@ from pathlib import Path
 from research.nexus_mr40_bybit_archive_bridge_v1 import (
     BASE_URL,MAX_BYTES,rollup,epoch,STEP4,canon)
 from research.nexus_mr40_independent_closed_signal_v1 import ClosedMR40,frozen_rows
-from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import (reconcile, LAST_BRIDGE_BAR, WS_SHA as EXPECTED_OCT22_WS_SHA)
+from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import (reconcile, LAST_BRIDGE_BAR, WS_SHA as EXPECTED_OCT22_WS_SHA, persist_trusted_pair_no_overwrite)
 
 EXPECTED_BRIDGE="f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e"
 EXPECTED_BRIDGE_ROWS="a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6"
@@ -201,6 +201,14 @@ def run(protocol,source_dir,bridge_file,archive_dir,output,oct22_verified_audit=
     # Absolutely no HTTP before date completion.
     now=int(time.time()*1000)
     check_clock(now)
+    # The Oct23 fixed-day study must never silently reconstruct its Oct22
+    # prefix from an uncorroborated archive. Only the separately pinned
+    # historical tick<->native-WS proof establishes the Oct22 source gate.
+    if oct22_verified_audit is None:
+        raise ValueError("oct22_independent_live_ws_parity_audit_required_before_any_shadow_download")
+    source22=archive_dir/"Bybit_BTCUSDT_Spot_2026-10-22.csv.gz"
+    if not source22.is_file() or not oct22_verified_audit.is_file():
+        raise ValueError("missing_pinned_oct22_source_and_verified_audit_before_any_shadow_download")
     original=frozen_rows(source_dir)
     if len(original)!=8514 or original[-1][0]!=epoch("2026-10-19")+5*STEP4:
         raise ValueError("immutable_OHLC_prefix_missing")
@@ -208,7 +216,9 @@ def run(protocol,source_dir,bridge_file,archive_dir,output,oct22_verified_audit=
     all_days=[];receipts=[];source_blobs={}
     for day in DAYS:
         target=archive_dir/("Bybit_BTCUSDT_Spot_"+day+".csv.gz")
-        if day=="2026-10-22" and oct22_verified_audit is not None:
+        if day=="2026-10-22":
+            # Mandatory independent tick<->WS agreement, never download a
+            # second unverified copy to patch the missing 4h source prefix.
             rows,metadata=reuse_oct22_only_if_archive_ws_parity_proven(target,oct22_verified_audit)
         else:
             if target.exists():raise ValueError("refuse_overwrite_future_archive")
@@ -230,7 +240,8 @@ def run(protocol,source_dir,bridge_file,archive_dir,output,oct22_verified_audit=
         "bridge_digest":EXPECTED_BRIDGE,
         "source_frozen_4h_sha256":EXPECTED_SOURCE,
         "source_public_spot_archives":receipts,
-        "oct22_independently_verified_archive_reused":oct22_verified_audit is not None,
+        "oct22_independently_verified_archive_reused":True,
+        "oct22_proof_is_required_not_optional":True,
         "oct22_archive_was_never_overwritten":True,
         "observation_fixed_full_utc_day":"2026-10-23",
         "data_source_receipt_after_day_end":now>=NOT_BEFORE,
@@ -250,11 +261,14 @@ def run(protocol,source_dir,bridge_file,archive_dir,output,oct22_verified_audit=
         "promote":False,"merge":False
     }
     doc["digest"]=hashlib.sha256(canon(doc)).hexdigest()
-    archive_dir.mkdir(parents=True,exist_ok=True)
-    for day,raw in source_blobs.items():
-        (archive_dir/("Bybit_BTCUSDT_Spot_"+day+".csv.gz")).write_bytes(raw)
-    output.parent.mkdir(parents=True,exist_ok=True)
-    output.write_text(json.dumps(doc,sort_keys=True,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
+    if set(source_blobs)!={"2026-10-23"}:
+        raise ValueError("only_fixed_oct23_new_archive_may_be_written")
+    # Proven and cached Oct22 is NEVER touched. The two new Oct23 artifacts
+    # must be created exclusively and rolled back together on an I/O error.
+    persist_trusted_pair_no_overwrite(
+        archive_dir/"Bybit_BTCUSDT_Spot_2026-10-23.csv.gz",
+        source_blobs["2026-10-23"],output,
+        json.dumps(doc,sort_keys=True,indent=2,ensure_ascii=False)+"\n")
     print(json.dumps({"digest":doc["digest"],"markers":counts},ensure_ascii=False))
 
 
@@ -263,5 +277,5 @@ if __name__=="__main__":
     for name in ("protocol","source_dir","bridge_file","archive_dir","output"):
         a.add_argument("--"+name,required=True,type=Path)
     a.add_argument("--oct22_verified_audit",type=Path,default=None,
-                   help="Optional immutable Oct22 audit result; required to reuse a previously downloaded Oct22 archive without overwrite.")
+                   help="REQUIRED: original independent Oct22 Spot trade↔live native WSS verified audit; no uncorroborated Oct22 source allowed.")
     run(**vars(a.parse_args()))
