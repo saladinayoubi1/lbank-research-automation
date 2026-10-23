@@ -1,5 +1,6 @@
 """Locked historical 47-entry diagnostic integrity tests. No market requests."""
 import copy
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -73,9 +74,14 @@ class CrossEvidenceTests(unittest.TestCase):
     def test_unarmed_winner_spoof_rejected(self):
         self._mutate(
             lambda s: s["unarmed"]["windows"]["train"]["episodes"][0].__setitem__(
-                "entry_open_utc", s["adverse"]["per_position"][1]["entry_open_utc"]
+                "entry_open_utc",
+                datetime.fromtimestamp(
+                    next(r["entry_utc_ms"] for r in
+                         s["structure"]["windows"]["train"]["entry_records"]
+                         if r["label"] == "winner") / 1000, timezone.utc
+                ).isoformat()
             ),
-            "unarmed_loser_not_a_baseline_loser|duplicate_unarmed_loss"
+            "unarmed_loser_not_a_baseline_loser"
         )
 
     def test_naive_local_time_rejected(self):
