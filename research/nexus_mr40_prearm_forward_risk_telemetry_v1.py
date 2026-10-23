@@ -9,7 +9,8 @@ from datetime import datetime,timezone
 from decimal import Decimal as D
 from pathlib import Path
 from research.nexus_mr40_bybit_archive_bridge_v1 import rollup,epoch,STEP4,BASE_URL
-from research.nexus_mr40_independent_closed_signal_v1 import canon,ROWS_SHA
+from research.nexus_mr40_independent_closed_signal_v1 import canon,ROWS_SHA,ClosedMR40,frozen_rows
+from research.nexus_mr40_bybit_forward_shadow_v1 import validate_bridge
 from research.nexus_mr40_bybit_forward_shadow_v1 import EXPECTED_BRIDGE,NOT_BEFORE
 
 LOCK_SCHEMA="nexus.mr40.prearm_forward_risk_telemetry.protocol.v1"
@@ -20,6 +21,7 @@ FIXED_SHADOW_DAY="2026-10-23"
 OCT22_SHA="9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587"
 OCT22_PARITY="59c037de00de8af3b403ea1ca069fe2362d658a71bc428ecae6895b0fe7bc380"
 OCT22_CLOSE="a3f46cf792cb47d1a3ebd01a7d5debe6abda0f0f7122a9fa9c437dff63daf351"
+OCT22_SOURCE_REPORT_SHA="ea5f020264cb3e307bc142f22a9736c8c5afdd5df16fa9615927f887384c099c"
 LIMITS=(D("5"),D("10"))
 
 def utc(ms):
@@ -57,7 +59,96 @@ def verified_json(file):
         raise ValueError("canonical_verified_evidence_drift")
     return p,digest
 
-def validate_inputs(lock,shadow,oct22,archive,clock_ms):
+
+def verify_six_markers_against_closed_engine(original,bridge,day22,day23,markers,
+                                             oct22_states,expected_prior_pairs=47):
+    """Recalculate ALL six Oct23 MR40 marker sets, rather than trust a JSON digest.
+
+    A legitimate SHA of public trades proves 4h OHLCV integrity but cannot by
+    itself prove a claimed indicator output. The independent MR40 state-machine
+    takes only complete, contiguous OHLCV and is never supplied the shadow
+    marker values. This historical/post-publication replay is NOT a real-time
+    decision, stop fill or independent order execution.
+    """
+    if not (len(bridge)==12 and len(day22)==6 and len(day23)==6 and
+            len(markers)==6 and len(oct22_states)==6 and
+            len(original)>=181):
+        raise ValueError("marker_independent_replay_source_row_counts_invalid")
+    if (type(expected_prior_pairs) is not int or expected_prior_pairs<0):
+        raise ValueError("invalid_reference_pair_count")
+    full=original+bridge+day22+day23
+    engine=ClosedMR40()
+    entries=exits=0
+    checked=[]
+    for idx,row in enumerate(full):
+        sig=engine.feed(row,confirmed=True,source_verified=True)
+        if idx<len(original):
+            entries+=int(sig.first_entry_close)
+            exits+=int(sig.natural_exit_close)
+        elif idx<len(original)+12:
+            continue
+        elif idx<len(original)+18:
+            j=idx-(len(original)+12)
+            ref=oct22_states[j]
+            if (ref.get("market_bar_start_ms")!=sig.start_ms
+                or ref.get("z_score_of_closed_fourhour_bar")!=sig.z_score
+                or ref.get("raw_MR40_active") is not sig.raw_active
+                or ref.get("momentum30_episode_admitted") is not sig.episode_admitted
+                or ref.get("target_long_after_closed_bar") is not sig.final_target
+                or ref.get("first_new_long_entry_marker_at_close") is not sig.first_entry_close
+                or ref.get("natural_long_exit_marker_at_close") is not sig.natural_exit_close):
+                raise ValueError("previous_spot_oct22_closed_signal_state_replay_drift")
+        else:
+            j=idx-(len(original)+18)
+            ref=markers[j]
+            if (ref.get("z_of_closed_bar")!=sig.z_score
+                or ref.get("raw_active") is not sig.raw_active
+                or ref.get("momentum_episode_admitted") is not sig.episode_admitted
+                or ref.get("closed_target") is not sig.final_target
+                or ref.get("first_entry_close_marker") is not sig.first_entry_close
+                or ref.get("natural_exit_close_marker") is not sig.natural_exit_close
+                or ref.get("market_bar_close_ms")!=sig.start_ms+STEP4):
+                raise ValueError("new_official_4h_MR40_shadow_marker_does_not_match_recomputed_indicator_"+str(j))
+            checked.append((sig.first_entry_close,sig.natural_exit_close))
+    if (entries,exits)!=(expected_prior_pairs,expected_prior_pairs) or
+        not all(not bool(x["first_new_long_entry_marker_at_close"]) and
+                not bool(x["natural_long_exit_marker_at_close"]) for x in oct22_states) or
+        engine.suspended):
+        raise ValueError("pinned_historical_prefix_and_oct22_flat_signal_parity_failed")
+    return {"independent_full_closed_bar_engine_replay":True,
+            "original_reference_entry_and_exit_count":expected_prior_pairs,
+            "original_oct22_6_bar_markers_checked":True,
+            "forward_oct23_6_marker_sets_recomputed":len(checked),
+            "new_entry_markers":sum(bool(a) for a,b in checked),
+            "new_natural_exit_markers":sum(bool(b) for a,b in checked),
+            "not_live_execution":True}
+
+
+def verify_independent_sources_and_forward_markers(original_dir,bridge_file,
+                                                    oct22_source_report,oct22_states,
+                                                    six_future_rows,shadow_markers):
+    if original_dir is None or bridge_file is None or oct22_source_report is None:
+        raise ValueError("independent_original_bridge_and_oct22_verified_source_required")
+    original=frozen_rows(original_dir)
+    if len(original)!=8514:
+        raise ValueError("independent_frozen_8514_prefix_count_drift")
+    bridge=validate_bridge(json.loads(bridge_file.read_bytes()))
+    raw=oct22_source_report.read_bytes()
+    if hashlib.sha256(raw).hexdigest()!=OCT22_SOURCE_REPORT_SHA:
+        raise ValueError("independent_oct22_public_archive_parity_report_SHA_changed")
+    report=json.loads(raw)
+    given=report.pop("digest",None)
+    if (given!=OCT22_PARITY or
+        hashlib.sha256(canon(report)).hexdigest()!=OCT22_PARITY or
+        report.get("source_reconciliation",{}).get("source_same_venue_reconciliation_pass") is not True or
+        report.get("official_trade_archive",{}).get("gz_sha256")!=OCT22_SHA):
+        raise ValueError("independent_oct22_source_quality_unproven")
+    day22=report["source_4h_candles"]
+    return verify_six_markers_against_closed_engine(
+        original,bridge,day22,six_future_rows,shadow_markers,
+        oct22_states["oct22_six_bar_markers"],47)
+
+def validate_inputs(lock,shadow,oct22,archive,clock_ms,original_dir=None,bridge_file=None,oct22_source_report=None):
     if type(clock_ms) is not int or clock_ms<NOT_BEFORE:
         raise ValueError("full_future_utc_day_not_finished_fail_closed")
     locked_bytes=lock.read_bytes()
@@ -121,7 +212,14 @@ def validate_inputs(lock,shadow,oct22,archive,clock_ms):
             type(m.get("natural_exit_close_marker")) is not bool or
             m["first_entry_close_marker"] and m["natural_exit_close_marker"]):
             raise ValueError("future_bar_clock_or_marker_integrity_failed")
-    return locked_bytes,rows,markers,ref,digest,obs_digest
+    parity=verify_independent_sources_and_forward_markers(
+        original_dir,bridge_file,oct22_source_report,observed,rows,markers)
+    claimed=doc.get("clock_and_closed_signals",{})
+    if (claimed.get("original_entries")!=47 or claimed.get("original_exits")!=47
+        or claimed.get("new_future_first_entry_close_markers")!=parity["new_entry_markers"]
+        or claimed.get("new_future_natural_exit_close_markers")!=parity["new_natural_exit_markers"]):
+        raise ValueError("future_shadow_summary_counts_not_matching_independent_engine")
+    return locked_bytes,rows,markers,ref,digest,obs_digest,parity
 
 def drawdown_pct(previous_peak,low_equity):
     if previous_peak<=0 or low_equity<0:
@@ -248,17 +346,21 @@ def compute_day(rows,markers):
         "per_closed_fourhour_bar":day
     }
 
-def run(protocol,shadow,oct22,archive,output,now_ms=None):
+def run(protocol,shadow,oct22,archive,output,now_ms=None,
+        original_dir=None,bridge_file=None,oct22_source_report=None):
     if output.exists():raise ValueError("never_overwrite_prospective_risk_telemetry")
     now=int(time.time()*1000) if now_ms is None else now_ms
-    protocol_raw,rows,markers,meta,source_digest,history_digest=validate_inputs(
-        protocol,shadow,oct22,archive,now)
+    protocol_raw,rows,markers,meta,source_digest,history_digest,parity=validate_inputs(
+        protocol,shadow,oct22,archive,now,
+        original_dir=original_dir,bridge_file=bridge_file,
+        oct22_source_report=oct22_source_report)
     x=compute_day(rows,markers)
     doc={
       "schema":"nexus.mr40.fixed_2026oct23_postday_prearm_risk_telemetry.results.v1",
       "protocol_sha256":hashlib.sha256(protocol_raw).hexdigest(),
       "shadow_report_logical_digest":source_digest,
       "oct22_historical_close_state_digest":history_digest,
+      "independent_replay_of_frozen_47_original_oct22_and_six_future_closed_signals":parity,
       "archive_oct23_gzip_sha256":meta["gzip_sha256"],
       "source_first_observed_utc":utc(meta["received_ms"]),
       "classification":"ONE_FUTURE_DAY_POST_ARCHIVE_RESEARCH_NOT_LIVE_ASOF_CLOSE_OR_FILL",
@@ -284,4 +386,7 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     for key in ("protocol","shadow","oct22","archive","output"):
         parser.add_argument("--"+key,type=Path,required=True)
+    for key in ("original_dir","bridge_file","oct22_source_report"):
+        parser.add_argument("--"+key,type=Path,required=True,
+                            help="Independent SHA-pinned public Spot source and closed-signal replay; no fill source")
     run(**vars(parser.parse_args()))
