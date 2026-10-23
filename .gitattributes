@@ -396,3 +396,7 @@ tests/test_nexus_mr40_bybit_forward_oct22_reuse_v1.py text eol=lf export-ignore
 # Prior completed MR40 risk-overlay result comparison and source-check tests are research only.
 research/nexus_mr40_existing_stop_overlay_failure_audit_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_existing_stop_overlay_failure_audit_v1.py text eol=lf export-ignore
+
+# Immutable legacy pre-profit-arm adverse price event audit, never deployed to trading runtime.
+research/nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
