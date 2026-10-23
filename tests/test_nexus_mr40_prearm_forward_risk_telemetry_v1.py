@@ -6,6 +6,7 @@ from unittest.mock import patch
 from research.nexus_mr40_bybit_archive_bridge_v1 import epoch,STEP4
 from research.nexus_mr40_prearm_forward_risk_telemetry_v1 import (
     compute_day,check_lock,run,LOCK_SCHEMA,NOT_BEFORE,
+    write_risk_receipt_exclusively_or_cleanup,
     verify_six_markers_against_closed_engine
 )
 
@@ -82,6 +83,42 @@ class TestFixedDayPrearmLowTelemetry(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"missing_or_nonmonotonic_4h_candle"):
             verify_six_markers_against_closed_engine(
                 a,b,old,new,marks,old_marks,expected_prior_pairs=0)
+
+    def test_exclusive_risk_receipt_writer_no_overwrite(self):
+        with tempfile.TemporaryDirectory() as p:
+            out=Path(p)/"results"/"risk.json"
+            write_risk_receipt_exclusively_or_cleanup(out,{"safe":True,"orders":0})
+            original=out.read_bytes()
+            with self.assertRaisesRegex(ValueError,"never_overwrite_prospective_risk_telemetry"):
+                write_risk_receipt_exclusively_or_cleanup(out,{"safe":False})
+            self.assertEqual(out.read_bytes(),original)
+
+    def test_partial_disk_full_write_removes_only_new_risk_receipt_then_safe_retry(self):
+        with tempfile.TemporaryDirectory() as p:
+            out=Path(p)/"results"/"risk.json"
+            real_open=Path.open
+            class DiskFullWriter:
+                def __init__(self,underlying):self.writer=underlying
+                def __enter__(self):return self
+                def write(self,body):
+                    self.writer.write(body[:15])
+                    raise OSError("simulated_disk_full_on_partial_risk_receipt")
+                def __exit__(self,*exc):
+                    self.writer.close()
+                    return False
+            def injected_open(path,mode="r",*args,**kwargs):
+                target=real_open(path,mode,*args,**kwargs)
+                if path==out and mode=="x":
+                    return DiskFullWriter(target)
+                return target
+            with patch("pathlib.Path.open",injected_open):
+                with self.assertRaisesRegex(OSError,"simulated_disk_full_on_partial_risk_receipt"):
+                    write_risk_receipt_exclusively_or_cleanup(
+                        out,{"orders":0,"private_API":False})
+            self.assertFalse(out.exists(),"orphan partial report must not block fixed-date rerun")
+            write_risk_receipt_exclusively_or_cleanup(
+                out,{"orders":0,"private_API":False})
+            self.assertTrue(json.loads(out.read_text())["private_API"] is False)
 
     def test_no_new_entry_no_fabricated_PnL_or_risk(self):
         r,m=sample()
