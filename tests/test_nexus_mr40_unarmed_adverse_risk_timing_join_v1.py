@@ -15,7 +15,7 @@ def sources():
             day=i+1+(0 if window=="train" else 10)
             a=f"2025-01-{day:02d}T00:00:00+00:00"
             b=f"2025-01-{day:02d}T08:00:00+00:00"
-            low="15" if i==0 and window=="evaluation" else (
+            low=("15" if window=="evaluation" else "8") if i==0 else (
                 "7" if i==1 else "3")
             hit5= int(low)>=5
             hit10=int(low)>=10
