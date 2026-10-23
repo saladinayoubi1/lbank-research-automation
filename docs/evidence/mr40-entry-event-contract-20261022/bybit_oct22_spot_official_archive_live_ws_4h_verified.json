@@ -1,0 +1,119 @@
+{
+  "bridge_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+  "digest": "59c037de00de8af3b403ea1ca069fe2362d658a71bc428ecae6895b0fe7bc380",
+  "live": false,
+  "merge": false,
+  "native_confirm_verified_live_source": true,
+  "no_strategy_replay_or_order_produced": true,
+  "official_trade_archive": {
+    "csv_sha256": "c5918eaa64780fa9834eb6a25027aa28f455f6e0cd7efb9e17ce90b9e5275bde",
+    "data_availability_clock_is_post_full_GET": true,
+    "gz_sha256": "9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587",
+    "gz_size_bytes": 6814482,
+    "last_modified_header": "Fri, 23 Oct 2026 02:01:03 GMT",
+    "received_utc": "2026-10-23T05:17:22.252000+00:00",
+    "request_started_utc": "2026-10-23T05:17:18.808000+00:00",
+    "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-22.csv.gz"
+  },
+  "orders_sent": 0,
+  "paper_changed": false,
+  "prior_spot_WS_capture_sha256": "7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e",
+  "prior_spot_WS_gate_digest": "d52988afdce73267a9a8489e516cbce20cd58707b96bf907fc79fcfe4904f30f",
+  "promote": false,
+  "protocol_sha256": "fe6707d83952ef1cceac30d6bdf21df85b26860eec8d1ccbb67764d13edb62ed",
+  "schema": "nexus.mr40.oct22_spot_tick_ws_reconciliation.results.v1",
+  "source_4h_candles": [
+    [
+      1792627200000,
+      "84092.6",
+      "84374.1",
+      "82677",
+      "82924.7",
+      "1970.201195"
+    ],
+    [
+      1792641600000,
+      "82924.7",
+      "82999",
+      "82142",
+      "82243.8",
+      "1796.593704"
+    ],
+    [
+      1792656000000,
+      "82243.9",
+      "82278.5",
+      "81651.5",
+      "81750.1",
+      "1788.718883"
+    ],
+    [
+      1792670400000,
+      "81750.1",
+      "82098.4",
+      "81303",
+      "81677.3",
+      "2482.667875"
+    ],
+    [
+      1792684800000,
+      "81677.3",
+      "81761.2",
+      "80927.9",
+      "81488.6",
+      "2951.920267"
+    ],
+    [
+      1792699200000,
+      "81492.6",
+      "81571.7",
+      "81195",
+      "81416.1",
+      "747.757023"
+    ]
+  ],
+  "source_reconciliation": {
+    "all_six_contiguous_to_pinned_oct21_prefix": true,
+    "archive_fixed_4h_ohlcv": [
+      "81677.3",
+      "81761.2",
+      "80927.9",
+      "81488.6",
+      "2951.920267"
+    ],
+    "base_volume_abs_diff_btc": "0.000000",
+    "base_volume_relative_diff": "0",
+    "chosen_fixed_candle_utc": "2026-10-22T16:00:00Z–2026-10-22T20:00:00Z",
+    "day_utc": "2026-10-22",
+    "does_not_automatically_authorize_live_MR40": true,
+    "new_4h_candle_count": 6,
+    "no_orders_sent": true,
+    "not_account_or_market_order_fill_evidence": true,
+    "not_prospective_PNL_or_edge_validation": true,
+    "price_OHLC_abs_diff_usdt": [
+      "0.0",
+      "0.0",
+      "0.0",
+      "0.0"
+    ],
+    "price_comparison_pass": true,
+    "prior_observed_ws_ohlcv": [
+      "81677.3",
+      "81761.2",
+      "80927.9",
+      "81488.6",
+      "2951.920267"
+    ],
+    "same_venue_independent_sources": "Bybit BTCUSDT Spot public trades vs Bybit BTCUSDT Spot public WS",
+    "source_same_venue_reconciliation_pass": true,
+    "volume_comparison_pass": true
+  },
+  "source_validation": {
+    "day": "2026-10-22",
+    "exact_1m_to_4h": true,
+    "four_hour_candles_verified": 6,
+    "minutes_verified": 1440,
+    "number_of_trades": 1093898,
+    "source_trade_order_preserved": true
+  }
+}
