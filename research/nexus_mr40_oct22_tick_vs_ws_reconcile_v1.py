@@ -179,6 +179,12 @@ def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,outp
     if src["minutes_verified"]!=1440 or src["four_hour_candles_verified"]!=6 or not src["exact_1m_to_4h"]:
         raise ValueError("source_1m_fourhour_integrity_failed")
     comparison=reconcile(rows,closed,prev)
+    # Data-quality failure is NOT an approved historical prefix. Retaining
+    # a normal archive+result on failed Spot tick-vs-native-WS parity would
+    # look like a successful immutable source and could block safe retries.
+    # Never persist unverified material to the trusted source directory.
+    if comparison["source_same_venue_reconciliation_pass"] is not True:
+        raise ValueError("official_oct22_spot_tick_vs_live_ws_parity_failed_no_trusted_artifacts_written")
     result={
         "schema":"nexus.mr40.oct22_spot_tick_ws_reconciliation.results.v1",
         "protocol_sha256":hashlib.sha256(protocol_path.read_bytes()).hexdigest(),
