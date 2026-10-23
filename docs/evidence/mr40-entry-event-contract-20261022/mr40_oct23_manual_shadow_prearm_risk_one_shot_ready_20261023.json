@@ -1,0 +1,51 @@
+{
+  "schema": "nexus.mr40.manual_oct23_postday_research_runner_readiness.v1",
+  "verified_utc_date": "2026-10-23",
+  "result": "READY_FOR_FUTURE_MANUAL_ONE_SHOT_ONLY_NOT_NOW",
+  "real_research_machine": "DESKTOP-F4SA4VL",
+  "source_code": "research/nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py",
+  "tests": "tests/test_nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py",
+  "commits": {
+    "code": "67e9f50fccda7b187fda6b78c3bceee02b37866c",
+    "tests": "52e4652dbce6cd2d7a911a48034e3a38a74cb3e2"
+  },
+  "verified_windows_manual_source_preflight": true,
+  "original_8514_sha_pinned_market_data": true,
+  "previous_oct20_oct21_12_bar_bridge_valid": true,
+  "official_oct22_1440m_6x4h_trade_gzip_crc_digest_and_native_ws_parity_rechecked": true,
+  "prior_oct22_closed_state_original_entry_exit_count": [
+    47,
+    47
+  ],
+  "oct22_trusted_archive_sha256": "9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587",
+  "source_receipt_parity_report_sha256": "ea5f020264cb3e307bc142f22a9736c8c5afdd5df16fa9615927f887384c099c",
+  "source_status_checked_utc": "2026-10-23T10:45:44Z",
+  "new_oct23_official_archive_HEAD_HTTP": 404,
+  "new_oct23_archive_created": false,
+  "shadow_report_created": false,
+  "new_risk_report_created": false,
+  "manual_runner_unit_tests_passed": 7,
+  "manual_runner_unit_tests_failed": 0,
+  "manual_runner_tests_verified_utc": "2026-10-23T10:49:49Z",
+  "manual_runner_actual_preflight_utc": "2026-10-23T10:51:09Z",
+  "actual_manual_runner_date_gate_result": "NOT_YET_TIME",
+  "first_allowed_after_utc": "2026-10-24T00:00:00Z",
+  "publication_required_after_day_end": true,
+  "manual_steps": [
+    "preflight immutable original/bridge/Oct22 official trade-vs-WS archive parity and six-bar flat history",
+    "one read-only HEAD for official full Oct23 Bybit Spot trade archive",
+    "if 404 fail-closed no file; if 200 run original fixed Shadow in exclusive source+proof pair",
+    "independently compute MR40 full 47/47+Oct22 states+all six Oct23 Z/entry/exit markers and measure pre-arm risk; no fill claims"
+  ],
+  "resume_behavior": "Existing complete Oct23 archive+shadow pair is never overwritten or redownloaded; missing risk report can be validated and written alone; incomplete pair is refused.",
+  "no_background_task_created": true,
+  "no_paper_or_live_runtime_code_changes": true,
+  "private_API": false,
+  "orders": 0,
+  "Paper_500_USDT_unchanged": true,
+  "Live": false,
+  "PR_Draft_no_merge": true,
+  "no_parameter_tuning": true,
+  "forward_OOS_real_market_data_proven": false,
+  "economic_improvement_proven": false
+}

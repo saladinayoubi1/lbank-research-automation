@@ -1,0 +1,57 @@
+{
+  "schema": "nexus.mr40.exploratory_regime_discrimination_evidence.v1",
+  "date_utc": "2026-10-23",
+  "scope": "Exact exploratory label-permutation tests on 47 already-seen entries; not a predictive validator, not a parameter search",
+  "preregistered_commit": "630f648fc1c1837cd29aeae52b192e6c5921aa0c",
+  "source_regime_full_SHA256": "5ee377c2be5a954891052fba567cb2a67cb1528661d2696a696766da7ef4081d",
+  "local_full_report": "E:\\NEXUS-Research\\MR40-Entry-Event-20261022\\results\\mr40_exploratory_regime_discrimination_20261023.json",
+  "local_report_SHA256": "e2ac5e149a177ff970d20bf2705ad2673c11faebe93158083a61f394ce90c17b",
+  "local_report_logical_digest": "3c20c5ed720117f63312e01b98adb53af4c27eefa71d259dbef9ecbf112e9f09",
+  "method": "Fixed high-value-winner AUC, full exact two-sided permutation across all label assignments, p Bonferroni x4. Features selected AFTER inspecting historical medians: all findings exploratory and selection biased.",
+  "windows": {
+    "train_25_19wins_6losses": {
+      "ATR14_pct": {
+        "auc_winner_higher": 0.38596491,
+        "exact_p": 0.43669113,
+        "p_bonferroni_4": 1,
+        "permutations": 177100
+      },
+      "momentum180_pct": {
+        "auc_winner_higher": 0.71052632,
+        "exact_p": 0.13780915,
+        "p_bonferroni_4": 0.5512366,
+        "permutations": 177100
+      }
+    },
+    "evaluation_seen_22_18wins_4losses": {
+      "ATR14_pct": {
+        "auc_winner_higher": 0.47222222,
+        "exact_p": 0.90225564,
+        "p_bonferroni_4": 1,
+        "permutations": 7315
+      },
+      "momentum180_pct": {
+        "auc_winner_higher": 0.58333333,
+        "exact_p": 0.65208476,
+        "p_bonferroni_4": 1,
+        "permutations": 7315
+      }
+    }
+  },
+  "interpretation": "ATR14 and 180-bar momentum features have not shown robust independent winner/loser discrimination on the already-seen MR40 cohort. Therefore do not spend more effort fitting ATR or momentum cutoffs on these 47 trades. Small losses n=6/4 mean failure to reject does not prove no predictive ability; genuinely new OOS data required.",
+  "actual_on_Laptop1_tests": {
+    "passed": 9,
+    "failed": 0,
+    "features_asof_close_only": true
+  },
+  "decisions": {
+    "new_filter_accepted": false,
+    "predictive_edge_verified": false,
+    "merge": false,
+    "paper_changed": false,
+    "orders": 0,
+    "Live": false,
+    "promote": false
+  },
+  "next_gate": "2026-10-24T00:00:00Z and publication of fixed official Bybit Spot Oct23 archive, then manual fixed one-shot Shadow and pre-arm risk; no new signal until six real closed bars plus authenticated complete archives"
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "nexus.mr40.one-combination-ablation.v1",
+  "locked_before_code": true,
+  "issue": 2799,
+  "branch": "research/mr40-entry-event-contract-20261022",
+  "goal": "Test one previously untested conjunction (causal Vol40 cash-fraction size + 4pct entry stop + closed-bar +2pct gross-entry arm + original MR40 natural exit) against unchanged baseline and two existing single-component reference families; explicitly REJECT if not robust. Not a threshold sweep.",
+  "inputs": {
+    "venue": "Bybit",
+    "market": "BTCUSDT spot 4h",
+    "historically_seen": true,
+    "ohlc_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "existing_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e"
+  },
+  "windows": {
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation": [
+      "2025-01-01",
+      "2026-10-20"
+    ]
+  },
+  "capital_usdt": [
+    10000,
+    500
+  ],
+  "profiles": {
+    "normal": {
+      "fee_bp": 10,
+      "slip_bp": 5,
+      "lag_bars": 1
+    },
+    "stress": {
+      "fee_bp": 25,
+      "slip_bp": 15,
+      "lag_bars": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "baseline",
+      "vol_target": null,
+      "initial_stop": null,
+      "arm2": false
+    },
+    {
+      "id": "vol40_only",
+      "vol_target": "0.40",
+      "initial_stop": null,
+      "arm2": false
+    },
+    {
+      "id": "stop4_arm2_only",
+      "vol_target": null,
+      "initial_stop": "0.04",
+      "arm2": true
+    },
+    {
+      "id": "vol40_stop4_arm2",
+      "vol_target": "0.40",
+      "initial_stop": "0.04",
+      "arm2": true
+    }
+  ],
+  "source_semantics": {
+    "entry": "Use only first closed 4h MR40+Momentum30 signal episode indices from frozen prior decisions, execute at next bar open; these are already-seen historical indices so economic outcome is descriptive.",
+    "size": "Vol40 target fraction=min(1,0.4/annualized population stdev of prior 180 log close returns up to signal bar); cash* fraction; round quantity DOWN to 0.00001 BTC. No leverage and no scale-in.",
+    "exit_priority": "Previously closed 4h natural signal at next open > adverse gap at next open > same bar low touching known stop (hypothetical fill model, not observed real fill). Stop exit blocks re-entry in same signal episode.",
+    "arm": "Only when prior confirmed close >= entry fill*1.02, set gross fill-based entry stop effective at NEXT open. Not fee-adjusted breakeven. No retroactive stop.",
+    "min_notional": "1 USDT and 0.00001 BTC; original mathematical engine convention only; no real exchange execution guarantee.",
+    "cost": "normal or stress fee/slippage per side as above. No claim that OHLC intrabar stop fill is executable."
+  },
+  "qualification": "For novel combined candidate, require on BOTH train and evaluation at 10000 AND 500 USDT: net PNL >= baseline and >= both single-component cases under BOTH normal and stress; close DD <=90% baseline AND <= both references under normal and stress; >=70% baseline winning trade count and >=70% summed winning PnL preserved, no single-trade dependence. Even if passed, still NO_PROMOTE because historical samples have been seen and 4h/1m full-OHLC parity failed.",
+  "accounting": "First EXACTLY reproduce existing baseline ledger prices, fees, fills and close-equity SHA for every fixed profile and account. If failure => do not consider combination results valid.",
+  "safety": {
+    "paper_500_laptop2_unchanged": true,
+    "live": false,
+    "real_orders": false,
+    "private_api": false,
+    "auto_merge": false,
+    "auto_promote": false
+  }
+}

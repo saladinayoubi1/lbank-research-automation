@@ -271,3 +271,154 @@ docs/evidence/mr40-entry-stop-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/results.json.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/ledger.jsonl.gz export-ignore
 docs/evidence/mr40-entry-quality-20261022/excursion_audit.json export-ignore
+
+# MR40 Phase 2/3 research-only coordinator, replay oracles and bounded ablation.
+# GitHub retains all protocols/evidence, but none ship in the strict runtime source archive.
+research/mr40_entry_event_contract_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_entry_event_contract_v1.py text eol=lf export-ignore
+research/nexus_mr40_entry_event_baseline_parity_v1.py text eol=lf export-ignore
+research/mr40_accounting_reconciliation_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_accounting_reconciliation_v1.py text eol=lf export-ignore
+research/mr40_one_combination_ablation_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_one_combination_ablation_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_entry_event_contract_v1.py text eol=lf export-ignore
+docs/research/MR40_ENTRY_EVENT_CONTRACT_20261022_FA.md text eol=lf export-ignore
+docs/evidence/mr40-entry-event-contract-20261022/*.json text eol=lf export-ignore
+
+# One rejected MR40 pre-entry structural-break diagnostic is historical offline evidence only.
+research/mr40_structure_break_audit_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_structure_break_audit_v1.py text eol=lf export-ignore
+
+# MR40 two-feature OHLCV entry-volume audit remains strictly retrospective research.
+research/mr40_entry_volume_audit_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_entry_volume_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_entry_volume_audit_v1.py text eol=lf export-ignore
+
+# Read-only public Bitget/LBank backup source receipts are research-only, never NEXUS runtime.
+research/mr40_public_backup_alignment_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_public_backup_alignment_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_public_backup_alignment_v1.py text eol=lf export-ignore
+
+# Offline standalone MR40 closed-signal + integrated event replay (no runtime or broker path).
+research/mr40_independent_signal_parity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_independent_closed_signal_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_independent_closed_signal_v1.py text eol=lf export-ignore
+research/mr40_signal_coordinator_replay_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_signal_coordinator_replay_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_signal_coordinator_replay_v1.py text eol=lf export-ignore
+
+# MR40 public backup 240x1min -> 4h strict OHLCV integrity diagnostic (research only).
+research/mr40_backup_1m_4h_integrity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_backup_1m_4h_integrity_v1.py text eol=lf export-ignore
+
+# Official Bybit Spot archive one-day trade-print to frozen 4h research proof; not runtime.
+research/mr40_bybit_public_spot_archive_day_parity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_public_spot_archive_day_parity_v1.py text eol=lf export-ignore
+
+# No-money Bybit archived daily bridge and future-only shadow research: never ship into runtime archive.
+research/mr40_bybit_archive_bridge_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_archive_bridge_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_archive_bridge_v1.py text eol=lf export-ignore
+research/mr40_forward_archive_shadow_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_forward_shadow_v1.py text eol=lf export-ignore
+
+# Strict read-only official Bybit Spot WebSocket one-shot confirmation and history-continuity gate.
+research/mr40_bybit_public_spot_ws_probe_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_ws_probe_v1.ps1 text eol=lf export-ignore
+research/mr40_public_ws_close_gate_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_public_ws_close_gate_v1.py text eol=lf export-ignore
+
+# Public one-shot Spot 1m confirmed-close source proof and postcapture forensic tooling (never runtime).
+research/mr40_ws_minute_close_proof_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_ws_minute_close_proof_v1.ps1 text eol=lf export-ignore
+research/mr40_ws_raw_minute_diagnostic_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_ws_raw_minute_diagnostic_v1.ps1 text eol=lf export-ignore
+research/nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_ws_minute_raw_forensics_v1.py text eol=lf export-ignore
+
+# Fixed-window Bybit public Spot 4h native-bool, raw-message source close V2; never runtime.
+research/mr40_public_spot_4h_close_v2_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_4h_raw_close_gate_v2.py text eol=lf export-ignore
+research/nexus_mr40_bybit_public_4h_raw_capture_v2.ps1 text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_4h_raw_close_gate_v2.py text eol=lf export-ignore
+
+# Immutable 22 Oct 2026 public Bybit Spot tick archive vs original 20:00 UTC WS close source auditor only.
+research/mr40_bybit_oct22_tick_vs_ws_reconciliation_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_oct22_tick_vs_ws_reconcile_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_oct22_tick_vs_ws_reconcile_v1.py text eol=lf export-ignore
+
+# Offline Spot trade-print execution-timing sensitivity on fixed UTC 4h boundaries and last MR40 pair.
+research/mr40_bybit_spot_confirm_latency_tick_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_confirm_latency_tick_proxy_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_confirm_latency_tick_proxy_v1.py text eol=lf export-ignore
+research/mr40_last_completed_pair_tick_execution_proxy_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_last_completed_pair_tick_execution_proxy_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_last_completed_pair_tick_execution_proxy_v1.py text eol=lf export-ignore
+
+# One-shot public Spot L50 visible spread/liquidity cost source audit, never runtime exchange execution.
+research/mr40_bybit_spot_orderbook50_snapshot_cost_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_bybit_public_spot_ob50_snapshot_capture_v1.ps1 text eol=lf export-ignore
+research/nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_bybit_spot_ob50_visible_cost_v1.py text eol=lf export-ignore
+
+# Research-only all-47 fee sensitivity based on official public Bybit Spot VIP taker rates; never runtime.
+research/mr40_all47_spot_fee_sensitivity_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_frozen_47_spot_fee_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_frozen_47_spot_fee_audit_v1.py text eol=lf export-ignore
+
+# All-47 Spot OHLC floating drawdown guaranteed and high-before-low envelope study, not runtime.
+research/mr40_all47_intraposition_drawdown_bounds_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_all47_intratrade_ohlc_equity_bounds_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_all47_intratrade_ohlc_equity_bounds_v1.py text eol=lf export-ignore
+
+# Fixed prior-data all-47 MR40 tail MAE/hold diagnostic, never exported to execution runtime.
+research/mr40_frozen47_tail_risk_distribution_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_all47_tail_risk_distribution_v1.py text eol=lf export-ignore
+
+# Historical research only: precommitted fixed cash-reserve fraction 47-position risk study, excluded from runtime.
+research/mr40_preregistered_cash_fraction_risk_sensitivity_20261022.json text eol=lf export-ignore
+research/nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_cash_fraction_ohlc_risk_sensitivity_v1.py text eol=lf export-ignore
+
+# Descriptive time-to-adverse-LOW risk audit; NEVER deployed in Paper or trading runtime.
+research/mr40_all47_adversity_timing_protocol_20261022.json text eol=lf export-ignore
+research/nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_all47_adversity_timing_v1.py text eol=lf export-ignore
+# Source archive cache-reuse synthetic integrity and nontrading integration suite only.
+tests/test_nexus_mr40_bybit_forward_oct22_reuse_v1.py text eol=lf export-ignore
+
+# Prior completed MR40 risk-overlay result comparison and source-check tests are research only.
+research/nexus_mr40_existing_stop_overlay_failure_audit_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_existing_stop_overlay_failure_audit_v1.py text eol=lf export-ignore
+
+# Immutable legacy pre-profit-arm adverse price event audit, never deployed to trading runtime.
+research/nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
+
+# Archive-confirmed Oct22 retrospective six-bar MR40 signal audit; no runtime or Paper export.
+research/mr40_authenticated_oct22_historical_closed_signal_state_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
+
+# Prospective pre-profit-arm risk telemetry is research only, no Paper/live runtime.
+research/mr40_prearm_forward_risk_telemetry_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
+
+# Fixed future-only ATR14x2 pre-arm protection research and old47 diagnostic are NOT Paper or live runtime code.
+research/mr40_prearm_atr14x2_forward_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_prearm_atr14x2_prospective_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_prearm_atr14x2_prospective_v1.py text eol=lf export-ignore
+research/mr40_fixed_atr14x2_seen47_diagnostic_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
+
+# Research-only manual one-shot fixed public Oct23 archive->shadow->risk orchestrator, no Paper/Live runtime.
+research/nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py text eol=lf export-ignore

@@ -1,0 +1,41 @@
+{
+  "schema": "nexus.mr40.bybit_spot_websocket_public_probe.v1",
+  "project_issue": 2799,
+  "pr": 2808,
+  "locked_utc_day": "2026-10-22",
+  "objective": "One-shot read-only probe of the official Bybit V5 public BTCUSDT Spot 4h WebSocket kline channel as alternative to two-device blocked REST. No credentials, API key, client trading or scheduler.",
+  "official_documentation": [
+    "https://bybit-exchange.github.io/docs/v5/ws/connect",
+    "https://bybit-exchange.github.io/docs/v5/websocket/public/kline"
+  ],
+  "url": "wss://stream.bybit.com/v5/public/spot",
+  "subscribe_payload": {
+    "op": "subscribe",
+    "args": [
+      "kline.240.BTCUSDT"
+    ]
+  },
+  "host": "authorized research device DESKTOP-F4SA4VL; not assumed Laptop2 Paper",
+  "max_wait_seconds": 25,
+  "source_contract": {
+    "market": "BTCUSDT SPOT",
+    "interval": "240 minutes",
+    "require_topic": "kline.240.BTCUSDT",
+    "closed_only": "Only confirm===true means officially closed 4h; confirm=false is INTRABAR and MUST NOT be passed to MR40 as verified closed bar.",
+    "payload": "Response {topic, ts, data:[{start,open,high,low,close,volume,turnover,confirm}]}",
+    "time_window": "No trading output. Save connection status, handshake errors, subscribe ACK, first max 3 topic messages and receipt UTC.",
+    "need_validity": "OHLC positive finite; high >= max(open,close), low <= min(open,close), nonnegative volume; bar start aligned 14400000ms; event ts after start; no inferred next-open fills",
+    "no_complete_signal_claim": "Since current 4h bar unlikely to close during 25s probe, do not call subscribe proof a confirmed close, live strategy deployment, truly unseen performance, Bybit private/demo connectivity or PnL.",
+    "if_connect_fails": "Record fail, do not try proxy/VPN/geoblock bypass or mutate the active installation.",
+    "source_caution": "A public snapshot is a market source, not exchange execution, L2 liquidity or valid stop fill."
+  },
+  "safety": {
+    "paper_500_unchanged": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "no_automated_schedule": true,
+    "merge": false,
+    "promote": false
+  }
+}

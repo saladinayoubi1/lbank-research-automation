@@ -1,0 +1,54 @@
+{
+  "schema": "nexus.mr40.spot_archive_latency_sensitivity_20261022.v1",
+  "repo": "saladinayoubi1/lbank-research-automation",
+  "PR": 2808,
+  "roadmap_issue": 2799,
+  "type": "HISTORICAL_MARKET_DATA_LATENCY_SENSITIVITY_NOT_OOS_AND_NOT_A_FILL_SIMULATION",
+  "purpose": "Test the next-4h OPEN timing assumption in MR40 historical replay; a genuine official Bybit Spot fourhour confirm true was independently received 816.2316ms after the 4h boundary, so exact boundary OPEN was already past when the signal could have been acted on.",
+  "already_observed_live_source": {
+    "fixed_bar": "2026-10-22T16:00:00Z–20:00:00Z",
+    "server_confirm_sent": "2026-10-22T20:00:00.563Z",
+    "research_device_confirm_received": "2026-10-22T20:00:00.8162316Z",
+    "measurement_ms_after_next_fourhour_open": 816,
+    "raw_capture_sha256": "7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e"
+  },
+  "historical_sample": {
+    "venue": "Bybit Spot BTCUSDT; no derivatives",
+    "full_days_utc": [
+      "2026-10-20",
+      "2026-10-21"
+    ],
+    "archive_gzip_sha256": [
+      "4ad1f684eff798b925ae69fca6828820bf6086611af2935cb37b8b680cfba5d0",
+      "120005f407c3d620cf866823d73ad78948792b88ccb957bcc575089de70db9e9"
+    ],
+    "archive_day_trade_counts": [
+      1110780,
+      974028
+    ],
+    "boundaries": "all 6 chronological UTC 4h starts per day, including the first 00:00 UTC; N=12; no selecting profitable or entry-specific boundaries",
+    "basis": "Already known and previously evaluated days, not untouched future data. The latency-specific metric thresholds are fixed before evaluating this metric but NOT a truly blind test."
+  },
+  "cost_free_tick_proxy": {
+    "reference": "FIRST trade print at or after exact 4h boundary (historical 4h OPEN as first print)",
+    "latency_cases_ms": [
+      817,
+      1500
+    ],
+    "delayed_proxy": "FIRST actual Bybit Spot trade print at or after boundary+latency_ms. Not a guaranteed achievable market order fill, nor quote or midpoint.",
+    "price_delta_bps": "(delayed_trade_price - reference_first_trade_price)/reference_first_trade_price * 10000; positive means higher price (adverse to hypothetical buy), negative adverse to sell",
+    "coverage": "Fail if any of the 12 selected fixed 4h starts lacks either a baseline or a delayed trade in the same 4h bin. Report lag-to-first-trade after threshold, absolute and signed bp differences, max, mean absolute, zero/nonzero counts; do not optimize threshold or trade direction.",
+    "nonfill": "Cannot derive executable price, spread, fees, order book, available liquidity, size slippage or actual broker fills from last-sale trade prints.",
+    "threshold_reason": "A measured confirmation receipt +816.2316ms cannot be used at +816ms on integer-millisecond trade timestamps; ceil to +817ms. Chosen BEFORE running any latency tick metrics, no result seen."
+  },
+  "safety": {
+    "offline": true,
+    "api_keys": false,
+    "real_orders": 0,
+    "live": false,
+    "paper500_unchanged": true,
+    "merge": false,
+    "promote": false,
+    "scheduler": false
+  }
+}

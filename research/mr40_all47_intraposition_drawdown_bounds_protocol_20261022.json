@@ -1,0 +1,58 @@
+{
+  "schema": "nexus.mr40.all47_frozen_intraposition_ohlc_drawdown_bounds.v1",
+  "project_issue": 2799,
+  "pr": 2808,
+  "commit_before_results": true,
+  "study_utc_date": "2026-10-22",
+  "goal": "Quantify actual historically observed candle-low adverse excursion and rigorously bound 4h intra-position equity drawdown for ALL 47 previously frozen MR40 Bybit BTCUSDT Spot LONG next-open pairs. Clarify realized-only previous max DD vs uncertain high/low path and avoid falsely labeling the result exact or live.",
+  "data": {
+    "venue": "Bybit BTCUSDT SPOT only; no leverage",
+    "frozen_ohlcv_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "frozen_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "previous_fee_audit_full_sha256": "074b74042e62fab437e2d49ce4d8d71c401e301a1d0ad727ed2704a4b012de3d",
+    "n_fourhour_rows": 8514,
+    "positions": 47,
+    "train_pairs": 25,
+    "evaluation_pairs": 22,
+    "expected_signals": "Regenerate all first-entry and natural-exit events exclusively from ClosedMR40 market-bar transitions, then consult SHA-pinned ledger only for exact 94 temporal points. Fail on divergence.",
+    "entry_exit": "Enter after signal close at immediately following bar OPEN (entry bar index=signal index+1); hold through bars entry_index through exit_signal_index inclusive. Exit at OPEN of exit_signal_index+1. DO NOT use high/low from exit opening bar because already flat.",
+    "intratrade_time": "4h observed candle HI/LO cannot reveal within-bar temporal order, precise intrabar drawdown or stop touch/fill ordering."
+  },
+  "scenarios": [
+    {
+      "name": "ZERO_FEE_UPPER_BOUND",
+      "taker_fee_each_side": "0"
+    },
+    {
+      "name": "OFFICIAL_SPOT_VIP3_TAKER_REFERENCE",
+      "taker_fee_each_side": "0.00075"
+    },
+    {
+      "name": "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE",
+      "taker_fee_each_side": "0.001"
+    }
+  ],
+  "equity": {
+    "start_quote_usdt": "500",
+    "all_available_quote_reinvested_each_successive_long": true,
+    "for_position_mark_to_market_assume_immediate_exit_at_price": "E_quick_liquidation(p) = Q_before_entry * (1-f_buy) * p / entry_OPEN * (1-f_sell)",
+    "cash_after_natural_exit": "Q_next = Q_before_entry * (1-f_buy) * exit_next_OPEN / entry_OPEN * (1-f_sell)",
+    "actual_execution_not_proven": true,
+    "closed_only_drawdown": "max peak-to-trough from successive completed exits (cash at flat), same formula as pinned previous fee study. No intratrade candles.",
+    "guaranteed_candle_drawdown_lower_bound": "For each bar, measure candle low liquidation equity versus max(previous realized cash high and highs of PREVIOUS completed held bars) before the current bar. This peak necessarily predates current low regardless of unknown within-bar ordering. Include exits.",
+    "adversarial_intrabar_high_before_low_upper_bound": "For each bar, first update possible equity peak to the current bar HIGH, then evaluate current LOW; this assumes each 4h HIGH occurs before LOW and yields a conservative upper envelope. Include exit cash moments. Never claim this is actual path.",
+    "price_only_per_position_MAE": "Minimum LOW across held OHLC bars relative to entry OPEN, no fee or fill assumptions. Also report max high excursion price, max position duration in full 4h bars and hours.",
+    "true_market_drawdown": "UNKNOWN because intrabar ordering, spread/fees beyond scenario, fill timing, L2 and floating stop rules absent. Bounds are conditional on fictional next-open fills and candle extremes, not full 24/7 account risk proof."
+  },
+  "controls": {
+    "match_existing_fee_audit": "Exactly same 47 pairs; independent after-close compound balance and closed-only MDD must match SHA-pinned previous fee audit across all 3 scenarios x train/eval/combined. Reject if inconsistent.",
+    "no_overwrite": true,
+    "no_orders": true,
+    "no_private_API": true,
+    "live": false,
+    "laptop2_Paper500_unchanged": true,
+    "PR_draft_no_merge": true,
+    "no_promotion": true,
+    "no_scheduler": true
+  }
+}

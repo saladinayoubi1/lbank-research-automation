@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.mr40.forward_temporal_integrity_amendment.v1",
+  "preregistered_day_utc": "2026-10-23",
+  "scope": "Tighten ONLY future economic decision gate before any authentic forward completed trades; keep Oct23 one-day post-day signal shadow protocol unchanged",
+  "reason": "Synthetic claimed 12 closed trades can carry future-dated entry/exit and numerically pass without day completion; prospective economic policy must not predate its evaluation clock",
+  "min_admitted_economic_window_start_utc": "2026-10-24T00:00:00Z",
+  "require_evaluation_end_not_future": true,
+  "require_all_trade_exits_at_or_before_evaluation_utc": true,
+  "strict_timestamp_utc_Z": true,
+  "strictly_no_auto_promote": true,
+  "synthetic_test_clock_injection": "Synthetic unit tests may inject mock evaluation clock after synthetic window; actual CLI always uses system UTC",
+  "historical_23_oct_archives": "Use existing postday locked Oct23 Bybit public archive Shadow and risk research once available; do not count those signals as prospective economic acceptance when no policy was preregistered",
+  "safety": {
+    "paper_changed": false,
+    "live": false,
+    "orders": 0,
+    "private_api": false,
+    "merge": false,
+    "promote": false,
+    "automations": false
+  }
+}

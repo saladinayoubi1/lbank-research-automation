@@ -1,0 +1,65 @@
+{
+  "schema": "nexus.mr40.all47_early_mid_late_adverse_timing.protocol.v1",
+  "repo": "saladinayoubi1/lbank-research-automation",
+  "pr": 2808,
+  "roadmap_issue": 2799,
+  "classification": "FIXED HISTORICAL RISK DIAGNOSTIC, NOT STOP_OPTIMIZATION, NO NEW OOS EDGE",
+  "goal": "For each of 47 unmodified Bybit Spot BTCUSDT MR40 LONG positions, identify when adverse price extremes (relative to pre-existing entry open) first occur. Quantify separate early-vs-middle-vs-late risk without confusing longer exposure with causality, and without adding a stop to the strategy.",
+  "source": {
+    "frozen_4h_rows_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "original_4h_rows": 8514,
+    "authentic_ledger_gzip_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "complete_47_position_risk_report_file_sha256": "c401f4920d8f51abe2ed77c11aa3a9616df8cde2d0dd958d7dfd0a59c6cac051",
+    "complete_47_position_risk_report_logical_digest": "6ec8b21dc24ef1de962c4b439f870420493cecab570c53311eb836dbe7240ba9",
+    "pairs": 47,
+    "train": 25,
+    "evaluation": 22,
+    "entry": "after confirmed MR40 entry signal in following 4h candle OPEN, not filled market order",
+    "exit": "following 4h OPEN after natural MR40 exit signal; never use exit-bar H/L",
+    "venue": "Bybit BTCUSDT Spot only, no other exchange source"
+  },
+  "fixed_diagnostic": {
+    "bands_full_fourhour_bar_offset_from_entry": [
+      {
+        "label": "EARLY_0_TO_24_HOURS",
+        "lower_inclusive_hour": 0,
+        "upper_exclusive_hour": 24
+      },
+      {
+        "label": "MIDDLE_24_TO_120_HOURS",
+        "lower_inclusive_hour": 24,
+        "upper_exclusive_hour": 120
+      },
+      {
+        "label": "LATE_FROM_120_HOURS",
+        "lower_inclusive_hour": 120,
+        "upper_exclusive_hour": null
+      }
+    ],
+    "price_adverse_thresholds_pct": [
+      5,
+      10,
+      15
+    ],
+    "absolute_low_MAE": "max(0,100*(1-lowest_held_4h_bar_low/entry_next_open_price)) measured from entry, NOT global account max DD",
+    "bar_assignment": "For each held full 4h bar compute offset=4*(bar_index-entry_index). Assign into one and only one of the three fixed bands. Bars of EXIT OPEN are forbidden. Intrabar low instant lies somewhere after bar open and before its close.",
+    "time_to_first_threshold": "First bar with OHLC LOW <= entry_open_price*(1-threshold/100); record bar opening offset hours, not actual time or fill at that price.",
+    "denominators": "For each band include n_exposed positions (>=1 held candle in that band), n_total_positions (47) and n_threshold_crossers, to avoid falsely comparing different time-at-risk denominators.",
+    "risk_event_precedence": "Report first 5/10/15% adverse candle band; if no threshold event, report null. If early crossing and later worse low, retain both facts separately.",
+    "quantiles": "No quantiles/hypothesis tests for this step, to avoid discovery-led rule selection.",
+    "aggregate_by_window": "all47, train25 and eval22 separate, no train/eval label leakage or tuned thresholds",
+    "reconciliation": "For each of 47 historical pair identities, recompute full held low, held bars and worst-entry-relative price_MAE; these MUST match previous SHA-pinned complete risk report to 1e-18 in percent before output.",
+    "disallowed": "No stop fills, no hypothetical profit improvement, no automatic time stop, no risk budget invented, no promote."
+  },
+  "safety": {
+    "research_only": true,
+    "private_api": false,
+    "orders": 0,
+    "paper_reference_500_unchanged": true,
+    "live": false,
+    "auto_promote": false,
+    "merge": false,
+    "modify_runtime": false,
+    "no_scheduler": true
+  }
+}

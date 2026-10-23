@@ -1,0 +1,43 @@
+{
+  "schema": "nexus.mr40.entry-volume-microstructure-descriptive.v1",
+  "roadmap_issue": 2799,
+  "scope": "single non-executable retrospective diagnostic; 47 original MR40 entry signals, not a new entry filter, backtest or tuning sweep",
+  "preexisting_evidence": {
+    "ohlc_4h_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "baseline_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "source": "Bybit BTCUSDT spot historical 4h 6-column rows [ms,open,high,low,close,base_volume]",
+    "entry_time": "signal 4h bar CLOSED j, trade scheduled at j+1 open"
+  },
+  "asof_descriptors": [
+    {
+      "id": "relative_base_volume_30",
+      "formula": "V[j] / median(V[j-30],...,V[j-1])",
+      "interpretation": "bar volume relative to previous 30 closed bars; no future candles",
+      "lookback": 30
+    },
+    {
+      "id": "signed_candle_volume_proxy",
+      "formula": "relative_base_volume_30 * (Close[j]-Open[j])/(High[j]-Low[j])",
+      "interpretation": "OHLC signed candle activity proxy, NOT actual aggressor delta, order flow, CVD, L2 liquidity, or volume absorption"
+    }
+  ],
+  "nontrading_hypothesis": "Seller-activity exhaustion or continuation may show stable differences in pre-entry volume intensity between eventual MR40 winners and losers, measured before the entry; outcomes used for retrospective labeling only.",
+  "analysis_plan": "On train (25 trades, 19 winners 6 losers) and evaluation (22 trades, 18 winners 4 losers), report medians and pairwise AUC (winner higher), exact two-sided rank label-permutation p with ties respected. Also list per-trade pre-entry values and labels. Never compute thresholds from these outcomes.",
+  "multiple_testing": "Bonferroni 2 descriptors × 2 periods; alpha<=0.0125 for each test, and AUC direction must agree across periods to qualify for follow-up research. No selection if either period fails; any pass is still only historically seen and not a deployable filter.",
+  "gates": "At most an independent future-only shadow hypothesis if stable and significant across both. No current backtest filter or Paper promote regardless. If no stability, reject historical discriminative claim; collect genuinely prospective Bybit or appropriately labeled research-only backup market feed after an as-of-locked protocol.",
+  "no_new_backtest": true,
+  "source_limitations": [
+    "2023–2026 candles and profits already examined; evaluation not pristine blind OOS",
+    "Bybit public APIs currently HTTP 403 on research laptop; no forward source has been verified",
+    "Historical 4h↔1m exact OHLC source-parity gate FAILED; historical volume quality not independently proven",
+    "OHLC signed-body-weighted-volume is not observed aggressor flow, liquidity, quote depth or order execution"
+  ],
+  "safety": {
+    "paper_500_usdt_laptop2_unchanged": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "merge": false,
+    "promote": false
+  }
+}

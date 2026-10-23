@@ -1,0 +1,41 @@
+{
+  "schema": "nexus.mr40.bybit_spot_4h_close_proof_v2.protocol",
+  "pr": 2808,
+  "issue": 2799,
+  "preregistered_utc_day": "2026-10-22",
+  "reason": "The original Bybit Spot 4h probe converted confirm with PowerShell == true; this can mask the original JSON type, and it stopped after only two nonclosed frames. A true closed-bar proof requires retaining the original raw JSON and checking authoritative 4h time semantics separately from historical continuity.",
+  "goal": "Implement a strictly raw-JSON preserving, one-shot, read-only Bybit BTCUSDT SPOT 4h WebSocket collector for ONLY the fixed 2026-10-22 16:00–20:00 UTC candle, plus an independent downstream SOURCE-ONLY acceptance gate. No MR40 runtime, Paper or trades.",
+  "venue": "Bybit Spot BTCUSDT ONLY",
+  "url": "wss://stream.bybit.com/v5/public/spot",
+  "topic": "kline.240.BTCUSDT",
+  "fixed_bar_start_ms": 1792684800000,
+  "fixed_bar_end_ms_inclusive": 1792699199999,
+  "fixed_utc_bar_end": "2026-10-22T20:00:00Z",
+  "one_shot_start_window_utc": [
+    "2026-10-22T19:58:00Z",
+    "2026-10-22T20:02:00Z"
+  ],
+  "max_observation_seconds": 180,
+  "reject_early": "Before 19:58 UTC must refuse before network. After 20:02 UTC must refuse before network. No automatic retry or scheduler.",
+  "raw_acceptance": {
+    "true_boolean_confirmation": "Use raw JSON parser to require Python type(confirm) is bool and confirm is True, not string or int and not PowerShell coerced comparison",
+    "message_shape": "topic, type, ts and data[] retained unmodified with independent UTC receipt per update; topic=exact kline.240.BTCUSDT, type=snapshot, interval='240', start exact 2026-10-22T16:00Z, end exact 2026-10-22T19:59:59.999Z",
+    "as_of_validation": "Server system ts and independently recorded UTC receipt both at or after 2026-10-22T20:00:00Z; no confirmed message before bar end; preserve data.timestamp but do not treat it as the authoritative signal-close clock (Bybit 1m sample showed it can be 564ms beyond candle end)",
+    "ohlcv": "O,H,L,C positive finite Decimal; H>=max(O,C), L<=min(O,C), base volume >=0",
+    "same_candle_updates": "Unconfirmed updates are diagnostics only. Repeated confirm=true must FAIL duplicate, not emit duplicate event.",
+    "read_only": "Only op=subscribe, optional op=ping; never authenticate or send order; no exchange API keys."
+  },
+  "continuity": "The last SHA verified 4h bar still starts 2026-10-21T20:00Z; the four 4h closes Oct22 00:00/04:00/08:00/12:00 remain unresolved from official archive at protocol time. Even confirmed v2 realtime 16:00 candle cannot be admitted as an MR40 input until these intermediate bars are independently validated from authoritative Bybit Spot.",
+  "classification": "One exact 4h websocket close observation. Not Bybit archive 4h parity, not a live strategy signal, not a fill, not OOS edge.",
+  "safety": {
+    "source_read_only": true,
+    "no_scheduling": true,
+    "no_background_listener": true,
+    "private_api": false,
+    "orders": 0,
+    "live": false,
+    "laptop2_paper500_unchanged": true,
+    "merge": false,
+    "promote": false
+  }
+}

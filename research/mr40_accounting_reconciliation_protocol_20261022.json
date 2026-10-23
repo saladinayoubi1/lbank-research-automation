@@ -1,0 +1,47 @@
+{
+  "schema": "nexus.mr40.frozen-accounting-reconciliation.v1",
+  "issue": 2799,
+  "related_pr": 2808,
+  "goal": "Independently replay existing frozen baseline Bybit ledger cash/fill/mark-to-market accounting and compare PNL, close-DD, LOW bound, underwater days and equity SHA with the already recorded summary; not a new backtest or trading candidate.",
+  "frozen_sources": {
+    "baseline_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "market_4h_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "results_schema": "mr40.entry-quality.results.v1",
+    "entry_quality_protocol_schema": "mr40.entry-quality-v1"
+  },
+  "fixed_cases": {
+    "venue": "Bybit",
+    "strategy": "baseline",
+    "windows": [
+      "train",
+      "evaluation",
+      "full"
+    ],
+    "capitals": [
+      10000,
+      500
+    ],
+    "profiles": [
+      "normal",
+      "stress",
+      "lag"
+    ]
+  },
+  "tolerance": {
+    "pnl_usdt": "0.000001",
+    "drawdown_pct": "0.000001",
+    "equity_sha256": "exact",
+    "commission_and_cash": "exact_decimal_at_8_places"
+  },
+  "limits": "Replay only prior ledger fills; use known bar closes/lows solely for mark-to-market after recorded fills. Do not infer stop fills from LOW. No fitting, new thresholds, rerunning research sweeps, new strategy, or claims of genuinely unseen evaluation.",
+  "accept": "All 18 baseline ledger windows/profiles/capital cases independently reconcile cash, fees, fill prices, reference prices, position PnL, close-curve digest, close DD, low DD bound, underwater duration and published metrics; fail closed on discrepancy. If failing, do not authorize integrated economic simulation.",
+  "after_pass": "Record a separate preregistered, limited integrated ablation with unchanged baseline and a strictly bounded candidate. The preexisting trigger +2%, stop 4% and entry-quality vetoes remain NO_PROMOTE. No automatic trading or merging.",
+  "restrictions": {
+    "live": false,
+    "private_api": false,
+    "real_orders": false,
+    "paper_500_on_laptop2_unchanged": true,
+    "merge": false,
+    "promote": false
+  }
+}

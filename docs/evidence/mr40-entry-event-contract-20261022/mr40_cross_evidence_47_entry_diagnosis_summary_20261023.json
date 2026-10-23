@@ -1,0 +1,69 @@
+{
+  "schema": "nexus.mr40.cross_evidence_47_entry_diagnosis_summary.v1",
+  "date_utc": "2026-10-23",
+  "method": "Descriptive join only of four prior SHA-pinned analyses, matching all 47 unique entries by UTC timestamps, signal index, historical pnl/labels and window; NO backtest and no strategy candidate",
+  "branch": "research/mr40-entry-event-contract-20261022",
+  "protocol_commit": "7049bef8c672a66f1a5c2ee4626e21fba1c4d61e",
+  "research_device": "DESKTOP-F4SA4VL",
+  "local_full_report": "E:\\NEXUS-Research\\MR40-Entry-Event-20261022\\results\\mr40_cross_evidence_47_entry_diagnosis_20261023.json",
+  "local_report_sha256": "f59266ab01e373c761c2d03f187d739a0d77e9297ecabe65f8a248c0e0f13dd9",
+  "local_report_logical_digest": "25e03b6d098bb2205533be3c20d69721b37fae931a57e5be691ee5db393927c4",
+  "on_device_tests": {
+    "count": 13,
+    "passed": 13,
+    "failed": 0,
+    "utc": "2026-10-23T12:42:57Z",
+    "corrupted_sha_detected": true,
+    "pnl_spoof_detected": true,
+    "signal_index_spoof_detected": true,
+    "unarmed_winner_spoof_detected": true,
+    "raced_exclusive_writer_preserves_existing_file": true
+  },
+  "findings": {
+    "all_47": {
+      "winners": 37,
+      "losers": 10,
+      "median_low_MAE_winners_pct": 1.294660792,
+      "median_low_MAE_losers_pct": 4.7874707165,
+      "median_relative_volume_winners": 2.19813999,
+      "median_relative_volume_losers": 2.698777645,
+      "structural_low_break_winners": 19,
+      "structural_low_break_losers": 6,
+      "unarmed_losers": 8,
+      "unarmed_losers_with_low_5pct": 4
+    },
+    "train": {
+      "positions": 25,
+      "winners": 19,
+      "losers": 6,
+      "break_winners": 8,
+      "break_losers": 3,
+      "historical_winner_pnl_at_risk_if_break_excluded_USDT": "1949.48124827",
+      "unarmed_losers": 4,
+      "unarmed_losers_with_low_5pct": 2
+    },
+    "evaluation_seen": {
+      "positions": 22,
+      "winners": 18,
+      "losers": 4,
+      "break_winners": 11,
+      "break_losers": 3,
+      "historical_winner_pnl_at_risk_if_break_excluded_USDT": "2029.32625010",
+      "unarmed_losers": 4,
+      "unarmed_losers_with_low_5pct": 2
+    }
+  },
+  "interpretation": "Overlapping post-hoc features do not establish causality or economic edge. A structural-break exclusion would also remove many historically profitable opportunities. Pre-arm protection still leaves 8 losing historical positions unprotected until +2% CLOSE, of which only 4 ever have 5% low drawdown.",
+  "prospective_gate": "After 2026-10-24T00:00:00Z and actual publication of official 2026-10-23 Bybit Spot archive, manually run previously locked one-shot shadow/risk procedure; no scheduler.",
+  "economic_acceptance": "At least 12 genuinely new fully closed trades; positive net result under conservative costs and >=20% reduction in modeled Low DD vs locked baseline; no auto Paper promotion",
+  "status": "DESCRIPTIVE_COMPLETE; PROSPECTIVE_GATE_NOT_YET_TIME; NO_PROMOTE",
+  "safety": {
+    "research_only": true,
+    "orders": 0,
+    "paper_modifications_from_this_work": 0,
+    "private_api": false,
+    "live": false,
+    "merge": false,
+    "automations": false
+  }
+}

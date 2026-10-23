@@ -1,0 +1,37 @@
+{
+  "digest": "c02b9baf194af6caa2f3ee01e94fbd8604fd0d5699cacd387d18faddabf96de5",
+  "historically_seen": true,
+  "no_merge": true,
+  "no_promote": true,
+  "paper_changed": false,
+  "private_api": false,
+  "proof_scope": "Only timing and count of entry/exit intents from PREVIOUSLY FROZEN episode/exit indices; not indicator, execution, pnl or DD parity.",
+  "real_orders": false,
+  "results": [
+    {
+      "from_prior_outcomes": true,
+      "frozen_expected_entries": 25,
+      "frozen_expected_natural_exits": 25,
+      "no_unexpected_intent": true,
+      "not_strategy_or_equity_parity": true,
+      "offline_entry_intents_matched": 25,
+      "offline_natural_exit_intents_matched": 25,
+      "window": "train"
+    },
+    {
+      "from_prior_outcomes": true,
+      "frozen_expected_entries": 22,
+      "frozen_expected_natural_exits": 22,
+      "no_unexpected_intent": true,
+      "not_strategy_or_equity_parity": true,
+      "offline_entry_intents_matched": 22,
+      "offline_natural_exit_intents_matched": 22,
+      "window": "evaluation"
+    }
+  ],
+  "schema": "mr40.entry-event-ledger-timing-parity.v1",
+  "source_sha256": {
+    "ledger": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "rows": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a"
+  }
+}

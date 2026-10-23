@@ -1,0 +1,40 @@
+{
+  "bybit_public_reconnect_proven": false,
+  "digest": "475e05aab274fd3538f784dfde049a3cee6b0c1a2ce3b01d56ba7ffded179136",
+  "exact_independent_temporal_parity": true,
+  "histories_seen": true,
+  "independent_closed_bar_entries": 47,
+  "independent_closed_bar_natural_exits": 47,
+  "is_fill_or_equity_parity": false,
+  "live": false,
+  "merge": false,
+  "orders": 0,
+  "paper_changed": false,
+  "private_api": false,
+  "promote": false,
+  "protocol_sha256": "7070b54773f13cb90d172af2e245828512e274601367fe81afd17470bedebf75",
+  "rows": [
+    {
+      "exact_signal_indices_sha256": "9ccf9c9c252bc88197c3fac8161f864bbbf7fc304ac9384ddea9288a3fcf261b",
+      "first_entries_from_closed_prices": 25,
+      "frozen_ledger_consulted_only_after_generation": true,
+      "natural_exits_from_closed_prices": 25,
+      "same_as_frozen_ledger": true,
+      "signals_not_derived_from_ledger": true,
+      "window": "train"
+    },
+    {
+      "exact_signal_indices_sha256": "f6f87745bcd623fd612400d1b2c9a98be607bf0407157c193164f495ce96a1a3",
+      "first_entries_from_closed_prices": 22,
+      "frozen_ledger_consulted_only_after_generation": true,
+      "natural_exits_from_closed_prices": 22,
+      "same_as_frozen_ledger": true,
+      "signals_not_derived_from_ledger": true,
+      "window": "evaluation"
+    }
+  ],
+  "schema": "nexus.mr40.independent_closed_signal_parity.results.v1",
+  "source_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "source_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "total_market_rows": 8514
+}

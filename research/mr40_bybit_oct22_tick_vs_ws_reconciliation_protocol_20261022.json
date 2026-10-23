@@ -1,0 +1,77 @@
+{
+  "schema": "nexus.mr40.bybit_oct22_tick_ws_4h_reconciliation.protocol.v1",
+  "created_utc_day": "2026-10-22",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "PR": 2808,
+  "roadmap_issue": 2799,
+  "objective": "Reconstruct exactly one Bybit BTCUSDT Spot UTC full day 2026-10-22 from independent public daily trade prints AFTER official archive release. Reconcile all 1440 1m and six 4h bars and independently acquired prelocked official Spot WS native-confirm 16:00–20:00 UTC bar, not strategy outcomes or Paper.",
+  "preregister_before_release": true,
+  "archive": {
+    "date_utc": "2026-10-22",
+    "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-22.csv.gz",
+    "last_attempt_at_utc": "2026-10-22T20:18:29Z",
+    "last_attempt_status": 404,
+    "expect_head_200_before_get": true,
+    "max_compressed_bytes": 15000000,
+    "require_gzip_crc": true,
+    "csv_header": [
+      "id",
+      "timestamp",
+      "price",
+      "volume",
+      "side",
+      "rpi"
+    ],
+    "timestamp_day_start_ms": 1792627200000,
+    "timestamp_day_end_exclusive_ms": 1792713600000,
+    "expected_minute_bins": 1440,
+    "expected_fourhour_bins": 6,
+    "source_trade_id_unique": true,
+    "source_trade_timestamps_monotone": true,
+    "source_market": "Spot, not derivatives",
+    "ohlcv_source_checks": "All rows price>0, volume>0; source order nondecreasing timestamp; high>=O/C and low<=O/C; 1m->4h exact Decimal OHLCV; no empty minute/bucket"
+  },
+  "historical_prefix": {
+    "previous_archive_day": "2026-10-21",
+    "bridge_evidence_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "previous_12_rows_digest": "a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6",
+    "last_verified_4h_open_ms": 1792612800000,
+    "expected_next_start_ms": 1792627200000
+  },
+  "live_capture": {
+    "topic": "kline.240.BTCUSDT",
+    "fixed_open_ms": 1792684800000,
+    "fixed_end_ms_inclusive": 1792699199999,
+    "raw_source_sha256": "7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e",
+    "source_gate_digest": "d52988afdce73267a9a8489e516cbce20cd58707b96bf907fc79fcfe4904f30f",
+    "expected_native_bool_confirmed_count": 1,
+    "expected_source_closed_ohlcv": [
+      "81677.3",
+      "81761.2",
+      "80927.9",
+      "81488.6",
+      "2951.920267"
+    ],
+    "reference_utc_server": "2026-10-22T20:00:00.563Z",
+    "reference_utc_device_received": "2026-10-22T20:00:00.8162316Z"
+  },
+  "predefined_tolerances": {
+    "absolute_max_per_OHLC_usdt": "0.01",
+    "max_relative_base_volume_error": "0.001",
+    "report_all_absolute_price_deltas": true,
+    "report_raw_and_ws_volumes": true,
+    "do_not_override_on_mismatch": true
+  },
+  "result_rules": "Full source pass only when official Bybit Spot archive is published after full UTC day, valid gzip and complete 1440/6 OHLCV reconstruction, 6 bars contiguous after pinned Oct21, source-independent confirmed WS bar from pre-existing SHA-pinned raw receipt, 4 price differences <=0.01 USDT and relative volume <=0.1% on the fixed 16-20 bar. Fail each criterion independently and do not reselect another day, venue, date, reference or tolerance.",
+  "interpretation": "One-day historical source continuity and one verified live-close snapshot vs subsequently published actual same-venue trade prints. This does not demonstrate live REST access, orders, fill quality, OHLCV from every day, profitability or unseen out-of-sample trading edge. Even PASS is research only, not automatic MR40 signal promotion. Existing fixed Oct23 archive shadow protocol remains unchanged.",
+  "safety": {
+    "public_source_only": true,
+    "private_api": false,
+    "laptop2_paper_500_unchanged": true,
+    "live": false,
+    "orders": 0,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "archive_bridge_last_4h_open_ms": 1792612800000,
+  "bridge_sha256": "922b828e1eec702c7a48dd3efccedb1ffb4325c9c7e3db512b842e98b8eb315d",
+  "digest": "a3d5fffc320fd3a0c7d81782b491231f8a1f47897ef8e727796f1e343892f01b",
+  "gate": {
+    "accepted_closed_bars": [],
+    "confirmed_4h_contiguous_rows_accepted": 0,
+    "confirmed_closed_samples_seen": 0,
+    "expected_next_fourhour_start_ms": 1792627200000,
+    "may_feed_mr40_from_this_probe": false,
+    "missing_completed_4h_bars_before_latest_ws_bar": 4,
+    "no_live_signal_claim": true,
+    "orders_sent": 0,
+    "paper_unchanged": true,
+    "per_sample_gate": [
+      {
+        "bar_start_ms": 1792684800000,
+        "confirmed": false,
+        "gap_from_prefix": true,
+        "signal_input_accepted": false
+      },
+      {
+        "bar_start_ms": 1792684800000,
+        "confirmed": false,
+        "gap_from_prefix": true,
+        "signal_input_accepted": false
+      }
+    ],
+    "private_api_used": false,
+    "promote": false,
+    "public_websocket_connected": true,
+    "reason": "unconfirmed_and_or_missing_contiguous_history",
+    "source_samples_seen": 2,
+    "spot_subscribe_acknowledged": true,
+    "transport_qualified_for_market_read_only": true
+  },
+  "no_private_account_access": true,
+  "no_real_signal_mr40_executed": true,
+  "probe_sha256": "4d47e2f1b284f6936a4dc22674e74110e3a8d50c8cf8f7c46034a6b00edbc8c6",
+  "protocol_sha256": "c51493b858ea515f0fad2b88c567cec51e95598c634c2e50dedc264f10ddd8ae",
+  "schema": "nexus.mr40.bybit_spot_ws_close_gate.results.v1"
+}

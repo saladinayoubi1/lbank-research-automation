@@ -1,0 +1,60 @@
+{
+  "schema": "nexus.mr40.position_fraction_open_proxy_risk_sensitivity_v1",
+  "date_study_utc": "2026-10-22",
+  "repo": "saladinayoubi1/lbank-research-automation",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "purpose": "PRECOMMIT a zero-leverage CASH RESERVE fixed-fraction sensitivity for ALL original 47 frozen Bybit Spot BTCUSDT MR40 LONG events. It is a risk envelope diagnostic based on the SAME seen historical data, NOT optimization or a Paper sizing change.",
+  "source": {
+    "market_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "original_full_all47_fee_audit_file_sha256": "074b74042e62fab437e2d49ce4d8d71c401e301a1d0ad727ed2704a4b012de3d",
+    "original_full_all47_OHLC_risk_file_sha256": "c401f4920d8f51abe2ed77c11aa3a9616df8cde2d0dd958d7dfd0a59c6cac051",
+    "original_risk_report_digest": "6ec8b21dc24ef1de962c4b439f870420493cecab570c53311eb836dbe7240ba9",
+    "rows": 8514,
+    "n_trades": 47,
+    "train_trades": 25,
+    "evaluation_trades": 22,
+    "signal_engine": "ClosedMR40 verified first entry Z<=-2, exit Z>=0 Momentum30, Spot only; do not modify source, decision or dates",
+    "entry_exit": "One full selected fraction of available quote at next 4h OPEN after entry close signal, natural exit next 4h OPEN after close signal, everything else USD cash; no stop, no trailing, no leverage, no order"
+  },
+  "fixed_scenarios": {
+    "start_quote_usdt": "500",
+    "position_fraction_of_current_total_quote_capital": [
+      "0.25",
+      "0.50",
+      "0.75",
+      "1.00"
+    ],
+    "reference_fee": "Bybit public VIP0 Spot taker illustrative 0.001 EACH of buy and sell; actual account fee not confirmed",
+    "quote_cash_left": "Q*(1-f)",
+    "buy_BTC": "Q*f*(1-buy_fee)/entry_open",
+    "liquidation_quote_equity": "Q*(1-f)+Q*f*(1-buy_fee)*(price/entry_open)*(1-sell_fee)",
+    "completed_exit_quote": "Q*(1-f)+Q*f*(1-buy_fee)*(exit_open/entry_open)*(1-sell_fee)",
+    "realized_only_max_dd": "Track previous closed-trade cash peaks and exit balances from same chronology.",
+    "intrapos_OHLC_lower": "Prior bar highs plus prior closed cash peaks must precede current 4h Low. Exclude exit-bar post-exit high/low.",
+    "intrapos_OHLC_adversarial_upper": "Pretend current bar high happened before its low; bound but never declare actual high-low order.",
+    "MAE_price": "Same per-trade price MAE no matter what fraction; do NOT rescale price MAE as equity DD.",
+    "time_window": "train 25 and evaluation 22 each separately starting 500; combined all 47 starting 500",
+    "time_in_market_not_affected_by_fraction": true
+  },
+  "verification": {
+    "fail_if_1_fraction_does_not_match_full_original_fee_and_float_DD": true,
+    "require_same_47_source_signal_pairs_and_oracle_ledger_time": true,
+    "no_optimization_score_or_best_fraction_ranking": true,
+    "no_stop_RR_parameter_search": true,
+    "no_multiple_parameter_grid_search_beyond_preregistered_fractions": true,
+    "risk_acceptance_limit_not_user_approved": true,
+    "actual_order_fills_unverified": true,
+    "same_history_previously_seen": true
+  },
+  "safety": {
+    "demo_laptop2_500_unchanged": true,
+    "live": false,
+    "orders": 0,
+    "private_api": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  }
+}

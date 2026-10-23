@@ -1,0 +1,69 @@
+{
+  "schema": "nexus.mr40.signal_time_regime_matrix_evidence.v1",
+  "observed_date_utc": "2026-10-23",
+  "goal": "Phase 2: describe fixed causal signal-time price regime on 47 SHA-frozen entries without choosing a historical winner/loser filter or new stop.",
+  "protocol_commit": "9648a2e9950995ebb5e22c2c8c26c813543fd2aa",
+  "protocol_path": "research/mr40_signal_time_regime_matrix_protocol_20261023.json",
+  "implementation": "research/nexus_mr40_signal_time_regime_matrix_v1.py",
+  "tests": "tests/test_nexus_mr40_signal_time_regime_matrix_v1.py",
+  "host": "DESKTOP-F4SA4VL",
+  "pinned_frozen_ohlcv_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "pinned_prior_47_cross_evidence_sha256": "f59266ab01e373c761c2d03f187d739a0d77e9297ecabe65f8a248c0e0f13dd9",
+  "local_full_report": "E:\\NEXUS-Research\\MR40-Entry-Event-20261022\\results\\mr40_signal_time_regime_matrix_20261023.json",
+  "local_full_report_sha256": "5ee377c2be5a954891052fba567cb2a67cb1528661d2696a696766da7ef4081d",
+  "local_report_logical_digest": "791b3edce8fc1959a35302fad0cca0e197315729107e7467cf49c0db53913550",
+  "tests_actual": {
+    "total": 12,
+    "success": 12,
+    "failed": 0,
+    "synthetic_causal_future_mutation_test": true,
+    "synthetic_utc_gap_rejection": true,
+    "actual_47_market_hash_and_replay_check": true
+  },
+  "result": {
+    "train": {
+      "positions": 25,
+      "winners": 19,
+      "losers": 6,
+      "winner_median_ATR14_pct": "1.35767898",
+      "loser_median_ATR14_pct": "1.44724902",
+      "winner_median_momentum180_pct": "12.33795637",
+      "loser_median_momentum180_pct": "5.77765786",
+      "winner_median_momentum10_pct": "-1.94145668",
+      "loser_median_momentum10_pct": "-2.98387600"
+    },
+    "evaluation_previously_seen": {
+      "positions": 22,
+      "winners": 18,
+      "losers": 4,
+      "winner_median_ATR14_pct": "1.11122980",
+      "loser_median_ATR14_pct": "1.14919614",
+      "winner_median_momentum180_pct": "7.25360236",
+      "loser_median_momentum180_pct": "5.86154348",
+      "winner_median_momentum10_pct": "-2.57995199",
+      "loser_median_momentum10_pct": "-2.75014830"
+    },
+    "full47": {
+      "winners": 37,
+      "losers": 10,
+      "winner_median_ATR14_pct": "1.18747913",
+      "loser_median_ATR14_pct": "1.34294808",
+      "winner_median_momentum180_pct": "9.77708574",
+      "loser_median_momentum180_pct": "5.86154348"
+    }
+  },
+  "interpretation": "Across two already-seen windows, losing entries show modestly higher median ATR and less positive longer 180-bar return, but overlap and small sample prevent a predictive, statistical or causal claim. An adaptive ATR/Momentum cutoff is NOT authorized. Some other features even change direction between windows. This is additional attribution, not an economic strategy improvement.",
+  "prerequisite": "On 2026-10-23 UTC official Bybit 23-Oct day archive is still in progress. Frozen one-shot Shadow eligible only after 2026-10-24T00:00:00Z AND official publication; no automatic execution.",
+  "safety": {
+    "new_entry_filter": false,
+    "parameter_sweep": false,
+    "paper_demo_changed": false,
+    "orders": 0,
+    "private_api": false,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "scheduler": false
+  },
+  "status": "PHASE2_CAUSAL_CONTEXT_OBSERVED; NO_CONFIRMED_CANDIDATE; AWAIT_REAL_FORWARD_OBSERVATIONS"
+}

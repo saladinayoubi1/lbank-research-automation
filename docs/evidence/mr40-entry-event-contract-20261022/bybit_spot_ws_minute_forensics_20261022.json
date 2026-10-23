@@ -1,0 +1,50 @@
+{
+  "MR40_next_open_signal_authorized": false,
+  "classification": "POST_HOC_FIELD_SEMANTICS_DIAGNOSTIC_NOT_STRATEGY_VALIDATION",
+  "confirmed_fourhour_bar_observed": false,
+  "confirmed_minute_market_evidence": [
+    {
+      "bar_end_ms_inclusive": 1792697039999,
+      "bar_open_ms": 1792696980000,
+      "eligible_MR40_fourhour_signal_input": false,
+      "eligible_evidence_of_one_minute_closed_source": true,
+      "receipt_after_candle_end": true,
+      "receipt_utc": "2026-10-22T19:24:02.7286683+00:00",
+      "server_after_candle_end": true,
+      "server_generated_ms": 1792697040563,
+      "trade_timestamp_beyond_candle_end_ms": 564,
+      "trade_timestamp_ms": 1792697040563,
+      "ws_confirm_strict_boolean": true
+    }
+  ],
+  "digest": "5023f6ea3bef6fc6ab5053d20e5f28f9e9b66cb1bf6659052eeaa90734063367",
+  "earlier_tight_validator_result_overridden": false,
+  "finding": "The server message ts and independent receipt fall after the 1-minute bar end for the confirm=true frame. The embedded data.timestamp can lie after that end; do not silently assume it is in the candle. Quarantine this field as a source-semantic warning, not as an MR40 signal clock.",
+  "minute_bar_updates_validated": 12,
+  "missing_prior_fourhour_bars_repaired": false,
+  "orders_sent": 0,
+  "paper_modified": false,
+  "private_api": false,
+  "promote": false,
+  "schema": "nexus.mr40.bybit_spot_ws_minute_postcapture_forensics.results.v1",
+  "source_frames": 12,
+  "source_provenance_sha256": "2b7dcde57a0222165f53ec14db910607f0ad0959f49aacd1338dd465bfbde08a",
+  "strict_confirmed_closed_one_minute_count": 1,
+  "topic": "kline.1.BTCUSDT",
+  "trade_timestamp_after_bar_end_count": 1,
+  "trade_timestamp_after_bar_end_samples": [
+    {
+      "bar_end_ms_inclusive": 1792697039999,
+      "bar_open_ms": 1792696980000,
+      "eligible_MR40_fourhour_signal_input": false,
+      "eligible_evidence_of_one_minute_closed_source": true,
+      "receipt_after_candle_end": true,
+      "receipt_utc": "2026-10-22T19:24:02.7286683+00:00",
+      "server_after_candle_end": true,
+      "server_generated_ms": 1792697040563,
+      "trade_timestamp_beyond_candle_end_ms": 564,
+      "trade_timestamp_ms": 1792697040563,
+      "ws_confirm_strict_boolean": true
+    }
+  ]
+}

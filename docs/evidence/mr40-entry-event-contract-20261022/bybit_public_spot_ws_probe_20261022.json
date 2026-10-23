@@ -1,0 +1,47 @@
+{
+    "schema":  "nexus.mr40.bybit.public_spot_ws_one_shot_result.v1",
+    "protocol_sha256":  "9502727b24f46e475ea8f88a845bc3a10a3056e5b2483869fa0e9afb77780303",
+    "started_utc":  "2026-10-22T19:02:03.6867377+00:00",
+    "endpoint":  "wss://stream.bybit.com/v5/public/spot",
+    "topic":  "kline.240.BTCUSDT",
+    "public_ws_connected":  true,
+    "subscribe_ack_success":  true,
+    "received_frames":  [
+                            {
+                                "received_utc":  "2026-10-22T19:02:06.5602696+00:00",
+                                "bar_start_ms":  1792684800000,
+                                "interval":  "240",
+                                "open":  "81677.3",
+                                "high":  "81761.2",
+                                "low":  "80927.9",
+                                "close":  "81353.7",
+                                "base_volume":  "2728.018451",
+                                "confirmed_closed":  false,
+                                "bybit_message_ts":  1792695725562
+                            },
+                            {
+                                "received_utc":  "2026-10-22T19:02:10.7309695+00:00",
+                                "bar_start_ms":  1792684800000,
+                                "interval":  "240",
+                                "open":  "81677.3",
+                                "high":  "81761.2",
+                                "low":  "80927.9",
+                                "close":  "81353.8",
+                                "base_volume":  "2728.019065",
+                                "confirmed_closed":  false,
+                                "bybit_message_ts":  1792695730562
+                            }
+                        ],
+    "frames_seen":  3,
+    "topic_message_count":  2,
+    "confirmed_closed_4h_received":  0,
+    "accepted_closed_4h_from_realtime":  false,
+    "live_execution_qualification":  false,
+    "bybit_rest_unblocked":  false,
+    "failure_type":  null,
+    "failure_reason":  null,
+    "finished_utc":  "2026-10-22T19:02:10.8990365+00:00",
+    "paper_modified":  false,
+    "orders_sent":  0,
+    "private_api_used":  false
+}

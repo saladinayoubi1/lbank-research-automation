@@ -1,0 +1,48 @@
+{
+  "anomalies": [
+    {
+      "low_exceeds_open_usdt": "1.77",
+      "source_row": [
+        1792673940,
+        81661.67,
+        81693.32,
+        81663.44,
+        81691.78,
+        1.06833
+      ],
+      "utc": "2026-10-22T12:59:00+00:00"
+    }
+  ],
+  "bybit_reference_gate": false,
+  "digest": "01e8a00656407ef53f32516a609fd4221a6c4e4262ce8e188f3f0f665b659214",
+  "invalid_minute_count": 1,
+  "orders": 0,
+  "paper_unchanged": true,
+  "promote": false,
+  "raw_fourhour_receipt_sha256": "18ab857797f5d325804e23e6114ccb185d9c177a16cfb3b5daece943e0a646a9",
+  "raw_minute_receipt_sha256": "488fc9b4a0ca0cfe67ff0650c203d88cf56251450b015eb3f593e73bd3a26638",
+  "reason": "one_invalid_one_minute_bar_low_above_open; aggregation equality does not prove input correctness",
+  "reconstructed_values_equal_published": true,
+  "schema": "nexus.mr40.backup_source_anomaly_forensics.v1",
+  "source_compact_sha256": "86daf76cf0c6ddaf90671840d1b04e2a6bab95970fef740adc179a781b0cfef3",
+  "source_full_report_sha256": "66bcf63046d86a648eb66b9b5bd27582b9f1f6ba9c8ee51c4f9537c88bf2ebf0",
+  "source_validity_gate": false,
+  "target_240_one_minute_bars_complete": true,
+  "target_mins_reconstructed_even_if_invalid": [
+    "81754.65",
+    "82078.57",
+    "81340.26",
+    "81680.99",
+    "1131.02148"
+  ],
+  "target_published_fourhour": [
+    "81754.65",
+    "82078.57",
+    "81340.26",
+    "81680.99",
+    "1131.02148"
+  ],
+  "target_start_utc": "2026-10-22T12:00:00+00:00",
+  "total_source_1m_rows": 364,
+  "venue": "LBank Spot BTCUSDT public read-only"
+}

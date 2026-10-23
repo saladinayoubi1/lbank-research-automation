@@ -1,0 +1,37 @@
+{
+  "schema": "nexus.mr40.forward_economic_temporal_integrity_evidence.v1",
+  "observed_utc_day": "2026-10-23",
+  "scope": "Strict economic forward report input validation only; 23-Oct official market Shadow protocol unchanged.",
+  "locked_amendment_commit": "f5435274b9571fedb01194cb4bcd22aecc02b597",
+  "code_commit": "47776aa10e3515ea11e2b0b7dfc3df16f24c6712",
+  "research_laptop": "DESKTOP-F4SA4VL",
+  "test_command": "python -m unittest discover -s tests -p test_nexus_mr40_forward_closed_trade_decision_gate_v1.py -v",
+  "tests": {
+    "passed": 16,
+    "failed": 0,
+    "previous_passed": 13,
+    "new_temporal_cases": 3
+  },
+  "verified_new_guards": [
+    "Cannot submit forward economic comparison whose claimed observation period ends AFTER evaluation current UTC clock",
+    "Cannot count an economic comparison period starting on 23 Oct before policy activation at 24 Oct UTC",
+    "Cannot inject naive or non-UTC evaluation time"
+  ],
+  "test_clock": "The simulated test data is deliberately future-dated and test-only time is injected; production CLI always uses UTC system time.",
+  "known_limitations": [
+    "No real forward closed positions gathered; tests only synthetic",
+    "Numerical screen does not authenticate market source, market low history, fees, actual fills, or candidate preregistration; independent reviewer remains required",
+    "Risk strategy economic advantage not demonstrated"
+  ],
+  "source_data_gate": "Fixed 2026-10-23 archive cannot be processed before 2026-10-24T00:00:00Z and its official publication, even while the economic screen itself is ready.",
+  "safety": {
+    "orders": 0,
+    "private_api": false,
+    "live": false,
+    "Paper_500_USDT_untouched": true,
+    "merge": false,
+    "promote": false,
+    "automations": false
+  },
+  "decision": "TEMPORAL_GUARD_PASS; FORWARD_ECONOMIC_EVIDENCE_NOT_AVAILABLE; NO_PROMOTE"
+}

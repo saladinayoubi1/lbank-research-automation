@@ -1,0 +1,109 @@
+{
+  "broker_spread_depth_and_fees_not_modeled": true,
+  "data_classification": "HISTORICAL_POSTHOC_EXECUTION_COST_PROXY",
+  "digest": "b6da1a05c7fca872ee381550928592d57963ad0ad00edd9f90f12fc98d58e87b",
+  "events_utc": [
+    "2026-10-14T16:00:00+00:00",
+    "2026-10-19T04:00:00+00:00"
+  ],
+  "frozen_independent_signal_indices": [
+    8481,
+    8508
+  ],
+  "gross_quote_notional_illustration_usdt": "500",
+  "live": false,
+  "orders": 0,
+  "paper_changed": false,
+  "private_api": false,
+  "promote": false,
+  "protocol_sha256": "f26746641b3a6f8647e7d5075861db78a9cb437f1e65486d0b0d2ae38af4ea0f",
+  "public_trade_archive_sha_receipts": [
+    {
+      "complete_day_spot_trade_print_count": 1209482,
+      "csv_sha256": "368cf7973e95613fbc93588ac2049045908a80c30144dcbf415810c632dbf561",
+      "day": "2026-10-14",
+      "gzip_bytes": 7328212,
+      "gzip_sha256": "db68f34fca2523090721ebe25c66271ac7a39d5c6825e34f78b742dffefd351b",
+      "source": "new_official_Spot_csv.gz_public_GET_after_locked_date_selection"
+    },
+    {
+      "complete_day_spot_trade_print_count": 990272,
+      "day": "2026-10-19",
+      "gzip_bytes": 6221547,
+      "gzip_sha256": "7e092815d5be383a04156be15e7f679decb05811b769ea8b8826d36247b934ec",
+      "source": "previously_SHA_pinned_public_archive"
+    }
+  ],
+  "real_order_fill_or_actual_MR40_PNL_proven": false,
+  "schema": "nexus.mr40.latest_completed_pair_spot_4h_print_timing_proxy.results.v1",
+  "signal_dates_preselected_from_frozen_history": true,
+  "source_days_utc": [
+    "2026-10-14",
+    "2026-10-19"
+  ],
+  "trade_print_markouts_not_fills": [
+    {
+      "entry_buy_adverse_vs_zero_lag_bps": "0",
+      "entry_reference_print": {
+        "delay_from_candle_open_ms": 1130,
+        "price": "81630.9",
+        "timestamp_ms": 1791993601130,
+        "trade_id": "859177"
+      },
+      "exit_reference_print": {
+        "delay_from_candle_open_ms": 2206,
+        "price": "82525.1",
+        "timestamp_ms": 1792382402206,
+        "trade_id": "166325"
+      },
+      "exit_sell_adverse_vs_zero_lag_bps": "0",
+      "gross_markout_delta_vs_zero_lag_reference_USDT": "0E-27",
+      "hypothetical_unfilled_full_500_quote_gross_markout_usdt": "5.477092620564026612471503000",
+      "hypothetical_unfilled_full_500_quote_gross_return_pct": "1.095418524112805322494300600",
+      "latency_ms": 0,
+      "signal_trade_executed": false
+    },
+    {
+      "entry_buy_adverse_vs_zero_lag_bps": "0",
+      "entry_reference_print": {
+        "delay_from_candle_open_ms": 1130,
+        "price": "81630.9",
+        "timestamp_ms": 1791993601130,
+        "trade_id": "859177"
+      },
+      "exit_reference_print": {
+        "delay_from_candle_open_ms": 2206,
+        "price": "82525.1",
+        "timestamp_ms": 1792382402206,
+        "trade_id": "166325"
+      },
+      "exit_sell_adverse_vs_zero_lag_bps": "0",
+      "gross_markout_delta_vs_zero_lag_reference_USDT": "0E-27",
+      "hypothetical_unfilled_full_500_quote_gross_markout_usdt": "5.477092620564026612471503000",
+      "hypothetical_unfilled_full_500_quote_gross_return_pct": "1.095418524112805322494300600",
+      "latency_ms": 817,
+      "signal_trade_executed": false
+    },
+    {
+      "entry_buy_adverse_vs_zero_lag_bps": "1.506782358151141295759326432",
+      "entry_reference_print": {
+        "delay_from_candle_open_ms": 1562,
+        "price": "81643.2",
+        "timestamp_ms": 1791993601562,
+        "trade_id": "859239"
+      },
+      "exit_reference_print": {
+        "delay_from_candle_open_ms": 2206,
+        "price": "82525.1",
+        "timestamp_ms": 1792382402206,
+        "trade_id": "166325"
+      },
+      "exit_sell_adverse_vs_zero_lag_bps": "0",
+      "gross_markout_delta_vs_zero_lag_reference_USDT": "-0.076152921973084562184400000",
+      "hypothetical_unfilled_full_500_quote_gross_markout_usdt": "5.400939698590942050287103000",
+      "hypothetical_unfilled_full_500_quote_gross_return_pct": "1.080187939718188410057420600",
+      "latency_ms": 1500,
+      "signal_trade_executed": false
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "all_pass": true,
+  "cases": 18,
+  "digest": "fb932363865f307f8393a922282acc8cc02f2cda034b9709970baec776585385",
+  "historically_seen": true,
+  "merge": false,
+  "new_backtest": false,
+  "paper_changed": false,
+  "promote": false,
+  "results": [
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 10.72805063,
+      "equity_sha256": "f1421da4210b3d9b81eae886af6609824c39e4634311108f917b6b2d5f1ee321",
+      "intrabar_low_dd_bound_pct": 13.07732199,
+      "pnl_usdt": 131.48126864,
+      "profile": "lag",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 13.23740879,
+      "equity_sha256": "7c75beaef17ef62cb058dbee63eb3c4d655e65eb4dc0124c1cdf6f669949e753",
+      "intrabar_low_dd_bound_pct": 14.75967548,
+      "pnl_usdt": 102.3823868,
+      "profile": "normal",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 14.54131446,
+      "equity_sha256": "c086c7c6fd0b942153157ee8fe20445f0c79e90c43aa830539d1febf0530fff0",
+      "intrabar_low_dd_bound_pct": 15.62567036,
+      "pnl_usdt": 39.643104,
+      "profile": "stress",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 10.73233727,
+      "equity_sha256": "1df9be09a83ace08f94972e54093e57de2b8c37816b5fd2422a40e0541be164a",
+      "intrabar_low_dd_bound_pct": 13.0873592,
+      "pnl_usdt": 2630.42858084,
+      "profile": "lag",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 13.2589272,
+      "equity_sha256": "f8562cf73e8b1896569b089b33ca785a072277f0011edc71d6029fe2310a8f28",
+      "intrabar_low_dd_bound_pct": 14.78913474,
+      "pnl_usdt": 2048.82434732,
+      "profile": "normal",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 14.54971867,
+      "equity_sha256": "1d8b41dc20a5495db5270eea8eb1676df9d43ba7e80bfc05375aa94c7087bc20",
+      "intrabar_low_dd_bound_pct": 15.63637223,
+      "pnl_usdt": 793.82281355,
+      "profile": "stress",
+      "trades": 22,
+      "window": "evaluation"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 26.32623306,
+      "equity_sha256": "cbc7ce79971da3fdfc212f01238e4f0ff6b606f8007f013df627dd32b606ff75",
+      "intrabar_low_dd_bound_pct": 29.71470382,
+      "pnl_usdt": 242.07866046,
+      "profile": "lag",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 21.4339692,
+      "equity_sha256": "d0954e4e36399797d88edb3a985eb78f8538a26c80543b6f62d66a7d18b8de53",
+      "intrabar_low_dd_bound_pct": 25.04524609,
+      "pnl_usdt": 284.77999305,
+      "profile": "normal",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 21.44277514,
+      "equity_sha256": "eae0e19f74e2be5149980fd0789de583cdbd8d2ac48539493f7e66009e8d65a3",
+      "intrabar_low_dd_bound_pct": 25.05553569,
+      "pnl_usdt": 120.50745068,
+      "profile": "stress",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 26.33685353,
+      "equity_sha256": "a26068756820a243d16f6171253a611007abe18bd14e57016aa456721dbfea50",
+      "intrabar_low_dd_bound_pct": 29.72680993,
+      "pnl_usdt": 4845.23876322,
+      "profile": "lag",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 21.45490681,
+      "equity_sha256": "63ae84709d5ffe14cf5b6bf3f3d91802480f2cf7b814c754b1f29c3ffcb98b7c",
+      "intrabar_low_dd_bound_pct": 25.06971135,
+      "pnl_usdt": 5699.89285939,
+      "profile": "normal",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 21.4545037,
+      "equity_sha256": "70be0a9c022e8cf8fe10cb365cf652ef8355cbf877de2320d84a4dadc0b6d2f2",
+      "intrabar_low_dd_bound_pct": 25.06924033,
+      "pnl_usdt": 2411.92581406,
+      "profile": "stress",
+      "trades": 47,
+      "window": "full"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 26.32623306,
+      "equity_sha256": "df93820f0e78513a2da7f3a1f6badd2d7dc3fb0f1a57d35ac9e2cd2aed3313e2",
+      "intrabar_low_dd_bound_pct": 29.71470382,
+      "pnl_usdt": 87.64232766,
+      "profile": "lag",
+      "trades": 25,
+      "window": "train"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 21.4339692,
+      "equity_sha256": "2cfff260396c589090f06f9773405b0d3e3ac3dce5dd4b7f8035c92e7db8cf69",
+      "intrabar_low_dd_bound_pct": 25.04524609,
+      "pnl_usdt": 151.43988372,
+      "profile": "normal",
+      "trades": 25,
+      "window": "train"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 500,
+      "close_dd_pct": 21.44277514,
+      "equity_sha256": "c37ff47514b49d31774346c11a493b935c58a45f136e6f32d4bdcd1ee600b149",
+      "intrabar_low_dd_bound_pct": 25.05553569,
+      "pnl_usdt": 74.91102448,
+      "profile": "stress",
+      "trades": 25,
+      "window": "train"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 26.33685353,
+      "equity_sha256": "5a85d5ef0de6ebcb9d752e2c452335f03af4780cae0de25e7a1f7a36223f090e",
+      "intrabar_low_dd_bound_pct": 29.72680993,
+      "pnl_usdt": 1753.6138368,
+      "profile": "lag",
+      "trades": 25,
+      "window": "train"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 21.45490681,
+      "equity_sha256": "9f3d5ed619b3df603992119118bad9986b53d55f4f65f99805b21c622270256d",
+      "intrabar_low_dd_bound_pct": 25.06971135,
+      "pnl_usdt": 3030.246217,
+      "profile": "normal",
+      "trades": 25,
+      "window": "train"
+    },
+    {
+      "all_checks_pass": true,
+      "capital": 10000,
+      "close_dd_pct": 21.4545037,
+      "equity_sha256": "43288dab3689c2305774f46a463b053e646709c0637b4f623361cda11f910a2e",
+      "intrabar_low_dd_bound_pct": 25.06924033,
+      "pnl_usdt": 1499.20591873,
+      "profile": "stress",
+      "trades": 25,
+      "window": "train"
+    }
+  ],
+  "schema": "nexus.mr40.frozen-accounting-reconciliation.results.v1",
+  "sources": {
+    "ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "ohlc_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a"
+  },
+  "strategy_edge_proven": false
+}

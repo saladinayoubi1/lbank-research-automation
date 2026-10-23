@@ -1,0 +1,53 @@
+{
+  "schema": "nexus.mr40.backup_4h_1m_source_integrity.v1",
+  "issue": 2799,
+  "goal": "Single one-shot OFFLINE+public-GET same-venue 4h 1m reconstruction readiness check for BTCUSDT Spot Bitget and btc_usdt Spot LBank. This never substitutes for Bybit 4h/1m validation or any exchange execution.",
+  "frozen_before_observation": true,
+  "window": "The latest UTC-aligned 4-hour candle whose END is at least 2min before first public response at start of read. Anchor to device UTC before network calls, then do NOT move/retune if requested rows are missing.",
+  "venue_sources": [
+    {
+      "venue": "Bitget",
+      "public_get": "https://api.bitget.com/api/v3/market/candles",
+      "category": "SPOT",
+      "symbol": "BTCUSDT",
+      "interval_1m": "1m",
+      "interval_4h": "4H",
+      "limit_1m": 800,
+      "limit_4h": 10,
+      "fields": "[timestamp_ms,O,H,L,C,base_volume,quote_turnover]"
+    },
+    {
+      "venue": "LBank",
+      "public_get": "https://api.lbank.info/v2/kline.do",
+      "symbol": "btc_usdt",
+      "interval_1m": "minute1",
+      "interval_4h": "hour4",
+      "size_1m": 400,
+      "size_4h": 10,
+      "time_1m": "UTC selected 4h candle start minus 60 seconds",
+      "time_4h": "UTC selected 4h candle start minus 4 hours",
+      "fields": "[timestamp_seconds,O,H,L,C,base_volume]"
+    }
+  ],
+  "requirements": {
+    "min_1m_bars_per_4h": 240,
+    "strict_1m_sequence": "exactly 240 unique UTC minute opens every 60000ms within target 4h bar, no missing, duplicated, extra or unfinished minute",
+    "all_1m_ohlcv_valid": true,
+    "open_high_low_close_reconstruction": "first O, max H, min L, final C",
+    "price_abs_tolerance_usdt": "0.01",
+    "base_volume_rel_tolerance": "0.001",
+    "gate": "A venue passes only if all 240 minute bars and target 4h bar are retrieved from that SAME venue, prices within 0.01 USD, and summed base volume within 0.1%; otherwise fail-closed with detailed discrepancy; no override."
+  },
+  "source_receipts": "Record public raw JSON, fetched timestamp UTC, raw byte SHA256, requested no-auth URL. No orders, no auth. Strictly receive completed bars; do not report 4h/1m pass based on cross-venue prices.",
+  "scope": "Same-day historical quality only, not genuinely unseen forward validation; already observed timestamp; no trading-edge/Paper/DD/PNL claim. Due Bybit public 403 on both Windows machines, Bybit source-quality gate remains UNVERIFIED/FAILED regardless of Bitget/LBank result.",
+  "safety": {
+    "paper_500_laptop2_unchanged": true,
+    "bybit_only_execution": true,
+    "backups_research_only": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "auto_merge": false,
+    "promote": false
+  }
+}

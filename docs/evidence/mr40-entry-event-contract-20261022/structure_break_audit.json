@@ -1,0 +1,382 @@
+{
+  "all_descriptive_gates_pass": false,
+  "candidate_backtest_authorized": false,
+  "digest": "1240440986472f8e351abc4e39737bc72f547f3040d8e01f2e72150129256f01",
+  "feature": "signal closed below prior 30 closed 4h LOW; not a fill",
+  "historically_seen": true,
+  "merge": false,
+  "paper_changed": false,
+  "pnl_attribution_is_not_recompounded_counterfactual": true,
+  "promote": false,
+  "protocol_sha256": "56ca5688145138d800ab83c75b80a970a9b313d31119259a73aaa14e8826d0ba",
+  "real_orders": 0,
+  "schema": "nexus.mr40.pre_entry_structure_break_audit.results.v1",
+  "source_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "source_ohlc_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "truly_unseen_oos": false,
+  "windows": {
+    "evaluation": {
+      "baseline_losers": 4,
+      "baseline_winners": 18,
+      "baseline_winning_pnl_retained_fraction": 0.41391453,
+      "baseline_winning_pnl_sacrificed_usdt": 2029.3262501,
+      "baseline_winning_pnl_usdt": 3462.50905833,
+      "entry_records": [
+        {
+          "entry_utc_ms": 1737950400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 185.77305675,
+          "signal_index": 4728
+        },
+        {
+          "entry_utc_ms": 1738468800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 243.0475782,
+          "signal_index": 4764
+        },
+        {
+          "entry_utc_ms": 1739304000000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 205.15580346,
+          "signal_index": 4822
+        },
+        {
+          "entry_utc_ms": 1748548800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 56.55409283,
+          "signal_index": 5464
+        },
+        {
+          "entry_utc_ms": 1749153600000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 301.147845,
+          "signal_index": 5506
+        },
+        {
+          "entry_utc_ms": 1751385600000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 125.51181333,
+          "signal_index": 5661
+        },
+        {
+          "entry_utc_ms": 1753416000000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 227.80041012,
+          "signal_index": 5802
+        },
+        {
+          "entry_utc_ms": 1754006400000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -67.72106963,
+          "signal_index": 5843
+        },
+        {
+          "entry_utc_ms": 1760112000000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -872.6100637,
+          "signal_index": 6267
+        },
+        {
+          "entry_utc_ms": 1768896000000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -250.61515627,
+          "signal_index": 6877
+        },
+        {
+          "entry_utc_ms": 1774612800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 208.56351069,
+          "signal_index": 7274
+        },
+        {
+          "entry_utc_ms": 1777377600000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 154.00795594,
+          "signal_index": 7466
+        },
+        {
+          "entry_utc_ms": 1777478400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 133.84896982,
+          "signal_index": 7473
+        },
+        {
+          "entry_utc_ms": 1778688000000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 301.1251069,
+          "signal_index": 7557
+        },
+        {
+          "entry_utc_ms": 1778860800000,
+          "label": "loser",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": -222.73842141,
+          "signal_index": 7569
+        },
+        {
+          "entry_utc_ms": 1785211200000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 213.15467028,
+          "signal_index": 8010
+        },
+        {
+          "entry_utc_ms": 1785513600000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 137.1620295,
+          "signal_index": 8031
+        },
+        {
+          "entry_utc_ms": 1788350400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 617.1465413,
+          "signal_index": 8228
+        },
+        {
+          "entry_utc_ms": 1789056000000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 61.25123731,
+          "signal_index": 8277
+        },
+        {
+          "entry_utc_ms": 1789502400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 149.13588309,
+          "signal_index": 8308
+        },
+        {
+          "entry_utc_ms": 1791417600000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 47.37689991,
+          "signal_index": 8441
+        },
+        {
+          "entry_utc_ms": 1791993600000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 94.7456539,
+          "signal_index": 8481
+        }
+      ],
+      "fisher_one_sided_loss_enrichment_p_exploratory": 0.53492823,
+      "flagged_baseline_trade_pnl_sum_usdt": 838.3799605,
+      "flagged_losers": 3,
+      "flagged_total": 14,
+      "flagged_winners": 11,
+      "loss_capture_fraction": 0.75,
+      "preregistered_descriptive_gate_pass": false,
+      "winner_exclusion_fraction": 0.61111111
+    },
+    "train": {
+      "baseline_losers": 6,
+      "baseline_winners": 19,
+      "baseline_winning_pnl_retained_fraction": 0.58013898,
+      "baseline_winning_pnl_sacrificed_usdt": 1949.48124827,
+      "baseline_winning_pnl_usdt": 4643.15849009,
+      "entry_records": [
+        {
+          "entry_utc_ms": 1675915200000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -165.95133684,
+          "signal_index": 420
+        },
+        {
+          "entry_utc_ms": 1677081600000,
+          "label": "loser",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": -33.23466113,
+          "signal_index": 501
+        },
+        {
+          "entry_utc_ms": 1679932800000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 400.44273974,
+          "signal_index": 699
+        },
+        {
+          "entry_utc_ms": 1681732800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 247.03244231,
+          "signal_index": 824
+        },
+        {
+          "entry_utc_ms": 1681905600000,
+          "label": "loser",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": -391.24202292,
+          "signal_index": 836
+        },
+        {
+          "entry_utc_ms": 1688140800000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 106.56092289,
+          "signal_index": 1269
+        },
+        {
+          "entry_utc_ms": 1688688000000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 288.87880568,
+          "signal_index": 1307
+        },
+        {
+          "entry_utc_ms": 1695600000000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 174.37159239,
+          "signal_index": 1787
+        },
+        {
+          "entry_utc_ms": 1696996800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 24.8761209,
+          "signal_index": 1884
+        },
+        {
+          "entry_utc_ms": 1699992000000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 632.38917342,
+          "signal_index": 2092
+        },
+        {
+          "entry_utc_ms": 1702310400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 253.07295719,
+          "signal_index": 2253
+        },
+        {
+          "entry_utc_ms": 1703606400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 248.60769263,
+          "signal_index": 2343
+        },
+        {
+          "entry_utc_ms": 1708516800000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 165.80400834,
+          "signal_index": 2684
+        },
+        {
+          "entry_utc_ms": 1708675200000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 128.62295306,
+          "signal_index": 2695
+        },
+        {
+          "entry_utc_ms": 1710619200000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 132.45754525,
+          "signal_index": 2830
+        },
+        {
+          "entry_utc_ms": 1711987200000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 7.89763482,
+          "signal_index": 2925
+        },
+        {
+          "entry_utc_ms": 1717171200000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 150.13111834,
+          "signal_index": 3285
+        },
+        {
+          "entry_utc_ms": 1718078400000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 194.16271427,
+          "signal_index": 3348
+        },
+        {
+          "entry_utc_ms": 1718294400000,
+          "label": "loser",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": -91.57465134,
+          "signal_index": 3363
+        },
+        {
+          "entry_utc_ms": 1722484800000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -912.33039594,
+          "signal_index": 3654
+        },
+        {
+          "entry_utc_ms": 1727798400000,
+          "label": "loser",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": -18.57920492,
+          "signal_index": 4023
+        },
+        {
+          "entry_utc_ms": 1728590400000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 453.43931818,
+          "signal_index": 4078
+        },
+        {
+          "entry_utc_ms": 1729684800000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 303.40914715,
+          "signal_index": 4154
+        },
+        {
+          "entry_utc_ms": 1732651200000,
+          "label": "winner",
+          "prior_30_low_break": false,
+          "realized_historical_baseline_pnl_usdt": 624.93578443,
+          "signal_index": 4360
+        },
+        {
+          "entry_utc_ms": 1734638400000,
+          "label": "winner",
+          "prior_30_low_break": true,
+          "realized_historical_baseline_pnl_usdt": 106.0658191,
+          "signal_index": 4498
+        }
+      ],
+      "fisher_one_sided_loss_enrichment_p_exploratory": 0.54782609,
+      "flagged_baseline_trade_pnl_sum_usdt": 852.62031057,
+      "flagged_losers": 3,
+      "flagged_total": 11,
+      "flagged_winners": 8,
+      "loss_capture_fraction": 0.5,
+      "preregistered_descriptive_gate_pass": false,
+      "winner_exclusion_fraction": 0.42105263
+    }
+  }
+}

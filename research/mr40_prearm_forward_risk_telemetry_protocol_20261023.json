@@ -1,0 +1,54 @@
+{
+  "schema": "nexus.mr40.prearm_forward_risk_telemetry.protocol.v1",
+  "created_utc_day": "2026-10-23",
+  "classification": "PRECOMMITTED_POST_DAY_READ_ONLY_OOS_SIGNAL_RISK_OBSERVATION_NOT_EXECUTABLE_STOP_OR_FILL",
+  "goal": "Assess whether any genuinely new Oct23 4h Bybit BTCUSDT Spot natural MR40 entry gets adverse before a profit-trigger trailing stop would arm, without choosing a threshold by inspecting future returns.",
+  "sources": {
+    "locked_future_day": "2026-10-23",
+    "earliest_eligible_utc": "2026-10-24T00:00:00Z",
+    "input_shadow_schema": "nexus.mr40.spot_archive_forward_shadow.results.v1",
+    "original_8514_market_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "preverified_oct22_archive_sha256": "9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587",
+    "preverified_oct22_independent_tick_vs_WS_logical_digest": "59c037de00de8af3b403ea1ca069fe2362d658a71bc428ecae6895b0fe7bc380",
+    "previous_oct20_oct21_bridge_logical_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "oct22_historical_close_state_logical_digest": "a3f46cf792cb47d1a3ebd01a7d5debe6abda0f0f7122a9fa9c437dff63daf351",
+    "oct22_last_closed_target_long": false,
+    "oct22_first_entry_and_natural_exit_markers": [
+      0,
+      0
+    ],
+    "oct23_full_4h_candles": 6,
+    "spot_not_perpetual": true
+  },
+  "fixed_measurement": {
+    "position_model": "LONG only; risk telemetry based on next 4h OPEN reference after signal at previous confirmed close; no claim to actual fill",
+    "initial_quote_reference_USDT": "500",
+    "public_spot_VIP0_reference_fee_per_side": "0.001",
+    "prior_profit_arm_at_completed_4h_close_pct": "2",
+    "pre_arm_price_adverse_thresholds_descriptive_not_stops_pct": [
+      5,
+      10
+    ],
+    "floating_loss_at_low": "500-example cash + BTC position marked at each held 4h candle LOW after illustrative buy/sell taker fee; no fill at candle LOW is assumed",
+    "net_realized_PnL": "For only a fully closed position, next 4h OPEN-based natural exit after previous natural exit close; illustrative 0.1pct fee per side; never treat an unclosed day-end position as realized",
+    "unclosed_handling": "No forced day-end liquidation. Record incomplete or pending next open separately. Censor time-based adverse observation; no imaginary exit price.",
+    "baseline_comparison": "Same natural MR40 signals and timing; no risk control activated and no new stop hypothetical fills; a future separate immutable risk-budget policy may be compared only after explicit precommit and source proof.",
+    "protects_against": "False positive claims: no entry before next candle, no low of post-exit candle, no profit arm triggered by high without completed CLOSE, no same-candle stop fill, no when-incomplete PNL"
+  },
+  "acceptance": {
+    "no_signal_day_is_valid_result_not_failure": true,
+    "economic_improvement_status": "NOT_TESTABLE_FROM_ONE_DAY_WITHOUT_AN_APPROVED_RISK_POLICY_AND_COMPLETED_NONTRIVIAL_NEW_POSITIONS",
+    "never_merge_or_promote_from_only_one_day": true,
+    "needs_account_specific_fee_spread_slippage_and_real_fill_evidence_before_Paper_change": true
+  },
+  "safety": {
+    "orders": 0,
+    "private_api": false,
+    "Live": false,
+    "Paper_500USDT_unchanged": true,
+    "merge": false,
+    "promote": false,
+    "automations": false,
+    "output_only_new_file": true
+  }
+}

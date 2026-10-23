@@ -1,0 +1,143 @@
+{
+  "count_evaluation": 22,
+  "count_train": 25,
+  "fee_model": "500 USDT starting quote, full available balance per nonoverlapping long pair; BTC-side buy taker fee and USDT-side sell taker fee; next 4h OPEN proxies, no fees beyond the stated taker rates",
+  "frozen_ledger_hash": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "frozen_market_data_hash": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "full_local_evidence_logical_digest": "34ce0c48d2593c9ae90f553cb0721d8764bdc213f5545c4f7a9336e518880458",
+  "full_local_evidence_sha256": "074b74042e62fab437e2d49ce4d8d71c401e301a1d0ad727ed2704a4b012de3d",
+  "groups": {
+    "combined_chronological_2023_2026oct19": {
+      "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE": {
+        "closed_positions": 47,
+        "closed_trade_equity_end_usdt": "822.7437089338675974755875079",
+        "compounded_realized_only_return_pct": "64.54874178677351949511750160",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.001",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "258.2751697628351385536858100",
+        "max_closed_trade_only_drawdown_pct": "10.22924661117586234881992445",
+        "negative_net_positions": 10,
+        "positive_net_positions": 37,
+        "round_trip_flat_price_fee_drag_pct": "0.199900"
+      },
+      "OFFICIAL_SPOT_VIP3_TAKER_REFERENCE": {
+        "closed_positions": 47,
+        "closed_trade_equity_end_usdt": "842.3244916731678435654514321",
+        "compounded_realized_only_return_pct": "68.46489833463356871309028640",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.00075",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "270.1676862427731810294986862",
+        "max_closed_trade_only_drawdown_pct": "10.09437133337436922678992243",
+        "negative_net_positions": 10,
+        "positive_net_positions": 37,
+        "round_trip_flat_price_fee_drag_pct": "0.1499437500"
+      },
+      "ZERO_FEE_UPPER_BOUND": {
+        "closed_positions": 47,
+        "closed_trade_equity_end_usdt": "903.8756293389686209261971796",
+        "compounded_realized_only_return_pct": "80.77512586779372418523943590",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "305.8630900799048683855886021",
+        "max_closed_trade_only_drawdown_pct": "9.688731866525783739722418445",
+        "negative_net_positions": 9,
+        "positive_net_positions": 38,
+        "round_trip_flat_price_fee_drag_pct": "0"
+      }
+    },
+    "evaluation_2025_2026oct19": {
+      "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE": {
+        "closed_positions": 22,
+        "closed_trade_equity_end_usdt": "615.8324552412765121216687306",
+        "compounded_realized_only_return_pct": "23.16649104825530242433374610",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.001",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "108.1304255995411638357699868",
+        "max_closed_trade_only_drawdown_pct": "10.22924661117586234881992446",
+        "negative_net_positions": 4,
+        "positive_net_positions": 18,
+        "round_trip_flat_price_fee_drag_pct": "0.199900"
+      },
+      "OFFICIAL_SPOT_VIP3_TAKER_REFERENCE": {
+        "closed_positions": 22,
+        "closed_trade_equity_end_usdt": "622.6500053627993237583555698",
+        "compounded_realized_only_return_pct": "24.53000107255986475167111400",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.00075",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "113.6907460859320299598106523",
+        "max_closed_trade_only_drawdown_pct": "10.09437133337436922678992244",
+        "negative_net_positions": 4,
+        "positive_net_positions": 18,
+        "round_trip_flat_price_fee_drag_pct": "0.1499437500"
+      },
+      "ZERO_FEE_UPPER_BOUND": {
+        "closed_positions": 22,
+        "closed_trade_equity_end_usdt": "643.5482166453739547425489078",
+        "compounded_realized_only_return_pct": "28.70964332907479094850978160",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "130.3800553301461259415270998",
+        "max_closed_trade_only_drawdown_pct": "9.688731866525783739722418433",
+        "negative_net_positions": 4,
+        "positive_net_positions": 18,
+        "round_trip_flat_price_fee_drag_pct": "0"
+      }
+    },
+    "train_2023_2024": {
+      "OFFICIAL_SPOT_VIP0_TAKER_REFERENCE": {
+        "closed_positions": 25,
+        "closed_trade_equity_end_usdt": "667.9931383378661720555569762",
+        "compounded_realized_only_return_pct": "33.59862766757323441111139520",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.001",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "150.1447441632939747179158232",
+        "max_closed_trade_only_drawdown_pct": "7.861968587439920000533321821",
+        "negative_net_positions": 6,
+        "positive_net_positions": 19,
+        "round_trip_flat_price_fee_drag_pct": "0.199900"
+      },
+      "OFFICIAL_SPOT_VIP3_TAKER_REFERENCE": {
+        "closed_positions": 25,
+        "closed_trade_equity_end_usdt": "676.4028622969101570202197428",
+        "compounded_realized_only_return_pct": "35.28057245938203140404394860",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0.00075",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "156.4769401568411510696880338",
+        "max_closed_trade_only_drawdown_pct": "7.723536613620718019683061470",
+        "negative_net_positions": 6,
+        "positive_net_positions": 19,
+        "round_trip_flat_price_fee_drag_pct": "0.1499437500"
+      },
+      "ZERO_FEE_UPPER_BOUND": {
+        "closed_positions": 25,
+        "closed_trade_equity_end_usdt": "702.2594468916441747502617487",
+        "compounded_realized_only_return_pct": "40.45188937832883495005234970",
+        "equity_start_usdt": "500",
+        "fee_per_side_decimal": "0",
+        "fixed_500_quote_per_trade_total_pnl_usdt_NO_COMPOUND": "175.4830347497587424440615023",
+        "max_closed_trade_only_drawdown_pct": "7.436100945208701331982249576",
+        "negative_net_positions": 5,
+        "positive_net_positions": 20,
+        "round_trip_flat_price_fee_drag_pct": "0"
+      }
+    }
+  },
+  "independent_signals_matched_frozen_ledger": true,
+  "limitations": [
+    "Previously seen BTCUSDT Bybit Spot 4h historical data only",
+    "Open is not a guaranteed fill, public Bybit 4h realtime close observed +816ms after next open",
+    "Account-specific regional/VIP fee unknown",
+    "No spread/slippage/book replay, intratrade drawdown, order state or executable strategy edge",
+    "All drawdowns are realized-only after exit, not mark-to-market risk",
+    "Not the unchanged Laptop2 500 USDT Paper account"
+  ],
+  "live": false,
+  "merge": false,
+  "n_total_closed_long_pairs": 47,
+  "orders": 0,
+  "paper_modified": false,
+  "pinned_public_fee_page": "https://www.bybit.com/en/help-center/article/Trading-Fee-Structure",
+  "private_API": false,
+  "promote": false,
+  "schema": "nexus.mr40.frozen47_official_spot_fee_study_public_summary.v1"
+}

@@ -1,0 +1,269 @@
+{
+  "frozen_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "frozen_market_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "frozen_older_risk_report_sha256": "c401f4920d8f51abe2ed77c11aa3a9616df8cde2d0dd958d7dfd0a59c6cac051",
+  "frozen_protocol_sha256": "1e10a39a171dc1b00f06afa3ac3f4cdd630406af6d88d6096a5ae797c9419ff6",
+  "groups": {
+    "all_47": {
+      "bands": {
+        "EARLY_0_TO_24_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 47,
+          "n_exposed_positions": 47,
+          "n_with_FIRST_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 4
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 4
+          },
+          "total_exposed_4h_candles": 272
+        },
+        "LATE_FROM_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 47,
+          "n_exposed_positions": 9,
+          "n_with_FIRST_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 1
+          },
+          "n_with_any_breach_during_band": {
+            "10": 2,
+            "15": 0,
+            "5": 4
+          },
+          "total_exposed_4h_candles": 105
+        },
+        "MIDDLE_24_TO_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 47,
+          "n_exposed_positions": 36,
+          "n_with_FIRST_breach_during_band": {
+            "10": 1,
+            "15": 1,
+            "5": 4
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 1,
+            "5": 7
+          },
+          "total_exposed_4h_candles": 520
+        }
+      },
+      "ever_breached": {
+        "10": 2,
+        "15": 1,
+        "5": 9
+      },
+      "no_hold_cap_or_stop_selected": true,
+      "positions": 47
+    },
+    "evaluation_22": {
+      "bands": {
+        "EARLY_0_TO_24_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 22,
+          "n_exposed_positions": 22,
+          "n_with_FIRST_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 2
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 2
+          },
+          "total_exposed_4h_candles": 130
+        },
+        "LATE_FROM_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 22,
+          "n_exposed_positions": 4,
+          "n_with_FIRST_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 1
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 2
+          },
+          "total_exposed_4h_candles": 56
+        },
+        "MIDDLE_24_TO_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 22,
+          "n_exposed_positions": 17,
+          "n_with_FIRST_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 0
+          },
+          "n_with_any_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 2
+          },
+          "total_exposed_4h_candles": 243
+        }
+      },
+      "ever_breached": {
+        "10": 1,
+        "15": 0,
+        "5": 3
+      },
+      "no_hold_cap_or_stop_selected": true,
+      "positions": 22
+    },
+    "train_25": {
+      "bands": {
+        "EARLY_0_TO_24_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 25,
+          "n_exposed_positions": 25,
+          "n_with_FIRST_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 2
+          },
+          "n_with_any_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 2
+          },
+          "total_exposed_4h_candles": 142
+        },
+        "LATE_FROM_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 25,
+          "n_exposed_positions": 5,
+          "n_with_FIRST_breach_during_band": {
+            "10": 0,
+            "15": 0,
+            "5": 0
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 0,
+            "5": 2
+          },
+          "total_exposed_4h_candles": 49
+        },
+        "MIDDLE_24_TO_120_HOURS": {
+          "conditional_on_time_exposed_not_causal": true,
+          "n_all_positions": 25,
+          "n_exposed_positions": 19,
+          "n_with_FIRST_breach_during_band": {
+            "10": 1,
+            "15": 1,
+            "5": 4
+          },
+          "n_with_any_breach_during_band": {
+            "10": 1,
+            "15": 1,
+            "5": 5
+          },
+          "total_exposed_4h_candles": 277
+        }
+      },
+      "ever_breached": {
+        "10": 1,
+        "15": 1,
+        "5": 6
+      },
+      "no_hold_cap_or_stop_selected": true,
+      "positions": 25
+    }
+  },
+  "historical_original_full_report_sha256": "a751184655ab27e6381274cd07a48d3ebea8589a8527c1407d804f04f3ce8da1",
+  "limitations": [
+    "Five, ten and fifteen percent are diagnostic thresholds, NOT proposed stop losses",
+    "OHLC candle low establishes that the crossing happened at some unknown time during the 4h bar, not the exact touch or fill time",
+    "Exposure and censoring vary; late period has only 9 exposed positions of the original 47",
+    "Same fully observed history, no fresh out-of-sample predictive result",
+    "No private Bybit API, trading order, Paper modification or strategy promotion"
+  ],
+  "live": false,
+  "merge": false,
+  "orders": 0,
+  "original_logical_digest": "829214c448b82c8c0ac1a29980fb3fb3d03350d0060f5068e7a25cd4fc524806",
+  "paper_changed": false,
+  "private_API": false,
+  "promote": false,
+  "schema": "nexus.mr40.all47_fixed_risk_timing_compact_evidence.v1",
+  "worst_two": [
+    {
+      "adverse_MAE_pct": "23.39651835345841867164113269",
+      "entry_open_utc": "2024-08-01T04:00:00+00:00",
+      "exit_open_utc": "2024-08-08T16:00:00+00:00",
+      "first_threshold_breach": {
+        "10": {
+          "band": "MIDDLE_24_TO_120_HOURS",
+          "bar_end_utc": "2024-08-04T20:00:00+00:00",
+          "bar_start_utc": "2024-08-04T16:00:00+00:00",
+          "exact_intrabar_touch_time_not_known": true,
+          "hour_age_at_bar_start": 84
+        },
+        "15": {
+          "band": "MIDDLE_24_TO_120_HOURS",
+          "bar_end_utc": "2024-08-05T04:00:00+00:00",
+          "bar_start_utc": "2024-08-05T00:00:00+00:00",
+          "exact_intrabar_touch_time_not_known": true,
+          "hour_age_at_bar_start": 92
+        },
+        "5": {
+          "band": "MIDDLE_24_TO_120_HOURS",
+          "bar_end_utc": "2024-08-03T04:00:00+00:00",
+          "bar_start_utc": "2024-08-03T00:00:00+00:00",
+          "exact_intrabar_touch_time_not_known": true,
+          "hour_age_at_bar_start": 44
+        }
+      },
+      "held_hours": 180,
+      "trade_index": 20,
+      "worst_low": {
+        "band": "MIDDLE_24_TO_120_HOURS",
+        "hour_age": 96,
+        "low": "48974.0",
+        "start_utc": "2024-08-05T04:00:00+00:00"
+      }
+    },
+    {
+      "adverse_MAE_pct": "14.02031157181519444040670196",
+      "entry_open_utc": "2025-10-10T16:00:00+00:00",
+      "exit_open_utc": "2025-10-20T04:00:00+00:00",
+      "first_threshold_breach": {
+        "10": {
+          "band": "EARLY_0_TO_24_HOURS",
+          "bar_end_utc": "2025-10-11T00:00:00+00:00",
+          "bar_start_utc": "2025-10-10T20:00:00+00:00",
+          "exact_intrabar_touch_time_not_known": true,
+          "hour_age_at_bar_start": 4
+        },
+        "15": null,
+        "5": {
+          "band": "EARLY_0_TO_24_HOURS",
+          "bar_end_utc": "2025-10-11T00:00:00+00:00",
+          "bar_start_utc": "2025-10-10T20:00:00+00:00",
+          "exact_intrabar_touch_time_not_known": true,
+          "hour_age_at_bar_start": 4
+        }
+      },
+      "held_hours": 228,
+      "trade_index": 34,
+      "worst_low": {
+        "band": "EARLY_0_TO_24_HOURS",
+        "hour_age": 4,
+        "low": "102329.5",
+        "start_utc": "2025-10-10T20:00:00+00:00"
+      }
+    }
+  ]
+}

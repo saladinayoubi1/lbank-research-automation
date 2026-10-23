@@ -1,0 +1,44 @@
+{
+  "schema": "nexus.mr40.pre_entry_structure_break_audit.v1",
+  "source_issue": 2799,
+  "existing_draft_pr": 2808,
+  "study_date": "2026-10-22",
+  "nature": "One bounded, preregistered diagnostic on 47 previously seen MR40 entry episodes. Exploratory only; not OOS. No test reruns from earlier projects.",
+  "hypothesis": "At an oversold MR40 signal, a CLOSE below the LOWEST LOW of the immediately preceding 30 fully closed 4h bars represents a fresh bearish structural breakdown, which may be associated with a higher loss rate than an ordinary pullback in BTC spot MR40.",
+  "feature_definition": {
+    "name": "prior_30_low_break",
+    "event": "signal_CLOSE[j] < min(LOW[j-30],...,LOW[j-1])",
+    "lookback_bars": 30,
+    "decision_as_of": "after signal 4h candle j has fully closed, before entry at j+1 OPEN",
+    "no_future_candle": true,
+    "equal_low": "not flagged",
+    "not_a_fill": true
+  },
+  "inputs": {
+    "ohlc_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "baseline_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "cases": "only Bybit baseline normal 10000 windows train/evaluation; verify full 25+22 baseline positions and underlying signal timestamp matches input"
+  },
+  "outcome": "realized baseline compounded normal-profile trade PnL from frozen ledger; outcome label is only retrospective analysis, NEVER feature computation",
+  "gate": {
+    "training": "Flagged fraction of losers >=0.50; flagged fraction of winners <=0.20; summed PnL of baseline winning trades flagged <=0.20 of all baseline winning PnL.",
+    "evaluation": "Identical three requirements on independent calendar section; at least one losing trade flagged (4 losers only).",
+    "interpretation": "Fail either window => stop, no strategy simulation. Passing is not evidence of causality, robustness, or readiness for Paper; merely potential preregistered research candidate.",
+    "unseen_requirement": "For any future approval, forward-logged previously unseen confirmed 4h bars, independent exchange-source parity and liquid execution evidence still needed.",
+    "no_optimizer": true
+  },
+  "economics": {
+    "comparison": "Report loss count prevented, winner count sacrificed, winning PnL sacrificed, total baseline PnL of flagged trades as purely descriptive matched-account attribution. Do NOT conflate summing removed trade PnLs with full re-compounded alternative account PnL.",
+    "cost": "Underlying normal model 10 bps fee +5 bps slippage each side (already reflected in baseline account ledger). Stress only if gate passed, frozen original would be reused.",
+    "no_reexecuted_backtest": true
+  },
+  "safety": {
+    "paper_500_unchanged": true,
+    "bybit_spot_only": true,
+    "live": false,
+    "orders": 0,
+    "private_api": false,
+    "merge": false,
+    "promote": false
+  }
+}

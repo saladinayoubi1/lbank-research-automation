@@ -1,0 +1,54 @@
+{
+  "schema": "nexus.mr40.latest_completed_signal_pair_4h_execution_proxy.v1",
+  "project_issue": 2799,
+  "pr": 2808,
+  "classification": "HISTORICAL_KNOWN_MR40_TRADE__SOURCE_TRADE_PRINT_EXECUTION_TIMING_PROXY_NOT_REAL_FILL_OR_OOS",
+  "selection": "Latest fully completed entry and natural exit produced by SHA-pinned independent ClosedMR40 engine on 8,514 frozen Bybit BTCUSDT Spot 4h candles; dates selected BEFORE reading 2026-10-14 trade print archive.",
+  "frozen_input_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "frozen_first_entry_signal_count": 47,
+  "frozen_natural_exit_signal_count": 47,
+  "latest_completed_pair": {
+    "entry_next_open_utc": "2026-10-14T16:00:00Z",
+    "exit_next_open_utc": "2026-10-19T04:00:00Z",
+    "entry_signal_index": 8481,
+    "exit_signal_index": 8508,
+    "venue": "Bybit Spot BTCUSDT",
+    "side": "LONG only",
+    "no_leverage": true,
+    "source_days_only": [
+      "2026-10-14",
+      "2026-10-19"
+    ],
+    "url_rule": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_{YYYY-MM-DD}.csv.gz"
+  },
+  "latency_cases": {
+    "reference_ms": 0,
+    "after_public_confirm_receipt_ceil_ms": 817,
+    "stress_ms": 1500,
+    "latency_justification": "Measured official Bybit public SPOT native-confirmed 4h close received at 2026-10-22T20:00:00.8162316Z, 816.2316ms after the next 4h boundary. Ceil to first eligible integer-ms print at +817ms. Stress +1500ms. This observation is at a different date and may not characterize historical latencies.",
+    "assumed_execution_proxy": "Only first actual public trade price at or after t, t+817 and t+1500ms in EXACT respective 4h bin. For long entry and sell exit, use same delay case at both. Do not use any trade print before each cutoff.",
+    "illustrative_quote_budget_usdt": 500,
+    "gross_markout_formula": "For a hypothetical full 500USDT quote purchase at historical FIRST LAST-SALE print price, gross USDT markout=500*(exit_print_price/entry_print_price-1). No fees/spread/market liquidity/size or guaranteed order fill; not actual demo PNL.",
+    "comparison": "Report price deltas at each leg vs first 4h print, signed long-roundtrip markout for each latency case, delta vs zero-latency first-print baseline, source trade timestamp delay in ms, exact raw archive sha256, source row counts. No cherry-pick/winner retuning."
+  },
+  "file_validation": {
+    "public_unauthenticated": true,
+    "source_one_spot_venue": true,
+    "daily_archive_full_gzip_CRC": true,
+    "exact_header": "id,timestamp,price,volume,side,rpi",
+    "unique_ids": true,
+    "monotone_timestamp": true,
+    "only_full_calendar_days": true,
+    "max_daily_compressed_bytes": 16000000,
+    "source_high_quality": "Reject invalid trade prices/volumes, malformed CSV, missing target execution proxy prints, different price source/day"
+  },
+  "limitations": "Archive trade prints are historical public market last sales. Their first available price after cutoff is NOT a fill quote, likely not actually obtainable for a new order, and latency of Oct22 session is not guaranteed on historical dates. This can assess optimistic assumptions of historical next-open fills, not performance proof or live execution capability.",
+  "constraints": {
+    "no_private_API": true,
+    "orders": 0,
+    "paper500_unchanged": true,
+    "live": false,
+    "promote": false,
+    "merge": false
+  }
+}

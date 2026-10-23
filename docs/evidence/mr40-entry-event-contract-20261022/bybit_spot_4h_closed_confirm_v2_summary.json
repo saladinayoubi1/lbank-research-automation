@@ -1,0 +1,63 @@
+{
+  "schema": "nexus.mr40.public_spot_four_hour_close_v2.summary_evidence.v1",
+  "source_date_utc": "2026-10-22",
+  "venue": "Bybit BTCUSDT Spot Public WebSocket",
+  "endpoint": "wss://stream.bybit.com/v5/public/spot",
+  "topic": "kline.240.BTCUSDT",
+  "protocol_commit_before_observation": "893203e1a21f2b45ee882758b84b6002bf281490",
+  "protocol_file": "research/mr40_public_spot_4h_close_v2_protocol_20261022.json",
+  "source_capture_local_path": "E:\\NEXUS-Research\\MR40-Entry-Event-20261022\\results\\bybit_spot_4h_raw_close_v2_20261022.json",
+  "source_raw_full_file_sha256": "7704589ec16144ee9852fb4c8d0aeea49287346891c27f5149825e0311445a7e",
+  "source_capture_started_utc": "2026-10-22T19:58:36.3184930+00:00",
+  "source_capture_finished_utc": "2026-10-22T20:00:00.8212490+00:00",
+  "source_subscribe_ack": true,
+  "source_websocket_connected": true,
+  "raw_topic_receipts_total": 49,
+  "unconfirmed_receipts": 48,
+  "confirmed_native_boolean_true": 1,
+  "verified_closed_4h_frame": {
+    "bar_start_ms": 1792684800000,
+    "bar_end_ms_inclusive": 1792699199999,
+    "open": "81677.3",
+    "high": "81761.2",
+    "low": "80927.9",
+    "close": "81488.6",
+    "base_volume": "2951.920267",
+    "confirm_native_json_boolean": true,
+    "server_timestamp_ms": 1792699200563,
+    "received_utc": "2026-10-22T20:00:00.8162316+00:00",
+    "ancillary_data_timestamp_ms": 1792699200563,
+    "ancillary_timestamp_after_candle_end_ms": 564
+  },
+  "source_validation": {
+    "code": "research/nexus_mr40_bybit_4h_raw_close_gate_v2.py",
+    "synthetic_tests": "12/12 PASS on authorized research Windows",
+    "one_shot_result_digest": "d52988afdce73267a9a8489e516cbce20cd58707b96bf907fc79fcfe4904f30f",
+    "local_result_sha256": "43d01ec0fa7ab836505dfe1b1b727cd5ddb7020806df2832e566d6151b7fd9f5",
+    "native_confirm_and_utc_close_gate_pass": true,
+    "source_connection_gate_pass": true,
+    "MR40_source_ready": false,
+    "missing_previous_4h_bars": 4,
+    "unverified_missing_bar_starts_utc": [
+      "2026-10-22T00:00:00Z",
+      "2026-10-22T04:00:00Z",
+      "2026-10-22T08:00:00Z",
+      "2026-10-22T12:00:00Z"
+    ],
+    "reason": "historical_prefix_gap_blocks_MR40"
+  },
+  "provenance_note": "Full raw WebSocket frame evidence and independently generated validator result remain on the authorized research machine and are pinned by SHA256. GitHub contains this verified compact summary, not the 49-frame raw payload.",
+  "unsupported_inferences": [
+    "Bybit REST API restored",
+    "all 4h history continuity",
+    "live execution or paper trade fill",
+    "new MR40 strategy edge",
+    "true online OOS PnL"
+  ],
+  "paper_500_unchanged": true,
+  "private_api_used": false,
+  "orders_sent": 0,
+  "live_enabled": false,
+  "merge": false,
+  "promote": false
+}

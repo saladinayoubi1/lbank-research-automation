@@ -1,0 +1,30 @@
+{
+  "schema": "nexus.mr40.entry-event-contract.v1",
+  "parent_entry_quality_head": "b36256f601561e756449c4f17f8ed724f5fd050a",
+  "roadmap_issue": 2799,
+  "kind": "research-only deterministic temporal/event contract; NO strategy optimization or economic efficacy claims",
+  "data": "frozen Bybit BTCUSDT 4h historical records; synthetic tests only in this iteration; all 2023-2026 history already seen",
+  "preregistered_problem": "Prevent spurious/repeated MR40 entries and noncausal stop arm application while maintaining natural exit > adverse gap > previous-stop touch > new entry ordering.",
+  "source_truth": "MR40+Momentum30 source produces bool entry on fully closed candle, Z<=-2 and 180-bar momentum filter; exits Z>=0 at closed candle. The coordinator does NOT recompute indicators.",
+  "fixed_rules": [
+    "Only first confirmed CLOSED signal of each contiguous positive MR40 episode eligible; veto consumes episode, no delayed reentry until a confirmed non-signal reset.",
+    "Next-open entry intent only, never at the signal candle's close; any pending entry expires after one index.",
+    "If a valid Position is open, previously confirmed natural exit at next open has priority over stop/gap and forbids same-bar entry.",
+    "Without natural exit, next-open adverse gap through active stop produces separate stop-gap event; historical bar LOW <= stop produces unverified intrabar-stop-touch event, never an actual fill.",
+    "Profit arm when a fully confirmed close >= position entry * 1.02 schedules gross entry-level stop from NEXT bar open only; no close-based retroactive protective exit; profit trigger does not prove net breakeven.",
+    "Missing candle, incorrect index, crossed/invalid OHLC, bad data or unknown source identity yields DATA_BLOCK rather than trade intent.",
+    "Never call private API, place orders, compute actual fill price, or update Paper; integration/valuation happens only after independent evaluation."
+  ],
+  "acceptance": [
+    "Synthetic tests must prove 1-bar entry deferral and no repeated / vetoed episode reentry.",
+    "Natural exit > gap stop > intrabar low stop > entry precedence must hold.",
+    "No future close or current-bar high/low influences a new entry selection.",
+    "Profit ratchet cannot act until next bar; gating source gaps/stale inputs must suppress intents.",
+    "Default baseline arm/stop disabled; candidate +2% arm is research-only and NOT promoted; preserve previously failed economic gates."
+  ],
+  "mode": "NO_PROMOTE_NO_MERGE",
+  "paper_500_usdt_untouched": true,
+  "live": false,
+  "real_orders": false,
+  "private_api": false
+}

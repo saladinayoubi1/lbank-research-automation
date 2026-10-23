@@ -1,0 +1,34 @@
+{
+  "schema": "nexus.mr40.prospective_spot_archive_shadow_protocol.v1",
+  "locked_now_utc": "2026-10-22",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "goal": "First genuinely post-protocol ONE-DAY shadow logging of MR40 Spot closed-bar signal transitions from the official public Bybit Spot trade archive only; no position management, order execution, private API, PNL outcomes, or trading venue change.",
+  "fixed_observation_day": "2026-10-23",
+  "asof_boundary": "UTC 2026-10-23 00:00:00; older days are only history and bridge, never counted as unseen future observations.",
+  "earliest_legitimate_full_archive_read_utc": "2026-10-24T00:00:00Z",
+  "prerequisites": {
+    "frozen_core_4h_rows": 8514,
+    "frozen_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "historical_bridge_oct20_21_logical_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "historical_bridge_new_4h_rows_digest": "a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6",
+    "require_archive_oct22": "2026-10-22",
+    "require_archive_fixed_future_day": "2026-10-23",
+    "one_minute_buckets_each_archive": 1440,
+    "four_hour_bars_each_day": 6,
+    "no_changing_utc_day_after_failure": true
+  },
+  "validation": "Same public Bybit BTCUSDT Spot gzip trade CSV, SHA and CRC; exact 1440 minute buckets and six OHLCV 4h bars per day, trade timestamp range within each day, exact minute-to-four-hour aggregate and continuous UTC sequence. Base prefix and Oct20–21 bridge must match existing immutable hashes before any future calculation; Oct22 is new pre-forward history bridging only. Oct23 is prospective signal-only; never measure same-day winners/losers or select parameters on Oct23. Reject if no archive or early/incomplete.",
+  "signal_calculation": "Use frozen code research/nexus_mr40_independent_closed_signal_v1.py, Z<=-2, Z>=0, 40 prior closed bars, first-episode momentum30 (close[j]>=close[j-180]), no threshold change. Record each of six complete Oct23 4h bar signal states and their UTC receipt times, but signals are retrospective after archive publication; timestamp their calculated-as-of market bar and external collection time distinct. No trading assertions or fill prices.",
+  "acceptance": "A valid data-only prospective observation artifact if the archive was first collected after cutoff, past archives and 4h continuity validated, and six signal states are logged with fixed protocol. No demonstrated edge from one day; no Paper promotion or private Bybit API.",
+  "constraints": {
+    "no_background_task": true,
+    "requires_explicit_future_invocation": true,
+    "live": false,
+    "private_api": false,
+    "orders": 0,
+    "paper_500_untouched": true,
+    "merge": false,
+    "promote": false
+  }
+}

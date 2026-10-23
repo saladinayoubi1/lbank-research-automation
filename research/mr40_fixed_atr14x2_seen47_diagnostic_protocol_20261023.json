@@ -1,0 +1,57 @@
+{
+  "schema": "nexus.mr40.fixed_prearm_atr14x2_seen_sample_diagnostic_protocol.v1",
+  "created_utc_day": "2026-10-23",
+  "purpose": "One fixed retrospective check on the already-seen 47 Bybit Spot 4h MR40 pairs to catch broken net-PNL, stop-touch or floating equity geometry BEFORE any genuinely future forward-day assessment; it must NOT be used to choose the 2x multiple or promote a stop.",
+  "preregistered_parent_future_protocol_sha256": "e26ae98b1e2a32aed6ddfdf4abb9aef303a3ff71ac1e9766e3a99f620caf282b",
+  "immutable_seen_8514_market_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "immutable_47_position_ledger_file_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "scope": {
+    "pairs": 47,
+    "train": 25,
+    "evaluation": 22,
+    "candidate": "PREARM_ATR14_X2_CLOSED_SIGNAL",
+    "baseline": "UNCHANGED_MR40_BASELINE_NATURAL_EXIT",
+    "no_other_candidates": true,
+    "signal_at_bar_close": true,
+    "atr14_signal_prior_bar_inclusive": true,
+    "entry_at_next_4h_open_proxy": true,
+    "exit_natural_at_next_open_proxy": true,
+    "same_500USDT_start_each_train_and_evaluation": true,
+    "full_balance_for_both_arms_to_isolate_stop_effect": true,
+    "do_not_reenter_until_next_independent_frozen_pair": true
+  },
+  "fee_slip_cases": {
+    "fee_only": {
+      "side_fee": "0.001",
+      "side_slippage": "0"
+    },
+    "stress": {
+      "side_fee": "0.001",
+      "side_slippage": "0.001"
+    }
+  },
+  "stop": {
+    "multiplier": "2",
+    "measure": "Arithmetic mean of latest 14 completed 4h true ranges based on previous close, computed at signal close, no future entry bar",
+    "gap_rule": "open below stop => hypothetical exit at bar Open; else Low crosses stop => hypothetical exit at stop; never assume actual fill",
+    "entry_bar_held": true,
+    "exit_open_bar_low_excluded": true
+  },
+  "metrics": "Net compounded terminal equity USDT and PNL; worst modeled in-position equity drawdown from prior peak if highs occur before lows (NOT verified path); stop event count and gaps, average holding hours, survival time versus baseline",
+  "forbidden": [
+    "No tuning, choosing multiple, or rerunning new grid after reading historical outcomes",
+    "No promotion or strategy runtime modifications",
+    "No actual fill inference from OHLC lows",
+    "No claim that 2025-2026 is genuinely unseen to project"
+  ],
+  "safety": {
+    "orders": 0,
+    "private_api": false,
+    "paper_modified": false,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  },
+  "source_identity_typo_correction": "Added omitted hex 'b' in historical Ledger SHA identity BEFORE any economic evaluation. All ATR, fee/slippage, calendar, trade entry/exit and stop parameters untouched."
+}

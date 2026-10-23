@@ -1,0 +1,302 @@
+{
+  "L2_execution_verified": false,
+  "bridge_source_integrity_gate_pass": true,
+  "classification": "BACKFILL_ALREADY_PUBLISHED__NOT_TRULY_FORWARD",
+  "digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+  "first_prospective_full_UTC_day_fixed_as_2026_10_23": true,
+  "frozen_source_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "live": false,
+  "merge": false,
+  "new_4h_rows_canonical_digest": "a3fe422736b0dd27342b711765e721608cb88f7ec49ef22b723d09b64acaf5a6",
+  "new_4h_rows_utc_day20_21": [
+    [
+      1792454400000,
+      "81932.8",
+      "82131.5",
+      "81183.9",
+      "82125.7",
+      "2653.255229"
+    ],
+    [
+      1792468800000,
+      "82125.8",
+      "82268.3",
+      "81464.4",
+      "81560.2",
+      "1326.525701"
+    ],
+    [
+      1792483200000,
+      "81560.3",
+      "81661",
+      "81320.4",
+      "81500.2",
+      "1595.014690"
+    ],
+    [
+      1792497600000,
+      "81500.2",
+      "83446.1",
+      "81313.5",
+      "82612.5",
+      "3232.692244"
+    ],
+    [
+      1792512000000,
+      "82612.6",
+      "82929.1",
+      "82345.9",
+      "82605.6",
+      "1576.316428"
+    ],
+    [
+      1792526400000,
+      "82608.4",
+      "83185.9",
+      "82519.7",
+      "83025.7",
+      "1102.766632"
+    ],
+    [
+      1792540800000,
+      "83025.6",
+      "83229.1",
+      "82727.4",
+      "82732.3",
+      "1275.296300"
+    ],
+    [
+      1792555200000,
+      "82732.4",
+      "83255",
+      "82632.2",
+      "83151.8",
+      "1141.697555"
+    ],
+    [
+      1792569600000,
+      "83151.8",
+      "83708",
+      "83094.1",
+      "83505.2",
+      "1424.231273"
+    ],
+    [
+      1792584000000,
+      "83505.2",
+      "84832.4",
+      "83271.6",
+      "84541.4",
+      "4480.244583"
+    ],
+    [
+      1792598400000,
+      "84541.5",
+      "84906.1",
+      "84181.7",
+      "84489.8",
+      "1545.987835"
+    ],
+    [
+      1792612800000,
+      "84487.3",
+      "84870.4",
+      "84062.4",
+      "84092.6",
+      "1007.677998"
+    ]
+  ],
+  "new_asof_signal_descriptions": [
+    {
+      "bar_start_ms": 1792454400000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T00:00:00+00:00",
+      "potential_next_open_ms": 1792468800000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "0.04166554061034713041990703992525380690383"
+    },
+    {
+      "bar_start_ms": 1792468800000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T04:00:00+00:00",
+      "potential_next_open_ms": 1792483200000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "-0.6928890718759789700922099279504626588795"
+    },
+    {
+      "bar_start_ms": 1792483200000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T08:00:00+00:00",
+      "potential_next_open_ms": 1792497600000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "-0.7417191029419011098585661297164215401304"
+    },
+    {
+      "bar_start_ms": 1792497600000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T12:00:00+00:00",
+      "potential_next_open_ms": 1792512000000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "0.9577497548019998928931809748937968518051"
+    },
+    {
+      "bar_start_ms": 1792512000000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T16:00:00+00:00",
+      "potential_next_open_ms": 1792526400000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "0.9976741184957715900765984191031279085018"
+    },
+    {
+      "bar_start_ms": 1792526400000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-20T20:00:00+00:00",
+      "potential_next_open_ms": 1792540800000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "1.837792815049657715121632676832250086983"
+    },
+    {
+      "bar_start_ms": 1792540800000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T00:00:00+00:00",
+      "potential_next_open_ms": 1792555200000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "1.447691126728392456988934786937061896666"
+    },
+    {
+      "bar_start_ms": 1792555200000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T04:00:00+00:00",
+      "potential_next_open_ms": 1792569600000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "2.397399903960000232706118231419016647252"
+    },
+    {
+      "bar_start_ms": 1792569600000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T08:00:00+00:00",
+      "potential_next_open_ms": 1792584000000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "2.820155681474655174704374536185776783844"
+    },
+    {
+      "bar_start_ms": 1792584000000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T12:00:00+00:00",
+      "potential_next_open_ms": 1792598400000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "4.219237404355567246332196546735193045505"
+    },
+    {
+      "bar_start_ms": 1792598400000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T16:00:00+00:00",
+      "potential_next_open_ms": 1792612800000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "3.364657177152757491084382431908284211339"
+    },
+    {
+      "bar_start_ms": 1792612800000,
+      "closed_signal_target": false,
+      "first_entry_signal_at_close": false,
+      "momentum_episode_admitted": false,
+      "natural_exit_signal_at_close": false,
+      "next_open_fill_or_account_proven": false,
+      "open_utc": "2026-10-21T20:00:00+00:00",
+      "potential_next_open_ms": 1792627200000,
+      "raw_active": false,
+      "z_score_as_of_this_confirmed_close": "2.451286016776524145812154216798687900566"
+    }
+  ],
+  "official_archive_receipts": [
+    {
+      "archive_gzip_sha256": "4ad1f684eff798b925ae69fca6828820bf6086611af2935cb37b8b680cfba5d0",
+      "archive_len": 7004770,
+      "archive_public_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-20.csv.gz",
+      "day": "2026-10-20",
+      "decompressed_csv_sha256": "83c3454314ff454d76785b7c017f6e6d24b5cf5ef60a9178e7f2120d3d599ba1",
+      "exact_1m_to_4h": true,
+      "four_hour_candles_verified": 6,
+      "minutes_verified": 1440,
+      "number_of_trades": 1110780,
+      "on_research_device": "results\\Bybit_BTCUSDT_Spot_2026-10-20.csv.gz",
+      "server_last_modified": "Wed, 21 Oct 2026 02:00:53 GMT",
+      "source_trade_order_preserved": true
+    },
+    {
+      "archive_gzip_sha256": "120005f407c3d620cf866823d73ad78948792b88ccb957bcc575089de70db9e9",
+      "archive_len": 6154622,
+      "archive_public_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-21.csv.gz",
+      "day": "2026-10-21",
+      "decompressed_csv_sha256": "3eee629692978bf3136e9938ee53815322fec03e97e6c66579bc7f1da0557dfd",
+      "exact_1m_to_4h": true,
+      "four_hour_candles_verified": 6,
+      "minutes_verified": 1440,
+      "number_of_trades": 974028,
+      "on_research_device": "results\\Bybit_BTCUSDT_Spot_2026-10-21.csv.gz",
+      "server_last_modified": "Thu, 22 Oct 2026 02:01:28 GMT",
+      "source_trade_order_preserved": true
+    }
+  ],
+  "orders": 0,
+  "paper_modified": false,
+  "profit_outcomes_measured": false,
+  "promote": false,
+  "protocol_sha256": "d64cb64039d9b5eb0431fade731801aea9ae8341dd52b436410472263530d8bd",
+  "rest_api_restored": false,
+  "schema": "nexus.mr40.bybit_spot_oct20_oct21_bridge.results.v1",
+  "source_and_prefix_verification": {
+    "bridge_entry_close_markers": 0,
+    "bridge_exit_close_markers": 0,
+    "frozen_prefix_entries_replayed": 47,
+    "frozen_prefix_exits_replayed": 47,
+    "frozen_prefix_market_rows": 8514,
+    "historical_backfill_not_blind_forward": true,
+    "new_close_signals_are_not_fills": true,
+    "new_closed_market_rows": 12
+  }
+}

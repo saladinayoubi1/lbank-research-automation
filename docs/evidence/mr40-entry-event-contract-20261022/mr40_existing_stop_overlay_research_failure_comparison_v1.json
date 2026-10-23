@@ -1,0 +1,310 @@
+{
+  "classification": "RETROSPECTIVE_AUDIT_ALREADY_SEEN_TRAIN_EVALUATION_NOT_NEW_BACKTEST",
+  "digest": "6c83165729d10b07a166ca6eb4ce8694291f7928b32764108c6a36730474c82a",
+  "live": false,
+  "merge": false,
+  "no_orders": true,
+  "paper_reference_500_usdt_unchanged": true,
+  "private_exchange_API": false,
+  "promote": false,
+  "ratchet_failure_mode": {
+    "evaluation_baseline_loss_makers": 4,
+    "evaluation_selected_case_did_not_reduce_any_risk_or_raise_profit": true,
+    "fair_comparison_limit": "Separate compounded-path USDT PNL deltas are NOT equal-capital causal treatment effects; normalized log contributions also not counterfactual reruns.",
+    "no_2pct_completed_close_arm_on_any_eval_loser": true,
+    "train_ratchet_relative_gain_log_contribution_from_aug2024_focus_pct": {
+      "normal": 127.11137496528903,
+      "stress": 116.4594868973744
+    },
+    "unarmed_losers_source_rows": [
+      {
+        "baseline_pnl": -872.61,
+        "entry_utc": "2025-10-10T16:00:00+00:00",
+        "exit_utc": "2025-10-20T04:00:00+00:00",
+        "holding_h": 228.0,
+        "max_completed_close_gain_pct": -2.033
+      },
+      {
+        "baseline_pnl": -250.615,
+        "entry_utc": "2026-01-20T08:00:00+00:00",
+        "exit_utc": "2026-01-28T00:00:00+00:00",
+        "holding_h": 184.0,
+        "max_completed_close_gain_pct": 0.001
+      },
+      {
+        "baseline_pnl": -222.738,
+        "entry_utc": "2026-05-15T16:00:00+00:00",
+        "exit_utc": "2026-05-22T04:00:00+00:00",
+        "holding_h": 156.0,
+        "max_completed_close_gain_pct": -0.066
+      },
+      {
+        "baseline_pnl": -67.721,
+        "entry_utc": "2025-08-01T00:00:00+00:00",
+        "exit_utc": "2025-08-06T16:00:00+00:00",
+        "holding_h": 136.0,
+        "max_completed_close_gain_pct": -0.142
+      }
+    ]
+  },
+  "research_decision": {
+    "existing_trigger_staged_stop_demonstrated_forward_success": false,
+    "new_Paper_rule_authorized": false,
+    "new_stop_parameter_optimization_done": false,
+    "why": "Previously trained improvements failed independent historical evaluation; trigger after closed +2% cannot protect positions never achieving that arm condition. Existing 2025–26 evaluation has now been seen; future OOS requires fresh chronology, actual source receipt and execution-cost evidence."
+  },
+  "schema": "nexus.mr40.existing_stop_overlay_studies_integrity_and_failure_attribution.v1",
+  "source_file_sha256": {
+    "early_fuse_result": "2a6bfb6c6f7870056c70c2f4accb9362a8337717c23a5649d2b122db26344cd9",
+    "early_policy": "8e87c146248598495fe86d58baf2d4535d7ed8e6303467bd4d22bb865667dc33",
+    "partial_trim_result": "01444ccb9346416dd948d5679692f359cc78a75f493695077cff8e7477ded6f4",
+    "ratchet_equal_cash_audit": "f4bdae81685bb8ec4c28e57a4afc14b3efdbf12c9c02af8eda4d5bd350bb88a2",
+    "ratchet_unarmed_audit": "423aa9c28fbb3e23ebce62ea1e731db8922a84ee87da04f891473c9a236852bc",
+    "trigger_policy": "f791ef3ae7044ba5dac21d716ebafac153e615ec9a7d0426320fa71007261714",
+    "trigger_ratchet_result": "e5287176023ace0da642559bbe848bb709d222fdf273c277ea9cd6567e2ad285",
+    "trim_policy": "0c71de53fc54c2298d8660306be75d54a25661c82f453101ae1d2c0dad0698f0"
+  },
+  "source_result_digest": {
+    "early_fuse_result": "7c573b72a0907e573b67f4f552ab8fb0b6c131a55f0ec2b2328b42e64f7b67a7",
+    "partial_trim_result": "61971ef7504cd269f04ae4512727f648a2a720791b73b983c2d0a3090adb3fb6",
+    "ratchet_equal_cash_audit": "99cb681c4169a70a3a273e74a394f2edfab9440e72e65b0df4aeaad17d84ac91",
+    "ratchet_unarmed_audit": "2a8f7d1c97b0eadb4b719ad65ddb8aa6543eb3a972c84921e6dbf3d137f22db1",
+    "trigger_ratchet_result": "56623e1509ccc3a88a1fba1bb47d1a87a699cf953d8a661b71e49db4e18cd5b3"
+  },
+  "studies": {
+    "early_fuse_result": {
+      "capital_per_separate_old_path_usdt": 10000,
+      "evaluation_success_efficiency": false,
+      "evaluation_success_profit": false,
+      "training_selected_efficiency": "baseline",
+      "training_selected_profit": "baseline",
+      "underlying_historical_results_are_not_untouched_today": true,
+      "windows": {
+        "evaluation": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 10.917497795069607,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 13.258927197618153,
+              "net_pnl_usdt": 2048.82434732
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 10.917497795069607,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 13.258927197618153,
+              "net_pnl_usdt": 2048.82434732
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 4.338199343608196,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 14.549718668238487,
+              "net_pnl_usdt": 793.8228135499994
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 4.338199343608196,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 14.549718668238487,
+              "net_pnl_usdt": 793.8228135499994
+            }
+          }
+        },
+        "train": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 14.139771184314508,
+              "longest_underwater_days": 117.5,
+              "max_close_drawdown_pct": 21.454906809179764,
+              "net_pnl_usdt": 3030.246217
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 14.139771184314508,
+              "longest_underwater_days": 117.5,
+              "max_close_drawdown_pct": 21.454906809179764,
+              "net_pnl_usdt": 3030.246217
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 7.229227506385172,
+              "longest_underwater_days": 210.83333333333334,
+              "max_close_drawdown_pct": 21.45450370406786,
+              "net_pnl_usdt": 1499.2059187300001
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 7.229227506385172,
+              "longest_underwater_days": 210.83333333333334,
+              "max_close_drawdown_pct": 21.45450370406786,
+              "net_pnl_usdt": 1499.2059187300001
+            }
+          }
+        }
+      }
+    },
+    "partial_trim_result": {
+      "capital_per_separate_old_path_usdt": 10000,
+      "evaluation_success_efficiency": false,
+      "evaluation_success_profit": false,
+      "training_selected_efficiency": "trim75at8",
+      "training_selected_profit": "baseline",
+      "underlying_historical_results_are_not_untouched_today": true,
+      "windows": {
+        "evaluation": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 10.917497795069607,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 13.258927197618153,
+              "net_pnl_usdt": 2048.82434732
+            },
+            "closed_dd_change_percentage_points": 0.94020992,
+            "net_pnl_change_usdt_10000_reference": -130.5926567,
+            "previous_training_selected": {
+              "cagr_pct": 10.24753858537979,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 14.199137120026794,
+              "net_pnl_usdt": 1918.2316906199994
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 4.338199343608196,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 14.549718668238487,
+              "net_pnl_usdt": 793.8228135499994
+            },
+            "closed_dd_change_percentage_points": 0.92638544,
+            "net_pnl_change_usdt_10000_reference": -116.98284649,
+            "previous_training_selected": {
+              "cagr_pct": 3.7080196778382035,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 15.476104109474399,
+              "net_pnl_usdt": 676.8399670599993
+            }
+          }
+        },
+        "train": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 14.139771184314508,
+              "longest_underwater_days": 117.5,
+              "max_close_drawdown_pct": 21.454906809179764,
+              "net_pnl_usdt": 3030.246217
+            },
+            "closed_dd_change_percentage_points": -7.18997604,
+            "net_pnl_change_usdt_10000_reference": -208.22592173,
+            "previous_training_selected": {
+              "cagr_pct": 13.224734027837194,
+              "longest_underwater_days": 117.66666666666667,
+              "max_close_drawdown_pct": 14.26493077311516,
+              "net_pnl_usdt": 2822.02029527
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 7.229227506385172,
+              "longest_underwater_days": 210.83333333333334,
+              "max_close_drawdown_pct": 21.45450370406786,
+              "net_pnl_usdt": 1499.2059187300001
+            },
+            "closed_dd_change_percentage_points": -6.76217824,
+            "net_pnl_change_usdt_10000_reference": -183.81083021,
+            "previous_training_selected": {
+              "cagr_pct": 6.369350226819348,
+              "longest_underwater_days": 210.83333333333334,
+              "max_close_drawdown_pct": 14.692325464439671,
+              "net_pnl_usdt": 1315.3950885199993
+            }
+          }
+        }
+      }
+    },
+    "trigger_ratchet_result": {
+      "capital_per_separate_old_path_usdt": 10000,
+      "evaluation_success_efficiency": false,
+      "evaluation_success_profit": false,
+      "training_selected_efficiency": "arm2_be",
+      "training_selected_profit": "arm2_be",
+      "underlying_historical_results_are_not_untouched_today": true,
+      "windows": {
+        "evaluation": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 10.917497795069607,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 13.258927197618153,
+              "net_pnl_usdt": 2048.82434732
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 10.917497795069607,
+              "longest_underwater_days": 403.8333333333333,
+              "max_close_drawdown_pct": 13.258927197618153,
+              "net_pnl_usdt": 2048.82434732
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 4.338199343608196,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 14.549718668238487,
+              "net_pnl_usdt": 793.8228135499994
+            },
+            "closed_dd_change_percentage_points": 0.0,
+            "net_pnl_change_usdt_10000_reference": 0.0,
+            "previous_training_selected": {
+              "cagr_pct": 4.338199343608196,
+              "longest_underwater_days": 450.3333333333333,
+              "max_close_drawdown_pct": 14.549718668238487,
+              "net_pnl_usdt": 793.8228135499994
+            }
+          }
+        },
+        "train": {
+          "normal": {
+            "baseline": {
+              "cagr_pct": 14.139771184314508,
+              "longest_underwater_days": 117.5,
+              "max_close_drawdown_pct": 21.454906809179764,
+              "net_pnl_usdt": 3030.246217
+            },
+            "closed_dd_change_percentage_points": -14.18149726,
+            "net_pnl_change_usdt_10000_reference": 775.17807855,
+            "previous_training_selected": {
+              "cagr_pct": 17.483528799592452,
+              "longest_underwater_days": 86.66666666666667,
+              "max_close_drawdown_pct": 7.273409548896625,
+              "net_pnl_usdt": 3805.4242955499994
+            }
+          },
+          "stress": {
+            "baseline": {
+              "cagr_pct": 7.229227506385172,
+              "longest_underwater_days": 210.83333333333334,
+              "max_close_drawdown_pct": 21.45450370406786,
+              "net_pnl_usdt": 1499.2059187300001
+            },
+            "closed_dd_change_percentage_points": -13.68576068,
+            "net_pnl_change_usdt_10000_reference": 759.15680497,
+            "previous_training_selected": {
+              "cagr_pct": 10.709780652019486,
+              "longest_underwater_days": 220.16666666666666,
+              "max_close_drawdown_pct": 7.768743023225378,
+              "net_pnl_usdt": 2258.3627237
+            }
+          }
+        }
+      }
+    }
+  }
+}

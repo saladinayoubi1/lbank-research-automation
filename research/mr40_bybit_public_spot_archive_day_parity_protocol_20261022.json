@@ -1,0 +1,49 @@
+{
+  "schema": "nexus.mr40.bybit_official_spot_archive_day_source_parity.v1",
+  "roadmap_issue": 2799,
+  "pr": 2808,
+  "phase": "Market-source provenance, not trade strategy optimization",
+  "pre_registered_before_full_archive_download": true,
+  "known_metadata_before_lock": {
+    "venue": "Bybit Spot",
+    "symbol": "BTCUSDT",
+    "date_utc": "2026-10-19",
+    "archive_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-19.csv.gz",
+    "head_status": 200,
+    "content_length_bytes": 6221547,
+    "csv_header": "id,timestamp,price,volume,side,rpi",
+    "reason_for_day": "Final full day contained in frozen 4h Bybit data through 2026-10-19, so exact same-venue comparison is possible",
+    "status_notice": "Only HTTP HEAD and initial CSV schema rows already inspected; no full-file comparison or strategy outcome inspected before protocol."
+  },
+  "source_pins": {
+    "frozen_ohlcv_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "day_window_utc": [
+      "2026-10-19T00:00:00Z",
+      "2026-10-20T00:00:00Z"
+    ],
+    "expected_minute_buckets": 1440,
+    "expected_fourhour_buckets": 6
+  },
+  "mechanics": "Download EXACT listed official Bybit Spot gzip once, max 12 MB, save SHA256 of raw gzip and decompressed CSV. CSV parse header exactly; trade timestamp in UTC ms and strictly in selected day, price and volume Decimal positive, trade ID unique. Sort by timestamp then original line number for OHLC (not by price or side); O=first,H=max,L=min,C=last, Volume=sum; 1m buckets 1440 contiguous and 4h buckets 6; require each minute nonempty and no invalid trades. Independently aggregate 1m candles into each 4h candle and assert identical to trade-derived aggregate. Only *after* raw aggregate, load immutable frozen 4h Bybit candles and check 6 matching UTC opens.",
+  "qualification": {
+    "max_price_absolute_usdt": "0.01",
+    "max_volume_relative_difference": "0.001",
+    "strict_ohlcv_trade_rows": true,
+    "no_trades_missing_or_outside_day": true,
+    "raw_download_complete_and_valid_gzip_crc": true,
+    "all_1440_mins_present": true,
+    "all_six_4h_bars_present": true,
+    "pass": "All six 4h candles price O/H/L/C within tolerance and base volume within 0.1% of frozen 4h snapshot AND all minute-integrity prerequisites met; otherwise explicit FAIL. Even a PASS is limited to ONE historic day, NOT Bybit REST API restored or forward executable data."
+  },
+  "classification": "One date-specific historical same-venue trade print provenance. A trade-print archive is public and neither an order-book feed nor API live quote. Zero evidence of stop fill, market impact or PnL. 2026-10-19 previously seen so not new OOS.",
+  "constraints": {
+    "Bybit_execution_only": true,
+    "Bitget_LBank_research_only": true,
+    "Paper500_Laptop2_unchanged": true,
+    "private_api": false,
+    "orders": 0,
+    "live": false,
+    "auto_merge": false,
+    "promote": false
+  }
+}
