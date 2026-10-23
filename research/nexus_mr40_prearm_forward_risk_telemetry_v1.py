@@ -137,7 +137,7 @@ def compute_day(rows,markers):
     if len(rows)!=6 or len(markers)!=6:
         raise ValueError("six_day_bars_required")
     quote=Q0;btc=D(0);entry_px=None;entry_before=None
-    pending=None;armed=False;held_bars=0;closed=0
+    pending=None;armed=False;held_bars=0;closed=0;realized_net=D(0)
     hist_peak=Q0;high_first_peak=Q0
     max_low_dd=D(0);max_adversarial_samebar_dd=D(0);max_adverse=D(0)
     pending_breaches={str(t):None for t in LIMITS}
@@ -154,7 +154,9 @@ def compute_day(rows,markers):
         action=None
         if pending=="exit":
             if btc<=0 or entry_px is None:raise ValueError("exit_without_position")
-            quote=btc*op*(D(1)-FEE);btc=D(0)
+            quote=btc*op*(D(1)-FEE)
+            realized_net+=quote-entry_before
+            btc=D(0)
             action="NATURAL_EXIT_NEXT_OPEN_REFERENCE_ONLY"
             closed+=1;entry_px=None;entry_before=None;armed=False
             hist_peak=max(hist_peak,quote)
@@ -232,7 +234,8 @@ def compute_day(rows,markers):
         "public_VIP0_fee_per_side":"0.001",
         "natural_exit_completed_positions_with_both_next_open_proxies":closed,
         "closed_positions_reference_quote_equity_if_flat_usdt":str(quote) if btc==0 else None,
-        "realized_net_PnL_only_for_completed_positions_usdt":str(quote-Q0) if btc==0 and closed else None,
+        "realized_net_PnL_only_for_completed_positions_usdt":str(realized_net) if closed else None,
+        "realized_net_PnL_excludes_any_open_or_pending_position":True,
         "realized_net_PnL_not_available_for_unclosed_position":btc!=0,
         "an_open_position_at_day_end":btc>0,
         "entry_or_exit_next_open_outside_day_unresolved":pending,
