@@ -1,0 +1,27 @@
+{
+  "schema": "nexus.mr40.forward_closed_trade_decision_gate.v1",
+  "locked_utc_day": "2026-10-23",
+  "purpose": "Evaluate non-executable numerical sufficiency of future closed-position evidence against locked baseline without reusing the 47 seen historical trades.",
+  "cutoff_utc": "2026-10-23T00:00:00Z",
+  "min_fully_closed_positions_per_arm": 12,
+  "arms": [
+    "baseline",
+    "candidate"
+  ],
+  "arm_definition": "Both arms must report observations over an identical predeclared forward evaluation calendar window and the same Bybit BTCUSDT Spot reference; specific trade entries need not coincide.",
+  "entry_exit_constraint": "All positions must have distinct identifier, post-cutoff entry and later closed exit, no overlap within each long-only arm, no open or unsettled positions included.",
+  "pnl_constraint": "Conservative-cost net PnL in USDT with same 500-USDT illustrative initial capital; candidate strictly positive and not below baseline net result.",
+  "low_drawdown_constraint": "Externally reconstructed, independently authenticated intratrade Low-based modeled max drawdown per arm; numerical candidate <= 0.8 * baseline, requiring baseline >0; this gate does NOT compute or verify a fill or Low timeline.",
+  "conflict_constraints": "Reject candidates selected after seeing forward outcome, missing venue/cost/source verification, inconsistent dates, unstable risk rules, or reporting only wins while excluding eligible loses.",
+  "no_asserted_edge": "Passing numeric checks is NECESSARY, NOT SUFFICIENT: must independently verify raw data provenance, cost/fills, open exposure and precommitments, and then obtain separate user permission before Paper promotion.",
+  "tests": "SYNTHETIC only until authentic >12 prospective fully closed positions exist",
+  "safety": {
+    "no_automations": true,
+    "real_orders": 0,
+    "paper_unchanged": true,
+    "private_api": false,
+    "live": false,
+    "merge": false,
+    "auto_promote": false
+  }
+}
