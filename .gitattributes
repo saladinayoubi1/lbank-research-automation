@@ -405,3 +405,8 @@ tests/test_nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-
 research/mr40_authenticated_oct22_historical_closed_signal_state_protocol_20261023.json text eol=lf export-ignore
 research/nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
+
+# Prospective pre-profit-arm risk telemetry is research only, no Paper/live runtime.
+research/mr40_prearm_forward_risk_telemetry_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
