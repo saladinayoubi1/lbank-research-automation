@@ -269,11 +269,17 @@ def test_terminal_frontier_reports_blocked_without_dispatching_or_moving_cursor(
     assert "--blocked-receipt-on-exhaustion" in decision
     assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in decision
     assert "BLOCKED_NEW_MECHANISM_REQUIRED" in decision
-    for name, next_name in (
-        ("Dispatch reviewed Research workflow", "Commit rotation cursor only after accepted dispatch"),
-        ("Commit rotation cursor only after accepted dispatch", "Obtain only the exact certified prior multi-timeframe outcome"),
-    ):
-        step = text.split(name, 1)[1].split(next_name, 1)[0]
+    assert text.index("Obtain only the exact certified prior multi-timeframe outcome") < text.index(
+        "Verify discovery surface and select one stage"
+    )
+    assert text.index("name: nexus-research-frontier-state") < text.index(
+        "Dispatch reviewed Research workflow"
+    )
+    assert text.index("Dispatch reviewed Research workflow") < text.index(
+        "Commit rotation cursor only after accepted dispatch"
+    )
+    for name in ("Dispatch reviewed Research workflow", "Commit rotation cursor only after accepted dispatch"):
+        step = text.split(name, 1)[1].split("\n      - ", 1)[0]
         assert "steps.frontier-selection.outputs.ready == 'true'" in step
 
 
