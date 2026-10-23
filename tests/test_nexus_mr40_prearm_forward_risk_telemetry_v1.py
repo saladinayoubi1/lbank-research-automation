@@ -78,7 +78,7 @@ class TestFixedDayPrearmLowTelemetry(unittest.TestCase):
             verify_six_markers_against_closed_engine(
                 a,b,old,new,marks,old_marks,expected_prior_pairs=0)
         old_marks[4]["target_long_after_closed_bar"]=False
-        new[1][0]+=60000
+        new[1][0]+=STEP4
         with self.assertRaisesRegex(ValueError,"missing_or_nonmonotonic_4h_candle"):
             verify_six_markers_against_closed_engine(
                 a,b,old,new,marks,old_marks,expected_prior_pairs=0)
