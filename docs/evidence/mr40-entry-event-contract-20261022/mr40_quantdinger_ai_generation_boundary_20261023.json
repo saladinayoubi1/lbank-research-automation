@@ -1,0 +1,64 @@
+{
+  "date_utc": "2026-10-23",
+  "decision": "GO only for gated JSON proposal format; no integration/runtime adoption until actual model-generated output + V2 compiler and safety checks pass in future isolated study",
+  "demonstrated_editor_transformation": {
+    "changed": true,
+    "executor": "deterministic",
+    "from": "4h",
+    "operation": "set_single_timeframe",
+    "operation_count": 2,
+    "operations": [
+      {
+        "endLine": 4,
+        "newText": "    context.subscribe(frequency=\"1h\")\n",
+        "oldText": "    context.subscribe(frequency=\"4h\")\n",
+        "startLine": 4
+      },
+      {
+        "endLine": 8,
+        "newText": "    bars = get_history(220, \"1h\", \"close\", g.symbol)\n",
+        "oldText": "    bars = get_history(220, \"4h\", \"close\", g.symbol)\n",
+        "startLine": 8
+      }
+    ],
+    "replacement_count": 2,
+    "resolved_from": "switch to 1h",
+    "to": "1h"
+  },
+  "economic_edge_measured": false,
+  "failed": 0,
+  "full_strategy_v2_compiler_ran": false,
+  "functions_extracted_without_rewriting": true,
+  "historical_market_backtest_performed": false,
+  "injected_dependency": "normalize_frequency small stub (NOT original V2 validation)",
+  "limit": "Deterministic editor is a narrow text edit, not LLM strategy generation. Faked frequency normalizer, no upstream compiler dependencies available.",
+  "live": false,
+  "nexus_gate_fixture": {
+    "accepted_as_text_proposal": true,
+    "backtested": false,
+    "id": "synthetic_contract_fixture_only",
+    "live": false,
+    "orders": 0,
+    "promote": false,
+    "strategy_validated": false,
+    "true_oos": false
+  },
+  "orders": 0,
+  "paper500_changed": false,
+  "passed": 10,
+  "private_API": false,
+  "promote": false,
+  "real_AI_model_used": false,
+  "real_upstream_functions": [
+    "_timeframe_change_target",
+    "_line_char_offset",
+    "apply_deterministic_strategy_edit"
+  ],
+  "schema": "nexus.mr40.quantdinger_ai_generation_boundary_smoke.v1",
+  "strategy_generated_by_AI": false,
+  "synthetic_example_only": true,
+  "test_cases": 10,
+  "upstream_commit_prefix": "d7642d7",
+  "upstream_repo": "OpenByteInc/QuantDinger",
+  "upstream_source": "backend_api_python/app/services/strategy_ai_generation.py"
+}
