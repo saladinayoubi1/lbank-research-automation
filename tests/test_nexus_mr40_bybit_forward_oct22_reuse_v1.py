@@ -215,6 +215,7 @@ class TestOct22SourceParityReuse(unittest.TestCase):
                          b"day23-only-test-bytes")
         doc=json.loads(target.read_bytes())
         self.assertTrue(doc["oct22_independently_verified_archive_reused"])
+        self.assertTrue(doc["oct22_proof_is_required_not_optional"])
         self.assertTrue(doc["oct22_archive_was_never_overwritten"])
         self.assertEqual(len(doc["locked_forward_4h_signals"]),6)
         self.assertTrue(all(m["signal_not_authorized_for_live_or_paper"]
