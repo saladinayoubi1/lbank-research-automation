@@ -389,3 +389,11 @@ def test_event_driven_rotation_requires_exact_receipt_and_stops_on_retryable_out
     assert 'last.get("stage") == plan.get("stage")' in selection
     assert "stop rather than create an event loop" in selection
     assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in selection
+    assert 'echo "recovery_allowed=true" >> "$GITHUB_OUTPUT"' in selection
+    assert 'echo "recovery_allowed=false" >> "$GITHUB_OUTPUT"' in selection
+
+    recovery_step = text.split("Produce exact-source design-review queue when frontier is exhausted", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert "steps.frontier-selection.outputs.recovery_allowed == 'true'" in recovery_step
+    assert "steps.frontier-selection.outputs.ready == 'false'" not in recovery_step
