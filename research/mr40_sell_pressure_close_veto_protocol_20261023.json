@@ -1,0 +1,86 @@
+{
+  "schema": "nexus.mr40.sell_pressure_close_veto.preregistered.v1",
+  "date_utc": "2026-10-23",
+  "roadmap": "https://github.com/saladinayoubi1/lbank-research-automation/issues/2799",
+  "source_head": "dcb731ba5e7e1f533ebbf022550eece661694e87",
+  "thesis": "When an MR40 first-positive episode closes in the bottom fifth of its own four-hour high-low range on a red candle with >=1.5x prior-20-bar mean volume, contemporaneous sell pressure may persist into the next open; vetoing the whole episode may reduce adverse drawdown without destroying profitable mean reversion entries.",
+  "uniqueness": "Distinct from previously rejected green_reversal, drift6, range_quiet14, trend60, reversal_and_quiet; uses joint close-location and relative contemporaneous volume, both observable at closed signal bar.",
+  "data": {
+    "market": "Bybit BTCUSDT Spot",
+    "timeframe": "4h",
+    "bars": 8514,
+    "ohlc_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "baseline_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+    "sample_is_seen": true,
+    "train": [
+      "2023-01-01",
+      "2025-01-01"
+    ],
+    "evaluation_seen": [
+      "2025-01-01",
+      "2026-10-20"
+    ],
+    "capital_usdt": 500
+  },
+  "signal_timing": "Only at first CLOSED positive signal bar j, based on OHLCV at or before j. Veto entire contiguous entry episode; do not reenter later during it. Next-bar-open entry and natural Z>=0 exit preserved; no change to sizing/stops, no intrabar oracle fills.",
+  "veto": {
+    "case": "sell_pressure_close_veto",
+    "all_conditions": [
+      "close[j] < open[j]",
+      "high[j] > low[j]",
+      "(close[j]-low[j])/(high[j]-low[j]) <= 0.20",
+      "volume[j] >= 1.50 * mean(volume[j-20:j])"
+    ],
+    "min_prior_bars": 20,
+    "reference_volume_window_excludes_signal_bar": true,
+    "nonfinite_missing_or_invalid_reference": "REJECT_DATA_FAIL_CLOSED"
+  },
+  "scenarios": {
+    "cases": [
+      "baseline",
+      "sell_pressure_close_veto"
+    ],
+    "windows": [
+      "train",
+      "evaluation"
+    ],
+    "profiles": {
+      "normal": {
+        "fee_bps": 10,
+        "slippage_bps": 5
+      },
+      "stress": {
+        "fee_bps": 25,
+        "slippage_bps": 15
+      }
+    },
+    "capital_usdt": [
+      500
+    ],
+    "max_scenario_runs": 8
+  },
+  "economic_gate": {
+    "train": "candidate normal and stress net PNL >= matching baseline; candidate LOW DD <=90% of baseline in both; retain >=80% baseline winners and >=90% of baseline historical winner profit; >=1 baseline losing episode vetoed",
+    "evaluation_seen": "same frozen thresholds plus candidate stress and normal net PNL >= baseline; no automated selection on evaluation",
+    "decision": "FAIL if any gate fails; even success is exploratory only due to prior historical exposure; never change Paper or claim independent prospective OOS"
+  },
+  "outputs": [
+    "baseline parity on each 4h historical candle path against frozen reference",
+    "candidate full cash/equity simulation after first-signal-only veto",
+    "vetoed losing and winning episodes and historical winning PNL sacrificed, with caveat gross historical attribution != candidate compounded account PNL",
+    "train/evaluation normal/stress 500 USDT net PNL; Close and Low DD, fees, fills, position count",
+    "explicit no-promotion and uncertainty statement"
+  ],
+  "integrity": "Validate full OHLC digest, pinned ledger SHA, chronological 4h bar sequence, signal episode ID and baseline replay, reject partial reports and overwrite.",
+  "safety": {
+    "live": false,
+    "real_orders": 0,
+    "private_api": false,
+    "bybit_private": false,
+    "paper500_change": false,
+    "merge": false,
+    "auto_promote": false,
+    "second_try_limit": 1
+  },
+  "future_gate": "For independent proof require genuinely new post-preregistration Bybit Spot fully CLOSED episodes with authenticated 4h data; no historical data (2023-2026) counted as unseen; at least 12 fully closed positions in both arms before economic promotion may even be discussed; no auto promotion."
+}
