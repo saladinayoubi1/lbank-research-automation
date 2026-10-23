@@ -47,7 +47,7 @@ class TestFixedDayPrearmLowTelemetry(unittest.TestCase):
     def test_high_without_completed_profitable_close_never_arms(self):
         r,m=sample();m[0]["first_entry_close_marker"]=True
         r[1]=[r[1][0],"100","120","94","100.9","1"]
-        r[2]=[r[2][0],"100.9","105","89","99","1"]
+        r[2]=[r[2][0],"100.9","250","89","99","1"]
         out=compute_day(r,m)
         self.assertFalse(out["per_closed_fourhour_bar"][1]["arm_two_pct_at_this_bar_CLOSE_for_future_bars"])
         self.assertEqual(out["first_prearm_adverse_LOW_5_and_10_pct"]["10"]["age_hours_from_entry_bar_start"],4)
