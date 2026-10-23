@@ -142,6 +142,39 @@ def load_pinned_files(protocol_path,bridge_path,ws_raw_path,ws_gate_path):
     return policy,prev,closed,info
 
 
+
+def persist_trusted_pair_no_overwrite(archive_path,raw,output,report):
+    """Write one logical trusted source+proof pair, fail-closed on partial I/O.
+
+    Exclusive create ('xb') forbids replacing a file that appears while source
+    verification runs. If the second write fails, remove ONLY files created
+    by this invocation. Neither raw bytes nor report are broker/runtime data.
+    """
+    if archive_path==output:
+        raise ValueError("source_and_audit_must_be_separate_paths")
+    if archive_path.exists() or output.exists():
+        raise ValueError("refuse_overwrite_existing_raw_source_or_result")
+    archive_path.parent.mkdir(parents=True,exist_ok=True)
+    output.parent.mkdir(parents=True,exist_ok=True)
+    archive_created=False
+    output_created=False
+    try:
+        with archive_path.open("xb") as archive_handle:
+            archive_created=True
+            archive_handle.write(raw)
+        with output.open("xb") as proof_handle:
+            output_created=True
+            proof_handle.write(report.encode("utf-8"))
+    except BaseException:
+        # Never delete a pre-existing file. Exclusive-create flags are set
+        # only after this specific invocation succeeds in acquiring the path.
+        if output_created:
+            output.unlink(missing_ok=True)
+        if archive_created:
+            archive_path.unlink(missing_ok=True)
+        raise
+
+
 def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,output):
     if archive_path.exists() or output.exists():
         raise ValueError("refuse_overwrite_existing_raw_source_or_result")
@@ -209,10 +242,9 @@ def execute(protocol_path,bridge_path,ws_raw_path,ws_gate_path,archive_path,outp
         "paper_changed":False,"orders_sent":0,"live":False,"promote":False,"merge":False
     }
     result["digest"]=hashlib.sha256(canonical(result)).hexdigest()
-    archive_path.parent.mkdir(parents=True,exist_ok=True)
-    archive_path.write_bytes(raw)
-    output.parent.mkdir(parents=True,exist_ok=True)
-    output.write_text(json.dumps(result,sort_keys=True,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
+    persist_trusted_pair_no_overwrite(
+        archive_path,raw,output,
+        json.dumps(result,sort_keys=True,indent=2,ensure_ascii=False)+"\n")
     print(json.dumps({"digest":result["digest"],"archives":src,
         "price_abs":[str(x) for x in comparison["price_OHLC_abs_diff_usdt"]],
         "volume_relative":comparison["base_volume_relative_diff"],
