@@ -410,3 +410,11 @@ tests/test_nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-i
 research/mr40_prearm_forward_risk_telemetry_protocol_20261023.json text eol=lf export-ignore
 research/nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_prearm_forward_risk_telemetry_v1.py text eol=lf export-ignore
+
+# Fixed future-only ATR14x2 pre-arm protection research and old47 diagnostic are NOT Paper or live runtime code.
+research/mr40_prearm_atr14x2_forward_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_prearm_atr14x2_prospective_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_prearm_atr14x2_prospective_v1.py text eol=lf export-ignore
+research/mr40_fixed_atr14x2_seen47_diagnostic_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
