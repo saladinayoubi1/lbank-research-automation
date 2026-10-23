@@ -12,7 +12,7 @@ from unittest.mock import patch
 from research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1 import (
     DAY_BEGIN,DAY_END,FIXED_BAR_START,LAST_BRIDGE_BAR,
     pinned_protocol, reject_before_day_end, reconcile,verified_bridge,verified_raw_ws,
-    execute, canonical,
+    execute, canonical, persist_trusted_pair_no_overwrite,
 )
 
 
@@ -259,6 +259,64 @@ class TestPinnedOct22Reconcile(unittest.TestCase):
         def alter(rows):
             rows[4][5]=str(D("2951.920267")*D("1.002"))
         self.fail_closed_mismatch_fixture(alter)
+
+
+    def test_trusted_pair_exclusive_write_success(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            archive=root/"sources"/"Bybit_BTCUSDT_Spot_2026-10-22.csv.gz"
+            proof=root/"receipts"/"result.json"
+            persist_trusted_pair_no_overwrite(archive,b"synthetic_gz_bytes",proof,'{"pass":true}\n')
+            self.assertEqual(archive.read_bytes(),b"synthetic_gz_bytes")
+            self.assertEqual(proof.read_text(),'{\"pass\":true}\n')
+
+    def test_partial_second_report_write_rolls_back_both_new_files(self):
+        """Simulate disk-full AFTER exclusive report creation and partial write."""
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            archive=root/"archive.gz"
+            proof=root/"result.json"
+            original_open=Path.open
+            class BrokenReportWriter:
+                def __init__(self,underlying): self.f=underlying
+                def __enter__(self):return self
+                def write(self,data):
+                    self.f.write(data[:7])
+                    raise OSError("simulated_disk_full_during_second_write")
+                def __exit__(self,*exc):
+                    self.f.close()
+                    return False
+            def create(handle,mode="r",*args,**kwargs):
+                underlying=original_open(handle,mode,*args,**kwargs)
+                if handle==proof and mode=="xb":
+                    return BrokenReportWriter(underlying)
+                return underlying
+            with patch("pathlib.Path.open",create):
+                with self.assertRaisesRegex(OSError,"simulated_disk_full"):
+                    persist_trusted_pair_no_overwrite(
+                        archive,b"source_is_unverified_if_proof_fails",
+                        proof,'{"pass":true}\n')
+            self.assertFalse(archive.exists())
+            self.assertFalse(proof.exists())
+            # Recovery should not be blocked by a stale orphan archive.
+            persist_trusted_pair_no_overwrite(archive,b"approved",proof,'{"pass":true}\n')
+            self.assertEqual(archive.read_bytes(),b"approved")
+
+    def test_exclusive_preexisting_archive_or_report_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            src=root/"a.gz";dst=root/"proof.json"
+            src.write_bytes(b"ORIGINAL_SOURCE")
+            with self.assertRaisesRegex(ValueError,"refuse_overwrite"):
+                persist_trusted_pair_no_overwrite(src,b"new",dst,'{"pass":true}\n')
+            self.assertEqual(src.read_bytes(),b"ORIGINAL_SOURCE")
+            self.assertFalse(dst.exists())
+            src.unlink()
+            dst.write_text("EXISTING_APPROVED_REPORT")
+            with self.assertRaisesRegex(ValueError,"refuse_overwrite"):
+                persist_trusted_pair_no_overwrite(src,b"new",dst,'{"pass":true}\n')
+            self.assertFalse(src.exists())
+            self.assertEqual(dst.read_text(),"EXISTING_APPROVED_REPORT")
 
 
 if __name__=="__main__":
