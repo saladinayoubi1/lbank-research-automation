@@ -12,6 +12,7 @@ import json
 
 PROTOCOL = "research/mr40_forward_closed_trade_decision_gate_protocol_20261023.json"
 CUTOFF = datetime(2026, 10, 23, tzinfo=timezone.utc)
+ECONOMIC_EARLIEST = datetime(2026, 10, 24, tzinfo=timezone.utc)  # frozen preregistered amendment
 
 def when(x):
     if not isinstance(x, str) or not x.endswith("Z"):
@@ -62,7 +63,12 @@ def arm(name, x, start, end):
         raise ValueError("invalid_modeled_low_drawdown")
     return {"closed_positions":len(trades),"net_USDT":net,"low_DD_pct":dd}
 
-def assess(doc, protocol):
+def assess(doc, protocol, *, now_utc=None):
+    # The CLI always reads current UTC. Tests may inject a deterministic clock.
+    now_utc = datetime.now(timezone.utc) if now_utc is None else now_utc
+    if (not isinstance(now_utc, datetime) or now_utc.tzinfo is None
+        or now_utc.utcoffset().total_seconds() != 0):
+        raise ValueError("evaluation_clock_must_be_UTC")
     if protocol.get("schema") != "nexus.mr40.forward_closed_trade_decision_gate.v1":
         raise ValueError("unexpected_locked_protocol")
     if protocol.get("min_fully_closed_positions_per_arm") != 12 or protocol.get("safety",{}).get("auto_promote") is not False:
@@ -80,6 +86,10 @@ def assess(doc, protocol):
     start, end = when(doc.get("forward_start_utc")), when(doc.get("forward_end_utc"))
     if start < CUTOFF or end <= start:
         raise ValueError("forward_window_not_after_lock")
+    if start < ECONOMIC_EARLIEST:
+        raise ValueError("economic_window_predates_postday_UTC_lock")
+    if end > now_utc:
+        raise ValueError("unclosed_or_future_dated_economic_report_window")
     # Declared evidence authenticity is not independently verifiable from
     # caller-supplied JSON. NEVER convert a numeric pass to promotion.
     arms=doc.get("arms")
