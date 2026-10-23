@@ -272,9 +272,10 @@ def test_terminal_frontier_reports_blocked_without_dispatching_or_moving_cursor(
     assert text.index("Obtain only the exact certified prior multi-timeframe outcome") < text.index(
         "Verify discovery surface and select one stage"
     )
-    assert text.index("name: nexus-research-frontier-state") < text.index(
-        "Dispatch reviewed Research workflow"
-    )
+    feedback_start = text.index("Obtain only the exact certified prior multi-timeframe outcome")
+    frontier_upload_action = text.index("uses: actions/upload-artifact@v4", feedback_start)
+    frontier_upload_name = text.index("name: nexus-research-frontier-state", frontier_upload_action)
+    assert frontier_upload_name < text.index("Dispatch reviewed Research workflow")
     assert text.index("Dispatch reviewed Research workflow") < text.index(
         "Commit rotation cursor only after accepted dispatch"
     )
