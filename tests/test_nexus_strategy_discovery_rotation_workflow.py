@@ -301,3 +301,64 @@ def test_restore_and_reconciliation_require_feedback_before_any_reset():
         'rm -f "$receipt"', 1
     )[0]
     assert "--require-feedback-state" in command
+
+
+
+def test_all_strategy_stage_completions_wake_the_existing_rotation():
+    text = _text()
+    trigger = text.split("  workflow_run:", 1)[1].split("  push:", 1)[0]
+    expected = (
+        "NEXUS multi-timeframe strategy discovery",
+        "NEXUS Multi-Pair Discovery v2 physical proof",
+        "Bybit strategy search v2",
+        "Bybit portfolio search v3",
+        "Bybit long short search v4",
+        "Bybit consensus search v5",
+        "Bybit regime search v6",
+        "Bybit neighborhood validation v7",
+    )
+    for workflow_name in expected:
+        assert f'- "{workflow_name}"' in trigger
+    assert "types: [completed]" in trigger
+    assert 'cron: "37 2 * * *"' in text  # fallback remains, not the normal continuation path
+    assert '"NEXUS strategy discovery rotation"' not in trigger
+    assert '"Fast Agent Coordinator"' not in trigger
+
+
+def test_successful_main_strategy_dispatch_completion_can_continue_same_rotation():
+    text = _text()
+    dispatch = text.split("  dispatch-one-stage:", 1)[1].split("    needs:", 1)[0]
+    for required in (
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.head_repository.full_name == github.repository",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.event == 'workflow_dispatch'",
+    ):
+        assert required in dispatch
+    # Paper/Demo health triggers keep their separately verified event path.
+    assert "github.event.workflow_run.name == 'NEXUS persistent Paper trading loop'" in dispatch
+    assert "github.event.workflow_run.name == 'NEXUS Demo regime lifecycle bridge'" in dispatch
+
+
+def test_feedback_only_manual_request_stays_non_dispatching_but_exact_completion_continues():
+    text = _text()
+    env = text.split("      HEALTH_TRIGGER:", 1)[1].split("    steps:", 1)[0]
+    assert "NEXUS persistent Paper trading loop" in env
+    assert "NEXUS Demo regime lifecycle bridge" in env
+    assert "AUTO_CONTINUE:" in text
+    for required in (
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.head_repository.full_name == github.repository",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.event == 'workflow_dispatch'",
+        "github.event.workflow_run.head_sha == github.sha",
+    ):
+        assert required in text.split("      AUTO_CONTINUE:", 1)[1].split("\n", 1)[0]
+    gate = text.split("Decide daily or health-driven dispatch", 1)[1].split(
+        "Restore rotation state", 1
+    )[0]
+    assert 'if [ "$FEEDBACK_REQUESTED" = "true" ]; then' in gate
+    assert 'if [ "$AUTO_CONTINUE" = "true" ]; then' in gate
+    assert 'echo "should_dispatch=true" >> "$GITHUB_OUTPUT"' in gate
+    assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in gate
+    assert "Manual feedback-only request: no subsequent strategy dispatch." in gate
