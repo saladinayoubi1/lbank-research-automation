@@ -16,7 +16,7 @@ INPUTS={
                    "829214c448b82c8c0ac1a29980fb3fb3d03350d0060f5068e7a25cd4fc524806"),
  "prior_ratchet":("423aa9c28fbb3e23ebce62ea1e731db8922a84ee87da04f891473c9a236852bc",
                  "2a8f7d1c97b0eadb4b719ad65ddb8aa6543eb3a972c84921e6dbf3d137f22db1"),
- "overlay_failure_audit":("fc8fe0c2ab55aff7c5ad7ee1cbda3e9cb10486992423d84ffa2bbc1b104a89cdf",
+ "overlay_failure_audit":("fc8fe0c2ab55aff7c5ad7ee1cbdae9cb10486992423d84ffa2bbc1b104a89cdf",
                           "6c83165729d10b07a166ca6eb4ce8694291f7928b32764108c6a36730474c82a"),
 }
 
