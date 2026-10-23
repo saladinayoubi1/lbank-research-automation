@@ -136,6 +136,7 @@ jobs:
       AUTO_CONTINUE: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_sha == github.sha && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      REQUIRE_EXACT_RESEARCH_RECEIPT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' && github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' && 'true' || 'false' }}
       SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.feedback_source_run_id }}
       FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
     steps:
@@ -263,12 +264,30 @@ jobs:
         if: steps.health-gate.outputs.should_dispatch == 'true'
         run: |
           set -euo pipefail
-          echo "ready=true" >> "$GITHUB_OUTPUT"
           receipt="build/discovery/last-research-run.json"
           if [ ! -f "$receipt" ]; then
+            if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+              echo "No prior dispatch receipt for this strategy workflow completion; do not auto-chain a manually dispatched/untracked run."
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
           run_id="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["research_run_id"])')"
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [ "$run_id" != "$TRIGGER_RUN_ID" ]; then
+            echo "Prior dispatch receipt does not match exact triggering workflow_run; no automatic continuation."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
+            was_processed="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str("$run_id" in {str(x) for x in s["processed_run_ids"]}).lower())')"
+            if [ "$was_processed" = "true" ]; then
+              echo "Triggering research run was already reconciled; refuse duplicate auto-dispatch."
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           stage="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["stage"])')"
           experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["experiment_sha256"])')"
           gh run view "$run_id" --repo "$GITHUB_REPOSITORY"             --json databaseId,status,conclusion,headSha,workflowName             > build/discovery/research-run-status.json
@@ -302,6 +321,21 @@ jobs:
           args=()
           if [ "$artifact_unavailable" = "true" ]; then args+=(--artifact-unavailable); fi
           python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --require-feedback-state             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             "${args[@]}"             --output build/discovery/feedback-state.json
+          reconciled_run="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str(s["outcomes"][-1]["run_id"]) if s["outcomes"] else "")')"
+          outcome="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str(s["outcomes"][-1]["outcome"]) if s["outcomes"] else "")')"
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [ "$reconciled_run" != "$run_id" ]; then
+            echo "Feedback state did not append the exact triggering run; refuse automatic continuation."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            rm -f "$receipt"
+            exit 0
+          fi
+          if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ] && [[ "$outcome" == "evidence_unavailable" || "$outcome" == "requires_data" || "$outcome" == "workflow_failed" ]]; then
+            echo "Research outcome is retryable or source-incomplete ($outcome); stop the immediate chain instead of looping."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            rm -f "$receipt"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
           rm -f "$receipt"
 
       - name: Verify discovery surface and select one stage
