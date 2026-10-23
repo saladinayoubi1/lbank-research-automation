@@ -37,7 +37,7 @@ def validate_lock(old_lock,forward_bytes):
         p["stop"]["multiplier"]!="2" or
         p["fee_slip_cases"]!={"fee_only":{"side_fee":"0.001","side_slippage":"0"},
                                "stress":{"side_fee":"0.001","side_slippage":"0.001"}} or
-        any(p["safety"][k] for k in ("orders","private_api","paper_modified","live","merge","promote","no_scheduler"))
+        any(p["safety"][k] for k in ("orders","private_api","paper_modified","live","merge","promote"))
     ):
         # no_scheduler must be true, checked separately
         if p["safety"].get("no_scheduler") is not True:
