@@ -39,6 +39,43 @@ class TestMR40ForwardShadow(unittest.TestCase):
                     run(spec,root,root/"bridge.json",root,root/"out.json")
             self.assertFalse((root/"out.json").exists())
 
+    def test_oct22_independent_ws_parity_audit_required_before_any_new_archive(self):
+        """Eligible Oct23 clock still cannot bypass an unaudited Oct22 gap."""
+        with TemporaryDirectory() as folder:
+            root=Path(folder)
+            spec=root/"lock.json"
+            spec.write_text(json.dumps(P))
+            with patch("research.nexus_mr40_bybit_forward_shadow_v1.time.time",
+                       return_value=(NOT_BEFORE+3600000)/1000),patch(
+                "research.nexus_mr40_bybit_forward_shadow_v1.get_archive",
+                side_effect=AssertionError("must never fetch any public day before independent Oct22 audit")
+                ) as any_download,patch(
+                "research.nexus_mr40_bybit_forward_shadow_v1.frozen_rows",
+                side_effect=AssertionError("must not even load historical input before Oct22 proof")):
+                with self.assertRaisesRegex(ValueError,"oct22_independent_live_ws_parity_audit_required"):
+                    run(spec,root,root/"bridge.json",root,root/"out.json")
+            any_download.assert_not_called()
+            self.assertFalse((root/"out.json").exists())
+
+    def test_fake_oct22_cached_source_without_immutable_audit_blocks_forward(self):
+        with TemporaryDirectory() as folder:
+            root=Path(folder)
+            spec=root/"lock.json"
+            spec.write_text(json.dumps(P))
+            archive=root/"Bybit_BTCUSDT_Spot_2026-10-22.csv.gz"
+            archive.write_bytes(b"unverified fake Oct22 source")
+            audit=root/"proof.json"
+            with patch("research.nexus_mr40_bybit_forward_shadow_v1.time.time",
+                       return_value=(NOT_BEFORE+3600000)/1000),patch(
+                "research.nexus_mr40_bybit_forward_shadow_v1.get_archive",
+                side_effect=AssertionError("cannot fetch Oct23 before proof")) as download:
+                with self.assertRaisesRegex(ValueError,"missing_pinned_oct22_source_and_verified_audit"):
+                    run(spec,root,root/"bridge.json",root,root/"out.json",
+                        oct22_verified_audit=audit)
+            download.assert_not_called()
+            self.assertEqual(archive.read_bytes(),b"unverified fake Oct22 source")
+            self.assertFalse((root/"out.json").exists())
+
     def test_cannot_overwrite_approved_future_report(self):
         with TemporaryDirectory() as folder:
             root=Path(folder)
