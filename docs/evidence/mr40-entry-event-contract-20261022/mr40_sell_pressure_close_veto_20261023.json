@@ -1,0 +1,267 @@
+{
+  "all_baseline_oracles_pass": true,
+  "attribution": {
+    "evaluation": {
+      "normal": {
+        "avoided_loser_historical_pnl_usdt": 46.91763667,
+        "baseline_losers": 4,
+        "baseline_winners": 18,
+        "count": 22,
+        "lost_winner_historical_pnl_usdt": 100.22205495,
+        "rejected_signal_indices": [
+          4764,
+          4822,
+          5506,
+          5802,
+          5843,
+          6267,
+          7274,
+          7466,
+          7473,
+          7557,
+          8031,
+          8481
+        ],
+        "removed_losers": 2,
+        "removed_winners": 10,
+        "retained_winner_fraction": 0.4444444444444444,
+        "retained_winner_pnl_fraction": 0.420481489033509
+      },
+      "stress": {
+        "avoided_loser_historical_pnl_usdt": 50.35769467,
+        "baseline_losers": 5,
+        "baseline_winners": 17,
+        "count": 22,
+        "lost_winner_historical_pnl_usdt": 70.31497744,
+        "rejected_signal_indices": [
+          4764,
+          4822,
+          5506,
+          5802,
+          5843,
+          6267,
+          7274,
+          7466,
+          7473,
+          7557,
+          8031,
+          8481
+        ],
+        "removed_losers": 2,
+        "removed_winners": 10,
+        "retained_winner_fraction": 0.4117647058823529,
+        "retained_winner_pnl_fraction": 0.40318181901562694
+      }
+    },
+    "train": {
+      "normal": {
+        "avoided_loser_historical_pnl_usdt": 58.435966709999995,
+        "baseline_losers": 6,
+        "baseline_winners": 19,
+        "count": 25,
+        "lost_winner_historical_pnl_usdt": 15.22267095,
+        "rejected_signal_indices": [
+          420,
+          1884,
+          2684,
+          2925,
+          3363,
+          3654,
+          4498
+        ],
+        "removed_losers": 3,
+        "removed_winners": 4,
+        "retained_winner_fraction": 0.7894736842105263,
+        "retained_winner_pnl_fraction": 0.9343907190840401
+      },
+      "stress": {
+        "avoided_loser_historical_pnl_usdt": 65.66251766,
+        "baseline_losers": 8,
+        "baseline_winners": 17,
+        "count": 25,
+        "lost_winner_historical_pnl_usdt": 6.81923756,
+        "rejected_signal_indices": [
+          420,
+          1884,
+          2684,
+          2925,
+          3363,
+          3654,
+          4498
+        ],
+        "removed_losers": 5,
+        "removed_winners": 2,
+        "retained_winner_fraction": 0.8823529411764706,
+        "retained_winner_pnl_fraction": 0.9598236052874846
+      }
+    }
+  },
+  "comparisons": {
+    "evaluation": {
+      "normal": {
+        "all_pass": false,
+        "delta_low_dd_pct_points": -8.220983213427502,
+        "delta_net_pnl_usdt": -57.61211810999998,
+        "gate": {
+          "losing_episode_vetoed": true,
+          "low_dd_improved_10pct": true,
+          "profit_not_worse": false,
+          "winner_pnl_retained_90pct": false,
+          "winners_retained_80pct": false
+        }
+      },
+      "stress": {
+        "all_pass": false,
+        "delta_low_dd_pct_points": -8.157426057266626,
+        "delta_net_pnl_usdt": -21.416394019999984,
+        "gate": {
+          "losing_episode_vetoed": true,
+          "low_dd_improved_10pct": true,
+          "profit_not_worse": false,
+          "winner_pnl_retained_90pct": false,
+          "winners_retained_80pct": false
+        }
+      }
+    },
+    "train": {
+      "normal": {
+        "all_pass": false,
+        "delta_low_dd_pct_points": -13.727109891923593,
+        "delta_net_pnl_usdt": 50.63819443,
+        "gate": {
+          "losing_episode_vetoed": true,
+          "low_dd_improved_10pct": true,
+          "profit_not_worse": true,
+          "winner_pnl_retained_90pct": true,
+          "winners_retained_80pct": false
+        }
+      },
+      "stress": {
+        "all_pass": true,
+        "delta_low_dd_pct_points": -13.732980510074745,
+        "delta_net_pnl_usdt": 66.75907630999995,
+        "gate": {
+          "losing_episode_vetoed": true,
+          "low_dd_improved_10pct": true,
+          "profit_not_worse": true,
+          "winner_pnl_retained_90pct": true,
+          "winners_retained_80pct": true
+        }
+      }
+    }
+  },
+  "digest": "45f70a7c7f4d59d863c00a9073e119a757814e6742e8438a7c11518aa59387a1",
+  "economic_gate_all_pass": false,
+  "genuine_prospective_oos": false,
+  "historical_seen": true,
+  "ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "live": false,
+  "merge": false,
+  "paper_changed": false,
+  "physical_engine_scenarios": 8,
+  "precommitted_protocol_commit": "07fede6ebf888c7cc8e962b409a3e27c26fcc92c",
+  "private_api": false,
+  "promote": false,
+  "real_4h_bars": 8514,
+  "real_orders": 0,
+  "results": [
+    {
+      "case": "baseline",
+      "closed_positions": 25,
+      "fees_usdt": 28.4390287,
+      "fills": 50,
+      "max_close_drawdown_pct": 21.433969196184954,
+      "max_intrabar_low_bound_pct": 25.04524609003369,
+      "net_pnl_usdt": 151.43988372,
+      "profile": "normal",
+      "skips": 0,
+      "window": "train"
+    },
+    {
+      "case": "sell_pressure_close_veto",
+      "closed_positions": 18,
+      "fees_usdt": 20.81839009,
+      "fills": 36,
+      "max_close_drawdown_pct": 9.743005024372009,
+      "max_intrabar_low_bound_pct": 11.318136198110096,
+      "net_pnl_usdt": 202.07807815,
+      "profile": "normal",
+      "skips": 0,
+      "window": "train"
+    },
+    {
+      "case": "baseline",
+      "closed_positions": 25,
+      "fees_usdt": 66.64879278,
+      "fills": 50,
+      "max_close_drawdown_pct": 21.44277513915174,
+      "max_intrabar_low_bound_pct": 25.05553569186334,
+      "net_pnl_usdt": 74.91102448000004,
+      "profile": "stress",
+      "skips": 0,
+      "window": "train"
+    },
+    {
+      "case": "sell_pressure_close_veto",
+      "closed_positions": 18,
+      "fees_usdt": 49.65302344,
+      "fills": 36,
+      "max_close_drawdown_pct": 9.746809023495961,
+      "max_intrabar_low_bound_pct": 11.322555181788596,
+      "net_pnl_usdt": 141.67010079,
+      "profile": "stress",
+      "skips": 0,
+      "window": "train"
+    },
+    {
+      "case": "baseline",
+      "closed_positions": 22,
+      "fees_usdt": 24.055342,
+      "fills": 44,
+      "max_close_drawdown_pct": 13.237408786319593,
+      "max_intrabar_low_bound_pct": 14.759675475235445,
+      "net_pnl_usdt": 102.38238679999995,
+      "profile": "normal",
+      "skips": 0,
+      "window": "evaluation"
+    },
+    {
+      "case": "sell_pressure_close_veto",
+      "closed_positions": 10,
+      "fees_usdt": 10.34868228,
+      "fills": 20,
+      "max_close_drawdown_pct": 6.065918544261162,
+      "max_intrabar_low_bound_pct": 6.5386922618079435,
+      "net_pnl_usdt": 44.770268689999966,
+      "profile": "normal",
+      "skips": 0,
+      "window": "evaluation"
+    },
+    {
+      "case": "baseline",
+      "closed_positions": 22,
+      "fees_usdt": 56.89253175,
+      "fills": 44,
+      "max_close_drawdown_pct": 14.541314455990372,
+      "max_intrabar_low_bound_pct": 15.625670358403099,
+      "net_pnl_usdt": 39.643103999999994,
+      "profile": "stress",
+      "skips": 0,
+      "window": "evaluation"
+    },
+    {
+      "case": "sell_pressure_close_veto",
+      "closed_positions": 10,
+      "fees_usdt": 25.23442298,
+      "fills": 20,
+      "max_close_drawdown_pct": 7.000057299203711,
+      "max_intrabar_low_bound_pct": 7.4682443011364725,
+      "net_pnl_usdt": 18.22670998000001,
+      "profile": "stress",
+      "skips": 0,
+      "window": "evaluation"
+    }
+  ],
+  "schema": "nexus.mr40.sell_pressure_close_veto.result.v1",
+  "source_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a"
+}
