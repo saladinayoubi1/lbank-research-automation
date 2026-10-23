@@ -404,3 +404,13 @@ def test_event_driven_rotation_requires_exact_receipt_and_stops_on_retryable_out
     )[0]
     assert "steps.frontier-selection.outputs.recovery_allowed == 'true'" in recovery_step
     assert "steps.frontier-selection.outputs.ready == 'false'" not in recovery_step
+
+
+
+def test_new_frontier_design_requires_exact_reconciled_run_or_manual_feedback_only():
+    text = _text()
+    source = text.split("Obtain only the exact certified prior multi-timeframe outcome", 1)[1].split(
+        "Restore integrity-bound prior independent research frontier", 1
+    )[0]
+    assert "steps.health-gate.outputs.should_feedback == 'true'" in source
+    assert "github.event_name != 'workflow_run' || steps.outcome.outputs.ready == 'true'" in source
