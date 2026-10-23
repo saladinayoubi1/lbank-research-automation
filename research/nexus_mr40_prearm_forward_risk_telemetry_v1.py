@@ -138,7 +138,8 @@ def compute_day(rows,markers):
         raise ValueError("six_day_bars_required")
     quote=Q0;btc=D(0);entry_px=None;entry_before=None
     pending=None;armed=False;held_bars=0;closed=0
-    hist_peak=Q0;max_low_dd=D(0);max_adverse=D(0)
+    hist_peak=Q0;high_first_peak=Q0
+    max_low_dd=D(0);max_adversarial_samebar_dd=D(0);max_adverse=D(0)
     pending_breaches={str(t):None for t in LIMITS}
     day=[]
     for j,(bar,mark) in enumerate(zip(rows,markers)):
@@ -157,6 +158,10 @@ def compute_day(rows,markers):
             action="NATURAL_EXIT_NEXT_OPEN_REFERENCE_ONLY"
             closed+=1;entry_px=None;entry_before=None;armed=False
             hist_peak=max(hist_peak,quote)
+            high_first_peak=max(high_first_peak,quote)
+            max_low_dd=max(max_low_dd,drawdown_pct(hist_peak,quote))
+            max_adversarial_samebar_dd=max(
+                max_adversarial_samebar_dd,drawdown_pct(high_first_peak,quote))
         elif pending=="entry":
             if btc!=0 or entry_px is not None:raise ValueError("duplicate_entry")
             entry_before=quote;btc=quote*(D(1)-FEE)/op
@@ -171,7 +176,15 @@ def compute_day(rows,markers):
             max_adverse=max(max_adverse,adverse)
             low_quote_equity=btc*low*(D(1)-FEE)
             close_liquidation_equity=btc*cl*(D(1)-FEE)
+            high_quote_equity=btc*high*(D(1)-FEE)
+            # Prior completed-candle HIGH is known to precede the current
+            # candle's LOW; same-bar HIGH/LOW order remains unknowable.
             max_low_dd=max(max_low_dd,drawdown_pct(hist_peak,low_quote_equity))
+            high_first_peak=max(high_first_peak,high_quote_equity)
+            max_adversarial_samebar_dd=max(
+                max_adversarial_samebar_dd,
+                drawdown_pct(high_first_peak,low_quote_equity))
+            hist_peak=max(hist_peak,high_quote_equity)
             # An adverse LOW during a candle that arms only at its CLOSE is
             # still strictly PRE-arm: the low is before the close.
             if not start_armed:
@@ -224,7 +237,8 @@ def compute_day(rows,markers):
         "an_open_position_at_day_end":btc>0,
         "entry_or_exit_next_open_outside_day_unresolved":pending,
         "fixed_day_max_held_bar_adverse_price_MAE_pct":str(max_adverse) if any(x["reference_open_long_during_bar"] for x in day) else None,
-        "fixed_day_OHLC_low_prior_equity_peak_drawdown_observed_pct":str(max_low_dd) if any(x["reference_open_long_during_bar"] for x in day) else None,
+        "fixed_day_OHLC_prior_high_to_current_low_minimum_drawdown_pct":str(max_low_dd) if any(x["reference_open_long_during_bar"] for x in day) else None,
+        "fixed_day_adversarial_same_bar_high_before_low_drawdown_upper_pct":str(max_adversarial_samebar_dd) if any(x["reference_open_long_during_bar"] for x in day) else None,
         "first_prearm_adverse_LOW_5_and_10_pct":pending_breaches,
         "reference_prices_are_not_executable_fills":True,
         "no_profit_protection_order_created":True,
@@ -259,7 +273,7 @@ def run(protocol,shadow,oct22,archive,output,now_ms=None):
     print(json.dumps({"digest":doc["digest"],
         "closed_positions":x["natural_exit_completed_positions_with_both_next_open_proxies"],
         "reference_realized_net_PnL":x["realized_net_PnL_only_for_completed_positions_usdt"],
-        "historical_bar_low_drawdown_pct":x["fixed_day_OHLC_low_prior_equity_peak_drawdown_observed_pct"],
+        "historical_low_drawdown_lower_bound_pct":x["fixed_day_OHLC_prior_high_to_current_low_minimum_drawdown_pct"],
         "incomplete":x["an_open_position_at_day_end"],
         "signals_not_fills":True},ensure_ascii=False))
 
