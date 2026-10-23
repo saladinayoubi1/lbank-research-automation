@@ -1,0 +1,35 @@
+{
+  "schema": "nexus.mr40.signal_time_regime_matrix.protocol.v1",
+  "locked_day_utc": "2026-10-23",
+  "objective": "Extend the already SHA-validated 47-position cross-evidence matrix with fixed PRE-ENTRY market-regime measurements visible at the fully closed 4h MR40 signal; no new trading filters or strategy candidate.",
+  "historical_seen_only": true,
+  "market": "Bybit BTCUSDT Spot 4h no leverage",
+  "source_digest": {
+    "canonical_8514_ohlcv_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "cross_evidence_47_full_report_sha256": "f59266ab01e373c761c2d03f187d739a0d77e9297ecabe65f8a248c0e0f13dd9",
+    "cross_evidence_47_full_report_logical_digest": "25e03b6d098bb2205533be3c20d69721b37fae931a57e5be691ee5db393927c4"
+  },
+  "feature_contract": {
+    "signal_index": "At fully CLOSED signal 4h candle j, all features may use rows <= j; neither next open nor future price/exit labels affect any predictor.",
+    "return_10_closed_bars_pct": "100*(close[j]/close[j-10] - 1)",
+    "return_40_closed_bars_pct": "100*(close[j]/close[j-40] - 1)",
+    "return_180_closed_bars_pct": "100*(close[j]/close[j-180] - 1), same nonnegative condition used by Momentum30",
+    "ATR14_pct": "100*mean over 14 fully closed bars ending at j of max(high-low, abs(high-prev_close), abs(low-prev_close))/close[j]; no alternative ATR smoothing",
+    "signal_4h_range_pct": "100*(high[j]-low[j])/close[j]",
+    "signal_close_location_in_range": "(close[j]-low[j])/(high[j]-low[j]); null if high=low",
+    "MR40_zscore": "Computed from 40 closes strictly BEFORE j with population std, observed close at j"
+  },
+  "join_contract": "Cross-evidence row signal_index j must equal exact original 4h next-open time rows[j+1][0] and each entry UTC. Only 47 unique historical episodes, 25 train and 22 evaluation; trend/ATR generated without passing PnL or winner labels to feature function.",
+  "validation": "Fail if canonical original SHA, cross report SHA/digest, row count, 4h time, index, labels or windows drift. Separate shadow read-only from Paper. Write report exclusively, no clobber on failure.",
+  "output": "Per-trade continuous metrics + per-window medians of winners/losers, no optimized cutoffs or p-value fishing. Historical 47 cannot establish OOS, causal loss mechanism, expected future edge or stop fills.",
+  "safety": {
+    "orders": 0,
+    "private_api": false,
+    "live": false,
+    "paper_modified": false,
+    "merge": false,
+    "promote": false,
+    "scheduler": false,
+    "no_candidate_entry_filter": true
+  }
+}
