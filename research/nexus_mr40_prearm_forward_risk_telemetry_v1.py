@@ -346,6 +346,33 @@ def compute_day(rows,markers):
         "per_closed_fourhour_bar":day
     }
 
+
+def write_risk_receipt_exclusively_or_cleanup(output,document):
+    """Refuse to clobber existing evidence, clean up this attempt on I/O error.
+
+    A missing full-day source or failed independent MR40 signal replay must
+    reject BEFORE calling this writer. This best-effort cleanup is for
+    synchronous I/O failures only; OS crash/power-loss needs manual recovery.
+    """
+    if output.exists():
+        raise ValueError("never_overwrite_prospective_risk_telemetry")
+    content=json.dumps(document,ensure_ascii=False,sort_keys=True,indent=2)+"\n"
+    output.parent.mkdir(parents=True,exist_ok=True)
+    created=False
+    try:
+        with output.open("x",encoding="utf8") as writer:
+            created=True
+            writer.write(content)
+    except BaseException:
+        # Never remove a file written by a previous run; the flag is set
+        # only after exclusive creation succeeds for this invocation.
+        if created:
+            try:
+                output.unlink()
+            except OSError:
+                pass  # still rethrow the original I/O error; manual review
+        raise
+
 def run(protocol,shadow,oct22,archive,output,now_ms=None,
         original_dir=None,bridge_file=None,oct22_source_report=None):
     if output.exists():raise ValueError("never_overwrite_prospective_risk_telemetry")
@@ -372,9 +399,7 @@ def run(protocol,shadow,oct22,archive,output,now_ms=None,
       "live":False,"promote":False,"merge":False
     }
     doc["digest"]=hashlib.sha256(canon(doc)).hexdigest()
-    output.parent.mkdir(parents=True,exist_ok=True)
-    with output.open("x",encoding="utf8") as f:
-        f.write(json.dumps(doc,ensure_ascii=False,sort_keys=True,indent=2)+"\n")
+    write_risk_receipt_exclusively_or_cleanup(output,doc)
     print(json.dumps({"digest":doc["digest"],
         "closed_positions":x["natural_exit_completed_positions_with_both_next_open_proxies"],
         "reference_realized_net_PnL":x["realized_net_PnL_only_for_completed_positions_usdt"],
