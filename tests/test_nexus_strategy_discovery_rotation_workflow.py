@@ -380,7 +380,12 @@ def test_event_driven_rotation_requires_exact_receipt_and_stops_on_retryable_out
     assert "was_processed=" in reconcile
     assert "Triggering research run was already reconciled" in reconcile
     assert "reconciled_run=" in reconcile
-    assert '"evidence_unavailable"' in reconcile
-    assert '"requires_data"' in reconcile
-    assert "stop the immediate chain instead of looping" in reconcile
     assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in reconcile
+
+    selection = text.split("Verify discovery surface and select one stage", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert '"workflow_failed", "evidence_unavailable", "requires_data"' in selection
+    assert 'last.get("stage") == plan.get("stage")' in selection
+    assert "stop rather than create an event loop" in selection
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in selection
