@@ -362,3 +362,25 @@ def test_feedback_only_manual_request_stays_non_dispatching_but_exact_completion
     assert 'echo "should_dispatch=true" >> "$GITHUB_OUTPUT"' in gate
     assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in gate
     assert "Manual feedback-only request: no subsequent strategy dispatch." in gate
+
+
+
+def test_event_driven_rotation_requires_exact_receipt_and_stops_on_retryable_outcomes():
+    text = _text()
+    env = text.split("      REQUIRE_EXACT_RESEARCH_RECEIPT:", 1)[1].split("\n", 1)[0]
+    assert "github.event_name == 'workflow_run'" in env
+    assert "NEXUS persistent Paper trading loop" in env
+    assert "NEXUS Demo regime lifecycle bridge" in env
+
+    reconcile = text.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert "No prior dispatch receipt for this strategy workflow completion" in reconcile
+    assert '"$run_id" != "$TRIGGER_RUN_ID"' in reconcile
+    assert "was_processed=" in reconcile
+    assert "Triggering research run was already reconciled" in reconcile
+    assert "reconciled_run=" in reconcile
+    assert '"evidence_unavailable"' in reconcile
+    assert '"requires_data"' in reconcile
+    assert "stop the immediate chain instead of looping" in reconcile
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in reconcile
