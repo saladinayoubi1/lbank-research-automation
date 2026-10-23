@@ -2,7 +2,14 @@ name: Fast Agent Coordinator
 
 on:
   workflow_dispatch:
+  workflow_run:
+    # Wake the existing coordinator as soon as one bounded task completes.
+    # The job gate below restricts this to exact-main runs in this repository.
+    workflows:
+      - "NEXUS Runtime Worker"
+    types: [completed]
   schedule:
+    # Five-minute cadence remains only a missed-event/recovery fallback.
     - cron: '*/5 * * * *'
   push:
     branches: [main]
@@ -17,6 +24,11 @@ concurrency:
 
 jobs:
   inspect-and-recover:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.name == 'NEXUS Runtime Worker' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
