@@ -1,0 +1,34 @@
+{
+  "schema": "nexus.mr40.cross_evidence_47_entry_diagnosis.protocol.v1",
+  "preregistered_utc": "2026-10-23",
+  "purpose": "Join pre-existing, SHA-pinned entry structure, relative volume, adverse intraposition path and unarmed losing episodes into a single historical diagnostic table; no new candidate, threshold, retraining, or counterfactual PnL.",
+  "market": "Bybit BTCUSDT Spot 4h",
+  "seen_sample": {
+    "train": 25,
+    "evaluation": 22,
+    "total": 47,
+    "oos": false
+  },
+  "input_files": {
+    "structure_break_audit.json": "afc1e196eff8f8bcea3d96776b96ecda5f255f9eae98f968a61bd3c509aad273",
+    "entry_volume_audit.json": "6046861903f90c7943d06ccd55badff763a0ab7ead960a302bc05530830998fc",
+    "mr40_all47_adverse_event_timing_20261022.json": "a751184655ab27e6381274cd07a48d3ebea8589a8527c1407d804f04f3ce8da1",
+    "mr40_unarmed_adverse_risk_source_join_20261023.json": "b1bbf7693e4e97a2f85b562254c4e645ac1ce078a3ae41b9276c2ab8a775ca76"
+  },
+  "join": "match windows=train/evaluation; structure entry_utc_ms == volume entry_ms == UTC ms of adverse entry_open_utc; signal_index == adverse entry_signal_index; only 47 unique episodes; PnL and label exact between structure and volume; unarmed source IDs must belong to baseline losing episodes",
+  "outputs": [
+    "47-row SHA-attested descriptive audit with per-position structural flag, continuous volume and signed volume, historical price MAE, first 5% low-breach band, realized PnL as AFTER-THE-FACT label",
+    "train/evaluation winner/loser joint counts and adverse-price MAE distribution, and retrospective overlap of flagged entries with unarmed losers; do not calculate or market as filtered profit or causality",
+    "failure gate on any hash, ID, timestamp, signal, or PnL discrepancy"
+  ],
+  "safety": {
+    "orders": 0,
+    "live": false,
+    "paper_modified": false,
+    "private_api": false,
+    "promote": false,
+    "merge": false,
+    "automations": false,
+    "never_sweep_existing_stop_sizing_RR": true
+  }
+}
