@@ -1,0 +1,54 @@
+{
+  "schema": "nexus.mr40.oct23_future_risk_receipt_IO_rollback_technical_gate.v1",
+  "observed_at_utc": "2026-10-23T12:08:47.8976952Z",
+  "research_device": "DESKTOP-F4SA4VL",
+  "fixed_market_day_utc": "2026-10-23",
+  "read_only_study": true,
+  "old_failure_mode": "Successful independent Spot OHLC and MR40 signal validation followed by a simulated synchronous disk-full during risk-report JSON write left an orphan incomplete report that blocked safe retry.",
+  "implementation": "research/nexus_mr40_prearm_forward_risk_telemetry_v1.py",
+  "test": "tests/test_nexus_mr40_prearm_forward_risk_telemetry_v1.py",
+  "changes": {
+    "report_writer": "exclusive create in x mode; refuse preexisting output",
+    "on_write_error": "best effort cleanup of only this attempt's newly created incomplete JSON",
+    "preserve_previous_output": true,
+    "no_change_to_signal_or_future_protocol": true,
+    "does_not_guarantee_crash_or_power_loss_atomicity": true
+  },
+  "verification": {
+    "actual_laptop_suites": [
+      {
+        "pattern": "test_nexus_mr40_prearm_forward_risk_telemetry_v1.py",
+        "passed": 18,
+        "failed": 0
+      },
+      {
+        "pattern": "test_nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py",
+        "passed": 7,
+        "failed": 0
+      }
+    ],
+    "total_passed": 25,
+    "total_failed": 0,
+    "injected_IO_failure_case": "partial report write throws OSError after 15 characters, new partial output removed, second corrected write succeeds",
+    "existing_output_never_clobbered": true,
+    "actual_oct23_market_source_consumed": false
+  },
+  "source_gate": {
+    "UTC_check": "2026-10-23T12:05:41.2394037Z",
+    "official_public_Bybit_BTCUSDT_Spot_Oct23_archive_status": 404,
+    "archive_day_not_complete": true,
+    "expected_earliest_acceptance_utc": "2026-10-24T00:00:00Z",
+    "oct23_archive_file_present": false,
+    "oct23_shadow_output_present": false,
+    "oct23_risk_output_present": false
+  },
+  "safety": {
+    "orders": 0,
+    "paper_500_usdt_unchanged": true,
+    "live": false,
+    "private_api": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true
+  }
+}
