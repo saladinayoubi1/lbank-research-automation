@@ -1,0 +1,100 @@
+{
+  "schema": "nexus.mr40.optuna_split_real_candle_verified.v1",
+  "date": "2026-10-23",
+  "branch": "research/mr40-external-optimizer-candle-smoke-20261023",
+  "source_head": "dcb731ba5e7e1f533ebbf022550eece661694e87",
+  "machine": "DESKTOP-F4SA4VL",
+  "engine": "research.nexus_mr40_one_combination_ablation_v1.scenario",
+  "optuna": "4.8.0 GridSampler(seed=19); study.optimize() in isolated Python",
+  "note": "Four real physical Windows TRAIN candle simulator outputs supplied to Optuna; selected case then two separate EVALUATION runs on physical Windows. No Optuna installed in NEXUS runtime.",
+  "ohlc_bars": 8514,
+  "ohlc_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "baseline_ledger_digest": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "archived_result_digest": "1bfaeae121e9fbe503ea3f4f62b0748ab8321107b726bf63325295df9b415201",
+  "capital_usdt": 500,
+  "fees_slippage_bps": {
+    "fee": 25,
+    "adverse_slippage": 15
+  },
+  "lag_bars": 1,
+  "training_period": [
+    "2023-01-01",
+    "2025-01-01"
+  ],
+  "evaluation_period": [
+    "2025-01-01",
+    "2026-10-20"
+  ],
+  "objective": "train stress net_pnl_usdt / max(intrabar-low-dd-pct,1)",
+  "trials": [
+    {
+      "case": "baseline",
+      "score": 2.9897993561689034,
+      "pnl_usdt": 74.91102448000004,
+      "low_dd_pct": 25.05553569186334,
+      "closed_positions": 25,
+      "parity": true
+    },
+    {
+      "case": "vol40_stop4_arm2",
+      "score": 3.128664207829508,
+      "pnl_usdt": 28.078281909999987,
+      "low_dd_pct": 8.974527160739676,
+      "closed_positions": 25,
+      "parity": true
+    },
+    {
+      "case": "stop4_arm2_only",
+      "score": 1.6788372879747102,
+      "pnl_usdt": 20.244950829999993,
+      "low_dd_pct": 12.058911828449315,
+      "closed_positions": 25,
+      "parity": true
+    },
+    {
+      "case": "vol40_only",
+      "score": 3.2961513658406685,
+      "pnl_usdt": 69.12801416000002,
+      "low_dd_pct": 20.97234213100806,
+      "closed_positions": 25,
+      "parity": true
+    }
+  ],
+  "all_optuna_trials_complete": true,
+  "selected": "vol40_only",
+  "evaluation": {
+    "baseline": {
+      "pnl_usdt": 39.643103999999994,
+      "low_dd_pct": 15.625670358403099,
+      "closed_positions": 22,
+      "parity": true
+    },
+    "selected": {
+      "pnl_usdt": 31.55918128999997,
+      "low_dd_pct": 15.60607660822788,
+      "closed_positions": 22,
+      "parity": true
+    },
+    "pnl_difference_usdt": -8.083922710000024,
+    "pnl_difference_percent": -20.391750000000005,
+    "low_dd_delta_pp": -0.0195937485752187,
+    "noninferior": false
+  },
+  "evaluation_done_after_training": true,
+  "candle_calls": 6,
+  "all_parity_verified": true,
+  "history_already_seen": true,
+  "genuine_prospective_oos": false,
+  "adopt": false,
+  "paper_promotion": false,
+  "live": false,
+  "real_orders": 0,
+  "private_api": false,
+  "paper_500_changed": false,
+  "limitations": [
+    "Separate Optuna runtime; not a Windows-installed Optuna dependency.",
+    "Results on previously seen historical windows; cannot prove edge.",
+    "Bar-based stop fills are simulated, not broker-verified.",
+    "No PR merge or Paper promotion."
+  ]
+}
