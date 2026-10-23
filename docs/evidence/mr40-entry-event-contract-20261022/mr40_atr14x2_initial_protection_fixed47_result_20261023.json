@@ -1,0 +1,92 @@
+{
+  "baseline_matches_original_47_fee_only_equity": true,
+  "candidate_passes_both_profit_and_drawdown": false,
+  "fixed_diagnostic_protocol_sha256": "cfaaf13db1486ce70b8a4a4b98d953d0a39202aa767992f0e066ba4d17352428",
+  "limitations": [
+    "same seen historical 47 positions, not blind forward",
+    "OHLC LOW touch stop is not actual exchange fill",
+    "HIGH before LOW worst-case modeled mark-to-market path is not verified intra-bar sequence",
+    "all cash figures simulated, not Laptop2 500 USDT Bybit Paper account"
+  ],
+  "live": false,
+  "market_source_SHA256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "merge": false,
+  "not_recommended_for_deployment": true,
+  "orders": 0,
+  "original_47_ledger_SHA256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "original_full_file_sha256": "704613423d8d301864607238122c6755a8ba2972e5d365097779459596b300fc",
+  "original_full_logical_digest": "b8b37328105debe9a53957951a7b1570e52412c24c8d749d74692f3ad7574504",
+  "paper_modified": false,
+  "parent_forward_protocol_sha256": "e26ae98b1e2a32aed6ddfdf4abb9aef303a3ff71ac1e9766e3a99f620caf282b",
+  "promote": false,
+  "research_only_not_forward_OOS": true,
+  "results": {
+    "all47_chronological": {
+      "fee_only": {
+        "DD_delta_percentage_points_candidate_minus_base": "-3.05026361272305673753392531",
+        "baseline_end_500USDT": "822.7437089338675974755875107",
+        "baseline_intraposition_model_dd_pct": "25.41746891798068870740313932",
+        "candidate_end_500USDT": "495.7176407518206119291606671",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "22.36720530525763196986921401",
+        "candidate_stop_events": 21,
+        "end_delta_candidate_minus_base": "-327.0260681820469855464268436"
+      },
+      "stress": {
+        "DD_delta_percentage_points_candidate_minus_base": "0.14279130999994338604319563",
+        "baseline_end_500USDT": "748.9293925180658106645896526",
+        "baseline_intraposition_model_dd_pct": "25.41746891798068870740313933",
+        "candidate_end_500USDT": "451.2432091760808501638075214",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "25.56026022798063209344633496",
+        "candidate_stop_events": 21,
+        "end_delta_candidate_minus_base": "-297.6861833419849605007821312"
+      }
+    },
+    "evaluation_22": {
+      "fee_only": {
+        "DD_delta_percentage_points_candidate_minus_base": "-5.084776512963041365352964089",
+        "baseline_end_500USDT": "615.8324552412765121216687308",
+        "baseline_intraposition_model_dd_pct": "14.69870290015805833282215010",
+        "candidate_end_500USDT": "543.5600983203424894856956485",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "9.613926387195016967469186011",
+        "candidate_stop_events": 8,
+        "end_delta_candidate_minus_base": "-72.2723569209340226359730823"
+      },
+      "stress": {
+        "DD_delta_percentage_points_candidate_minus_base": "-4.21203468291872152733221155",
+        "baseline_end_500USDT": "589.3232965400688466628548183",
+        "baseline_intraposition_model_dd_pct": "15.03922670043307578955992919",
+        "candidate_end_500USDT": "520.1619795830430972857244755",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "10.82719201751435426222771764",
+        "candidate_stop_events": 8,
+        "end_delta_candidate_minus_base": "-69.1613169570257493771303428"
+      }
+    },
+    "train_25": {
+      "fee_only": {
+        "DD_delta_percentage_points_candidate_minus_base": "-4.73613347001406191759173311",
+        "baseline_end_500USDT": "667.9931383378661720555569779",
+        "baseline_intraposition_model_dd_pct": "25.41746891798068870740313932",
+        "candidate_end_500USDT": "455.9915658669942188623765445",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "20.68133544796662678981140621",
+        "candidate_stop_events": 13,
+        "end_delta_candidate_minus_base": "-212.0015724708719531931804334"
+      },
+      "stress": {
+        "DD_delta_percentage_points_candidate_minus_base": "-3.63340888194257369308849691",
+        "baseline_end_500USDT": "635.4147179613025368172972849",
+        "baseline_intraposition_model_dd_pct": "25.41746891798068870740313933",
+        "candidate_end_500USDT": "433.7525875476261462440307399",
+        "candidate_gap_events": 0,
+        "candidate_intraposition_model_dd_pct": "21.78406003603811501431464242",
+        "candidate_stop_events": 13,
+        "end_delta_candidate_minus_base": "-201.6621304136763905732665450"
+      }
+    }
+  },
+  "schema": "nexus.mr40.fixed_atr14x2_seen47_readonly_economic_smoke_compact_evidence.v1"
+}
