@@ -3,12 +3,7 @@
   "preregistered_utc": "2026-10-23",
   "purpose": "Join pre-existing, SHA-pinned entry structure, relative volume, adverse intraposition path and unarmed losing episodes into a single historical diagnostic table; no new candidate, threshold, retraining, or counterfactual PnL.",
   "market": "Bybit BTCUSDT Spot 4h",
-  "seen_sample": {
-    "train": 25,
-    "evaluation": 22,
-    "total": 47,
-    "oos": false
-  },
+  "seen_sample": {"train": 25, "evaluation": 22, "total": 47, "oos": false},
   "input_files": {
     "structure_break_audit.json": "afc1e196eff8f8bcea3d96776b96ecda5f255f9eae98f968a61bd3c509aad273",
     "entry_volume_audit.json": "6046861903f90c7943d06ccd55badff763a0ab7ead960a302bc05530830998fc",
@@ -21,14 +16,5 @@
     "train/evaluation winner/loser joint counts and adverse-price MAE distribution, and retrospective overlap of flagged entries with unarmed losers; do not calculate or market as filtered profit or causality",
     "failure gate on any hash, ID, timestamp, signal, or PnL discrepancy"
   ],
-  "safety": {
-    "orders": 0,
-    "live": false,
-    "paper_modified": false,
-    "private_api": false,
-    "promote": false,
-    "merge": false,
-    "automations": false,
-    "never_sweep_existing_stop_sizing_RR": true
-  }
+  "safety": {"orders": 0, "live": false, "paper_modified": false, "private_api": false, "promote": false, "merge": false, "automations": false, "never_sweep_existing_stop_sizing_RR": true}
 }
