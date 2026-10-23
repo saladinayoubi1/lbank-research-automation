@@ -400,3 +400,8 @@ tests/test_nexus_mr40_existing_stop_overlay_failure_audit_v1.py text eol=lf expo
 # Immutable legacy pre-profit-arm adverse price event audit, never deployed to trading runtime.
 research/nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_unarmed_adverse_risk_timing_join_v1.py text eol=lf export-ignore
+
+# Archive-confirmed Oct22 retrospective six-bar MR40 signal audit; no runtime or Paper export.
+research/mr40_authenticated_oct22_historical_closed_signal_state_protocol_20261023.json text eol=lf export-ignore
+research/nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_oct22_verified_spot_close_state_v1.py text eol=lf export-ignore
