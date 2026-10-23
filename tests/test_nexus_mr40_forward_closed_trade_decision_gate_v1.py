@@ -2,7 +2,12 @@
 import copy
 from datetime import datetime, timedelta, timezone
 from unittest import TestCase, main
-from research.nexus_mr40_forward_closed_trade_decision_gate_v1 import assess, when, finite
+from research.nexus_mr40_forward_closed_trade_decision_gate_v1 import assess as actual_assess, when, finite
+
+
+def assess(doc, protocol):
+    # Synthetic test world ends after all fabricated dates; CLI cannot inject time.
+    return actual_assess(doc, protocol, now_utc=datetime(2026, 12, 31, tzinfo=timezone.utc))
 
 PROTO={
   "schema":"nexus.mr40.forward_closed_trade_decision_gate.v1",
@@ -49,6 +54,20 @@ class ProspectiveNumericGateTests(TestCase):
         self.assertFalse(z["paper_or_live_promotion_authorized"])
         self.assertFalse(z["economic_edge_verified"])
         self.assertFalse(z["authentic_market_source_verified"])
+
+    def test_future_dated_claim_rejected_in_real_utc(self):
+        with self.assertRaisesRegex(ValueError, "unclosed_or_future_dated_economic_report_window"):
+            actual_assess(sample(), PROTO, now_utc=datetime(2026, 10, 23, 13, tzinfo=timezone.utc))
+
+    def test_oct23_economic_sample_before_postday_policy_refused(self):
+        x = sample()
+        x["forward_start_utc"] = "2026-10-23T15:00:00Z"
+        with self.assertRaisesRegex(ValueError, "economic_window_predates_postday_UTC_lock"):
+            assess(x, PROTO)
+
+    def test_wrong_evaluation_clock_timezone_rejected(self):
+        with self.assertRaisesRegex(ValueError, "evaluation_clock_must_be_UTC"):
+            actual_assess(sample(), PROTO, now_utc=datetime(2026, 12, 31))
 
     def test_11_positions_rejected(self):
         x=sample(11)
