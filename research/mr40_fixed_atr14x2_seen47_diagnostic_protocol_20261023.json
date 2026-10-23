@@ -4,7 +4,7 @@
   "purpose": "One fixed retrospective check on the already-seen 47 Bybit Spot 4h MR40 pairs to catch broken net-PNL, stop-touch or floating equity geometry BEFORE any genuinely future forward-day assessment; it must NOT be used to choose the 2x multiple or promote a stop.",
   "preregistered_parent_future_protocol_sha256": "e26ae98b1e2a32aed6ddfdf4abb9aef303a3ff71ac1e9766e3a99f620caf282b",
   "immutable_seen_8514_market_digest": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
-  "immutable_47_position_ledger_file_sha256": "2c7115bac4ae81cc5c21b9fc96319d5bee79baa746074c92c998125a834331e",
+  "immutable_47_position_ledger_file_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
   "scope": {
     "pairs": 47,
     "train": 25,
@@ -52,5 +52,6 @@
     "merge": false,
     "promote": false,
     "no_scheduler": true
-  }
+  },
+  "source_identity_typo_correction": "Added omitted hex 'b' in historical Ledger SHA identity BEFORE any economic evaluation. All ATR, fee/slippage, calendar, trade entry/exit and stop parameters untouched."
 }
