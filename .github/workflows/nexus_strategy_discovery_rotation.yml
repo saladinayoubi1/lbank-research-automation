@@ -124,6 +124,7 @@ jobs:
           github.event.workflow_run.conclusion == 'success') ||
          (github.event.workflow_run.name != 'NEXUS persistent Paper trading loop' &&
           github.event.workflow_run.name != 'NEXUS Demo regime lifecycle bridge' &&
+          github.event.workflow_run.conclusion == 'success' &&
           github.event.workflow_run.event == 'workflow_dispatch')
        )) ||
       ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
