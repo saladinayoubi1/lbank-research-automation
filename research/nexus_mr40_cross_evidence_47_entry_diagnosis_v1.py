@@ -213,14 +213,17 @@ def main():
     dest = args.root / "results" / OUTPUT
     if dest.exists():
         raise FileExistsError("refuse_overwrite_existing_diagnostic")
+    created = False
     try:
         with dest.open("xb") as handle:
+            created = True
             handle.write(json.dumps(output, sort_keys=True, indent=2,
                                     ensure_ascii=False, allow_nan=False).encode("utf-8"))
             handle.write(b"\n")
     except OSError:
-        # Do not pretend this is crash-atomic; never delete preexisting files.
-        if dest.exists():
+        # Delete only our own newly-created incomplete file, never one from
+        # another writer; power-loss atomicity is not guaranteed.
+        if created and dest.exists():
             dest.unlink()
         raise
     print(json.dumps({
