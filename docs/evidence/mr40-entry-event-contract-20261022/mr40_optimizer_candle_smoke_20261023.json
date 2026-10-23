@@ -1,0 +1,51 @@
+{
+  "adopt_optimizer": false,
+  "baseline_ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "candle_engine_scenario_runs": 16,
+  "cases": [
+    "baseline",
+    "vol40_only",
+    "stop4_arm2_only",
+    "vol40_stop4_arm2"
+  ],
+  "evaluation_noninferiority_passed": false,
+  "evaluation_stress_baseline": {
+    "case": "baseline",
+    "close_drawdown_pct": 14.541314455990372,
+    "closed_positions": 22,
+    "low_drawdown_pct": 15.625670358403099,
+    "net_pnl_usdt": 39.643103999999994,
+    "profile": "stress",
+    "window": "evaluation"
+  },
+  "evaluation_stress_selected": {
+    "case": "vol40_only",
+    "close_drawdown_pct": 14.524973130365638,
+    "closed_positions": 22,
+    "low_drawdown_pct": 15.60607660822788,
+    "net_pnl_usdt": 31.55918128999997,
+    "profile": "stress",
+    "window": "evaluation"
+  },
+  "frozen_results_digest": "1bfaeae121e9fbe503ea3f4f62b0748ab8321107b726bf63325295df9b415201",
+  "genuine_new_OOS": false,
+  "historical_parity_passed": true,
+  "live": false,
+  "mode": "RESEARCH_ONLY",
+  "optimizer_backend": "bounded_deterministic_grid; Optuna installation failed on laptop",
+  "paper_changed": false,
+  "private_api": false,
+  "promote_paper": false,
+  "real_candle_rows": 8514,
+  "real_orders": 0,
+  "repository_head": "dcb731ba5e7e1f533ebbf022550eece661694e87",
+  "schema": "nexus.mr40.optimizer_real_candle_smoke.v1",
+  "selected_case": "vol40_only",
+  "source_ohlc_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "train_stress_scores": {
+    "baseline": 2.989799356168905,
+    "stop4_arm2_only": 1.6788372879747095,
+    "vol40_only": 3.296151365840669,
+    "vol40_stop4_arm2": 3.128664207829506
+  }
+}
