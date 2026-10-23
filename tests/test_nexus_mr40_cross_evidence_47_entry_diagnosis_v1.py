@@ -119,6 +119,21 @@ class PureInvariantTests(unittest.TestCase):
     def test_canonical_digest_order_independent(self):
         self.assertEqual(m.canon({"a": 1, "b": 2}), m.canon({"b": 2, "a": 1}))
 
+    def test_raced_file_exists_never_deletes_other_writers_file(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            outdir = root / "results"
+            outdir.mkdir()
+            target = outdir / m.OUTPUT
+            target.write_text("KEEP", encoding="utf-8")
+            original = target.read_bytes()
+            with patch.object(m, "inspect", return_value={"schema": "dummy"}), \
+                 patch.object(Path, "exists", return_value=False), \
+                 patch("sys.argv", ["test", "--root", str(root)]):
+                with self.assertRaises(FileExistsError):
+                    m.main()
+            self.assertEqual(target.read_bytes(), original)
+
 
 if __name__ == "__main__":
     unittest.main()
