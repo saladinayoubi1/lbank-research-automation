@@ -1,0 +1,83 @@
+{
+  "deflated_sharpe": {
+    "available": true,
+    "benchmarkSharpe": 0.177221,
+    "kurtosis": 6.221862,
+    "observations": 47,
+    "observedSharpe": 0.192652,
+    "on_47_trade_returns_not_daywise_returns": true,
+    "probability": 0.536497,
+    "skew": -1.332333
+  },
+  "execution": "actual QuantDinger stdlib modules, imported from isolated sparse GitHub checkout",
+  "external_code_paths": [
+    "backend_api_python/app/services/strategy_evolution/statistics.py",
+    "backend_api_python/app/services/strategy_evolution/walk_forward.py"
+  ],
+  "external_repo_commit": "d7642d7",
+  "ledger_sha256": "2c7115bac4ae81cc5c21b9bfc96319d5bee79baa746074c92c998125a834331e",
+  "limitations": [
+    "47 previously-seen trades; bootstrap samples correlated episodes, no fresh external validity",
+    "DSR computed on per-trade returns not time-indexed daily strategy returns, not approved economic gate",
+    "WFO calendar plan not a new walk-forward backtest; no strategy discovery or venue connectivity",
+    "PBO unavailable with only two genuinely independent historical windows, and fee profiles are not extra independent folds"
+  ],
+  "market": "Bybit BTCUSDT Spot, 4h",
+  "monte_carlo": {
+    "deterministic_seed_check": true,
+    "drawdown_percentiles": {
+      "1": -33.1659,
+      "25": -16.8503,
+      "5": -25.6161,
+      "50": -12.2791,
+      "75": -9.4192,
+      "95": -4.2244,
+      "99": -2.8902
+    },
+    "effective_block_size": 3,
+    "loss_probability": 0.115,
+    "paths": 400,
+    "source": "47 BASELINE historically seen position returns, STRESS fees/slippage; not new independent trials",
+    "terminal_percentiles": {
+      "1": -21.3667,
+      "25": 9.9028,
+      "5": -9.3203,
+      "50": 24.7965,
+      "75": 42.4007,
+      "95": 69.3034,
+      "99": 94.9993
+    }
+  },
+  "original_rows": 8514,
+  "pbo_refusal": {
+    "available": false,
+    "logits": [],
+    "probability": 0.0,
+    "reason": "insufficientCandidates",
+    "samples": 0,
+    "two_independent_time_windows_only": true
+  },
+  "safety": {
+    "live": false,
+    "paper_modified": false,
+    "private_api": false,
+    "promote": false,
+    "real_orders": 0
+  },
+  "schema": "nexus.mr40.quantdinger_standalone_diagnostics.v1",
+  "source_hash": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+  "wfo_timeline_only": {
+    "blind_history_bars": 1702,
+    "blind_start": "2026-01-09T08:00:00",
+    "effective_folds": 3,
+    "embargo_bars": 1,
+    "first_train_end": "2024-06-20T08:00:00",
+    "last_validation_end": "2026-01-09T00:00:00",
+    "note": "These timestamps and entire 2023-2026 history are ALREADY SEEN; not unbiased blind verification.",
+    "requested_folds": 3
+  },
+  "window_trade_counts": {
+    "evaluation_seen": 22,
+    "train": 25
+  }
+}
