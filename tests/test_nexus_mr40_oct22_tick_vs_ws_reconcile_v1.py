@@ -204,5 +204,62 @@ class TestPinnedOct22Reconcile(unittest.TestCase):
             self.assertFalse((base/"audit.json").exists())
 
 
+    @staticmethod
+    def fail_closed_mismatch_fixture(mutator):
+        """A mocked full official public day with deterministic disagreement.
+
+        Not an actual Bybit archive; assert normal trusted source location
+        is never populated if even one locked Spot 4h OHLCV metric fails.
+        """
+        from unittest.mock import MagicMock
+        fake_gz=b"M"*110000
+        rows=fixed_day_rows()
+        mutator(rows)
+        def response(status,headers,blob):
+            r=MagicMock()
+            r.status=status
+            r.headers=headers
+            r.read.return_value=blob
+            r.__enter__.return_value=r
+            r.__exit__.return_value=False
+            return r
+        with tempfile.TemporaryDirectory() as td:
+            d=Path(td)
+            (d/"locked.json").write_text(json.dumps(protocol()))
+            with patch("research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.load_pinned_files",
+                       return_value=(protocol(),LAST_BRIDGE_BAR,ws_fixed(),{"snapshots":49})),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.time.time",
+                side_effect=[DAY_END/1000+3600,DAY_END/1000+3601]),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.urllib.request.urlopen",
+                side_effect=[
+                    response(200,{"Content-Length":str(len(fake_gz)),"Last-Modified":"fixture"},b""),
+                    response(200,{},fake_gz)
+                ]) as transport,patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.gzip.decompress",
+                return_value=b"valid_mock_day"),patch(
+                "research.nexus_mr40_oct22_tick_vs_ws_reconcile_v1.rollup",
+                return_value=(rows,{"minutes_verified":1440,
+                                    "four_hour_candles_verified":6,
+                                    "exact_1m_to_4h":True})):
+                with unittest.TestCase().assertRaisesRegex(
+                    ValueError,"parity_failed_no_trusted_artifacts_written"):
+                    execute(d/"locked.json",d/"bridge.json",
+                            d/"source_raw.json",d/"source_gate.json",
+                            d/"trusted_archive.csv.gz",d/"approved_report.json")
+            assert transport.call_count==2
+            assert not (d/"trusted_archive.csv.gz").exists()
+            assert not (d/"approved_report.json").exists()
+
+    def test_rejected_4h_spot_close_mismatch_never_persists_trusted_archive(self):
+        def alter(rows):
+            rows[4][4]="81488.62"   # 0.02 USDT > 0.01 fixed tolerance
+        self.fail_closed_mismatch_fixture(alter)
+
+    def test_rejected_4h_spot_volume_mismatch_never_persists_trusted_archive(self):
+        def alter(rows):
+            rows[4][5]=str(D("2951.920267")*D("1.002"))
+        self.fail_closed_mismatch_fixture(alter)
+
+
 if __name__=="__main__":
     unittest.main()
