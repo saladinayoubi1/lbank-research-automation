@@ -14,6 +14,11 @@ class CrossEvidenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.root = Path(__file__).resolve().parents[1]
+        needed = [cls.root / "research" / m.PROTOCOL]
+        needed += [cls.root / "results" / name for name in m.NAMES.values()]
+        needed += [cls.root / "results" / m.OUTPUT]
+        if not all(p.is_file() for p in needed):
+            raise unittest.SkipTest("SHA-pinned market evidence exists only on research laptop")
         cls.protocol, cls.sources = m.load_locked(cls.root)
 
     def test_pinned_source_join_is_deterministic(self):
@@ -96,6 +101,23 @@ class CrossEvidenceTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 m.main()
         self.assertEqual(m.sha(out), old)
+
+
+class PureInvariantTests(unittest.TestCase):
+    def test_time_requires_utc_offset(self):
+        with self.assertRaisesRegex(ValueError, "utc_time_missing_offset"):
+            m.utc_ms("2026-10-23T12:00:00")
+
+    def test_nonduplicate_identity_enforced(self):
+        with self.assertRaisesRegex(ValueError, "duplicate_signal"):
+            m.unique_index([{"id": 3}, {"id": 3}], lambda x: x["id"], "signal")
+
+    def test_accounting_rounded_comparison_is_strict(self):
+        self.assertTrue(m.compatible_pnl("1.000000001", "1.0"))
+        self.assertFalse(m.compatible_pnl("1.000001", "1.0"))
+
+    def test_canonical_digest_order_independent(self):
+        self.assertEqual(m.canon({"a": 1, "b": 2}), m.canon({"b": 2, "a": 1}))
 
 
 if __name__ == "__main__":
