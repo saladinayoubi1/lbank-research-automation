@@ -1,0 +1,88 @@
+{
+  "schema": "nexus.mr40.prospective_prearm_atr14x2_research_protocol.v1",
+  "registered_day_utc": "2026-10-23",
+  "objective": "Future-only fixed initial ATR14x2 pre-arm protective stop vs unchanged natural MR40 exit: preserve fee/slip-adjusted net profit and reduce intraposition equity DD. Never optimize on already seen samples.",
+  "prior_methods_NOT_rerun": "Historical static 4/6/8% stops, ratchet after 2% profit, early 3/6-bar fuse, 25/50/75/100% cash splits; all previously tested.",
+  "market": {
+    "venue": "Bybit",
+    "category": "spot",
+    "symbol": "BTCUSDT",
+    "interval_minutes": 240,
+    "leverage": 1,
+    "shorts": false,
+    "fixed_mr40": "lookback 40 prior fully closed bars; Z<=-2 entry, Z>=0 natural exit, first Momentum30 episode close[j]>=close[j-180]. Following 4h OPEN is hypothetical and never a proven fill.",
+    "frozen_8514_rows_sha256": "a458d9f83df633df8ee5cab5f2a19de41c4c79c61185b5abd258fdefa80d575a",
+    "oct20_21_bridge_digest": "f118d0affe21995f4bfa01c1b5261eb7e963d1c1d46bfb094debf28a35c3114e",
+    "verified_oct22_official_spot_gzip_sha256": "9591b0ccf534810939771e59ec95d6dbab4f978a72c57f86b2b332ef4cb84587",
+    "verified_oct22_WS_parity_result_sha256": "ea5f020264cb3e307bc142f22a9736c8c5afdd5df16fa9615927f887384c099c",
+    "first_unseen_utc_day": "2026-10-23",
+    "end_exclusive_utc": "2026-12-23",
+    "public_source": "daily official Bybit BTCUSDT Spot trade gzip archives only, read after full UTC day completes AND publication. Oct23 already separately fixed by prior research contract.",
+    "no_source_substitution": true,
+    "immutable_asof_receipts": true
+  },
+  "candidate": {
+    "id": "PREARM_ATR14_X2_CLOSED_SIGNAL",
+    "atr_window": 14,
+    "atr_multiplier": "2",
+    "atr_true_range": "max(H-L,abs(H-prev_close),abs(L-prev_close))",
+    "atr_aggregation": "arithmetic mean of last 14 fully CLOSED 4h true ranges including completed signal bar and never entry bar",
+    "protective_initial_stop": "hypothetical following 4h entry OPEN minus 2*ATR14 from signal-close history",
+    "active_immediately_after_hypothetical_entry": true,
+    "ratchet_after_profit": false,
+    "gap_handling": "if next held 4h bar opens below stop use OPEN instead of unreachable stop as counterfactual exit-price basis",
+    "OHLC_LOW_is_not_an_executable_stop_fill": true,
+    "once_stopped_block_same_raw_MR40_episode_reentry": true
+  },
+  "comparator": {
+    "id": "UNCHANGED_MR40_BASELINE_NATURAL_EXIT",
+    "same_signal_timing": true,
+    "stop": null
+  },
+  "reference": {
+    "capital_USDT": "500",
+    "not_real_Paper_equity": true,
+    "diagnostic_risk_budgets_pct_of_cash": [
+      "1",
+      "2"
+    ],
+    "budget_not_authorized_for_trading": true,
+    "quantity_formula": "min(cash/(entry_open*(1+fee+slip)), (budget_pct*cash/100)/(2*ATR14+entry_open*(fee+slip)+stop_quote*(fee+slip)))",
+    "gap_could_exceed_diagnostic_budget": true
+  },
+  "cost_scenarios": [
+    {
+      "id": "VIP0_FEE_ONLY",
+      "fee_each_side": "0.001",
+      "slippage_each_side": "0",
+      "actual_fills_verified": false
+    },
+    {
+      "id": "VIP0_PLUS_0_1PCT_EACH_SIDE_SLIP_STRESS",
+      "fee_each_side": "0.001",
+      "slippage_each_side": "0.001",
+      "actual_fills_verified": false
+    }
+  ],
+  "prospective_evaluation": {
+    "new_signal_entries_only_from": "2026-10-23T00:00:00Z",
+    "num_completed_nonoverlapping_trades_minimum_for_directional_screen": 12,
+    "before_minimum": "INCONCLUSIVE_SMALL_SAMPLE",
+    "primary": "candidate vs baseline same starting capital: fee and stress slip adjusted terminal equity/net PNL, full intraposition model LOW equity maximum drawdown, stop gap events, holding hours and stop frequency",
+    "pass_only_when": "stress adjusted terminal equity candidate >= baseline AND modeled max intraposition drawdown candidate <= 80% of baseline; minimum 12 completed forward positions",
+    "even_if_pass": "research screen ONLY; no automatic paper deployment or edge guarantee",
+    "reject_if_missing_verified_day_or_unknown_bar_fill": true,
+    "no_recalibration_after_results": true
+  },
+  "safety": {
+    "no_orders": true,
+    "private_api": false,
+    "paper_modified": false,
+    "live": false,
+    "merge": false,
+    "promote": false,
+    "no_scheduler": true,
+    "pr": 2808,
+    "roadmap_issue": 2799
+  }
+}
