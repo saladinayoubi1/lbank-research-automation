@@ -418,3 +418,7 @@ tests/test_nexus_mr40_prearm_atr14x2_prospective_v1.py text eol=lf export-ignore
 research/mr40_fixed_atr14x2_seen47_diagnostic_protocol_20261023.json text eol=lf export-ignore
 research/nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
 tests/test_nexus_mr40_atr14x2_seen47_economic_smoke_v1.py text eol=lf export-ignore
+
+# Research-only manual one-shot fixed public Oct23 archive->shadow->risk orchestrator, no Paper/Live runtime.
+research/nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py text eol=lf export-ignore
+tests/test_nexus_mr40_oct23_manual_postday_shadow_and_risk_v1.py text eol=lf export-ignore
