@@ -281,7 +281,7 @@ jobs:
             exit 0
           fi
           if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
-            was_processed="$(python -c 'import json; s=json.load(open("build/discovery/feedback-state.json")); print(str("$run_id" in {str(x) for x in s["processed_run_ids"]}).lower())')"
+            was_processed="$(python -c 'import json,sys; s=json.load(open("build/discovery/feedback-state.json")); print(str(sys.argv[1] in {str(x) for x in s["processed_run_ids"]}).lower())' "$run_id")"
             if [ "$was_processed" = "true" ]; then
               echo "Triggering research run was already reconciled; refuse duplicate auto-dispatch."
               echo "ready=false" >> "$GITHUB_OUTPUT"
