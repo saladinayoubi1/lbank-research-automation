@@ -347,8 +347,10 @@ jobs:
           python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --require-feedback-state             --output build/discovery/dispatch-plan.json
           if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "recovery_allowed=true" >> "$GITHUB_OUTPUT"
             echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
           else
+            echo "recovery_allowed=false" >> "$GITHUB_OUTPUT"
             jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
             if [ "$REQUIRE_EXACT_RESEARCH_RECEIPT" = "true" ]; then
               retry_same_stage="$(python - <<'PY'
@@ -372,7 +374,7 @@ jobs:
           fi
 
       - name: Produce exact-source design-review queue when frontier is exhausted
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.recovery_allowed == 'true'
         run: |
           set -euo pipefail
           python scripts/nexus_strategy_discovery_recovery.py \
@@ -563,7 +565,7 @@ jobs:
           compression-level: 9
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'false'
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.recovery_allowed == 'true'
         with:
           name: nexus-strategy-discovery-recovery-plan
           path: build/discovery/recovery-review-plan.json
