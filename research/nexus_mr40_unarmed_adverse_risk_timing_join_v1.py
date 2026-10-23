@@ -124,7 +124,7 @@ def run(adverse_timing,prior_ratchet,overlay_failure_audit,output):
         "prior_ratchet":verify_file(prior_ratchet,"prior_ratchet"),
         "overlay_failure_audit":verify_file(overlay_failure_audit,"overlay_failure_audit"),
     }
-    result=join(**source)
+    result=join(source["adverse_timing"],source["prior_ratchet"],source["overlay_failure_audit"])
     result["digest"]=hashlib.sha256(canon(result)).hexdigest()
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(result,sort_keys=True,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
