@@ -1,0 +1,28 @@
+{
+  "CD_first_target_retracement": "0.382",
+  "PRZ_stop_XA_projection": "1.414",
+  "cannot_observe_next_open_in_close_signal": true,
+  "cash_reference_usdt": "500",
+  "contract_digest": "813581410e3fa6c1f66ddb2ed42a7f4a80b28101756b41e9996b8c5480a58b85",
+  "fee_slippage_bps_profiles": {
+    "conservative": [
+      "10",
+      "5"
+    ],
+    "stress": [
+      "25",
+      "15"
+    ]
+  },
+  "frozen_Elliott_V117_not_modified": true,
+  "frozen_V8_not_modified": true,
+  "live_enabled": false,
+  "max_cash_allocation_fraction": "0.10",
+  "max_nominal_stop_risk_fraction": "0.005",
+  "no_automatic_demo_promotion": true,
+  "no_orders": true,
+  "no_unseen_market_data_used_for_selection": true,
+  "not_a_backtest_or_measured_profit": true,
+  "schema": "nexus.butterfly-v9-structural-execution-plan.v1",
+  "source": "HarmonicTrader PRZ/1.414 XA structural invalidation, 0.382 CD first retracement"
+}
