@@ -1,0 +1,19 @@
+# Isolated v6 Decimal accounting precheck
+
+Change: Run the existing independently implemented Decimal fill oracle against the frozen v6 selected report; bind the completed reviewed-code numeric proof explicitly.
+System Map nodes: DATA-21, VAL-40, QA-41; RES-30/31/32 are read-only consumers of their completed producer evidence.
+Existing component being changed: Bounded immutable-report audit wrapper around nexus_composite_fill_oracle.verify_fills, pinned to oracle source 7294b2d72d2ae5a46a03a26c23242ac27a385f1a / blob d583ed655efe64b5c0c5eb73960eb217bc7ded83. Oracle and strategy code are unchanged.
+Why existing component cannot already satisfy the need: The prior audit wrapper binds the v5 source/report and its older proof schema/paths. The v6 frozen report and explicit original/optimized source identities require distinct input and proof bindings; old accounting receipts cannot prove v6.
+Primary runner / execution lane: Laptop1 isolated independent QA, separate physical host from the completed Laptop2 producer. Laptop2 is offline in the current device inventory; no research failover or owner writer change is made.
+Data source and provenance: Existing Bybit canonical BTC/ETH 15m/1h/4h archive, six exact raw hashes and pinned runtime. Retain the earlier dataset decoder reference as historical data provenance with its v5 identity; never relabel it as v6 strategy/accounting proof.
+Upstream dependencies: Original v6 study 8899ec6bec4927fc39795f2867be91e2431178c6; report digest 02c7a7b1dd0a78ed13d8dbefcfec7824d11c9eedd22e3d337b5e658eb0e099b3; reviewed-code numeric proof digest 2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259 with verification source 9144f888306e12a86fb4812896b137c13a6adeb9.
+Downstream consumers: Research accounting evidence only, no registry qualification or owner enrollment.
+Authority level: Research-only independent accounting QA; source simulator, producer and tournament calls prohibited; offline sockets.
+Paper/Live boundary: Auto-Demo=false, owner Demo admission=false, Live=false, official Coordinator advancement=false. Simulated report capital 10000 USDT remains separate from the owner 500 USDT reference.
+Duplicate-work check: Do not rerun v5 accounting, producer, replay, completed native day-cache units or the 16 completed numeric comparisons. Reuse the unchanged existing oracle implementation only; all new accounting cells identify the v6 report. Audit only its 12 selected-report cells; four additional challenger Training comparisons are outside this accounting scope.
+Failure mode: Any source, input, raw data, runtime, proof, regenerated signal, metric or authority mismatch fails closed; cells are saved atomically. The bounded watchdog preserves completed cells on deadline.
+Rollback: Remove the new isolated audit root if no longer needed; old producer, source and evidence roots remain intact. No owner-state rollback is required.
+Tests: Local syntax and frozen-input/proof binding tests; oracle exact Git-blob content check; current native runtime/source/raw/input checks; independent Decimal account comparison. Do not repeat completed oracle or strategy runs.
+Independent QA required: Existing oracle on distinct Laptop1 over Laptop2-produced immutable report. Reuse of shared signals/data must remain explicit; source/profitability/actual exchange fills are not independently proven.
+Deployment/cutover impact: Evidence branch and fresh isolated E:\NEXUS-QA\economic-oracle-v6-20261013 root only. No install, runtime, runner, VPS, WSL, scheduled-task or registry change.
+Evidence required to declare DONE: All 12 accounting cell receipts, bound final audit receipt, native process exit 0 and exact readback. A pending launch or partial result is not complete. Original-source full strict replay remains a separate unfinished gate; negative economics and absent pristine holdout remain unchanged.

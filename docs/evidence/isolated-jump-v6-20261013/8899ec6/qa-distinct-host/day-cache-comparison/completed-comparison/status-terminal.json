@@ -1,0 +1,16 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T13:45:47.301275+00:00",
+  "completed_cells": 16,
+  "elapsed_seconds": 130.203,
+  "independent_decimal_accounting_complete": false,
+  "independent_numeric_comparison_complete": true,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "qa_digest": "2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259",
+  "research_only": true,
+  "schema": "nexus.day-cache-comparison-status.v1",
+  "status": "OPTIMIZED_NUMERICAL_COMPARISON_MATCHED_RESEARCH_ONLY",
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9"
+}

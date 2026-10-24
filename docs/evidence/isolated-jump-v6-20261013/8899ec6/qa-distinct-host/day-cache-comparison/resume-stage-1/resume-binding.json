@@ -1,0 +1,18 @@
+{
+  "deadline_basis": "Previous measured 77k-bar cells ~38s, 26k-bar cells ~13s; remaining10cells ~282s plus imports/features and headroom",
+  "planned_new_cells": 10,
+  "prior_native_unit_file_sha256": "18cfcbf6970333350471ce12e1efcf059ba71bcb437c431fc6e7385cfd56299f",
+  "producer_report_digest": "02c7a7b1dd0a78ed13d8dbefcfec7824d11c9eedd22e3d337b5e658eb0e099b3",
+  "resume_from": "E:\\NEXUS-QA\\jump-v6-day-cache-qa-inline-20261013",
+  "reused_cell_digests": [
+    "1f651493f8bc6b71c9f3a13cd2d323728863d4fa60a668fbe40006442553b370",
+    "70880be92f491766eb7b8c7a113a043fa7b27a74519df4366bcce2fea8cc502f",
+    "d902df67de3dcaf8b32a13c94d048a0fbde90cb786d2317829c215f57d9357bf",
+    "87fc914d7a8207f3f9fcb4645a2283330f9487edaf422e1243f9821447ee89aa",
+    "1999f5af963f4fbd752173bd22d0445f1bb5a710255aea2c2459582ae3482103",
+    "173fcf7fbe2bb79be58dd10a493f0849fb37364bf0e914208407fcb4528bb057"
+  ],
+  "source_and_metrics_revalidated_before_reuse": true,
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "wall_seconds": 420
+}

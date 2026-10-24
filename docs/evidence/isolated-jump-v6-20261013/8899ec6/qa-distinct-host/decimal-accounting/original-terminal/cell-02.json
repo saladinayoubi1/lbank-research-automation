@@ -1,0 +1,18 @@
+{
+  "bars": 25709,
+  "cell_digest": "446eb05b53b52ac153810ce26864accb14f8a836a6d8cd2748e518194d2b2f85",
+  "closed_round_trips": 14,
+  "decision": "PASS_RESEARCH_ONLY",
+  "decision_signal_digest": "1807748aaeef67d4dd65fccbad4e5440360c75945219da70575829a3877550ee",
+  "evaluated_fills": 28,
+  "feature_frame_digest": "cb0975e8327f083b3449bd108dca61d3f35e95304ae70b3144d7b1a46ee71c37",
+  "fee_bps": 10.0,
+  "live_trading_authority": false,
+  "owner_demo_admission": false,
+  "part": "validation",
+  "profile": "conservative",
+  "slippage_bps": 5.0,
+  "symbol": "BTCUSDT",
+  "verified_net_pnl_usdt": -46.24778218,
+  "verified_net_return_pct": -0.46247782
+}

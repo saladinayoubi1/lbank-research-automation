@@ -1,0 +1,20 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T11:51:03.477251+00:00",
+  "elapsed_seconds": 19.844,
+  "independent_decimal_accounting_complete": false,
+  "independent_full_numeric_qa_complete": false,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "research_only": true,
+  "schema": "nexus.jump-verification-diagnostic.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "status": "DECODE_BTC_TIMEFRAMES",
+  "steps": [
+    {
+      "cpu_seconds": 9.546875,
+      "phase": "IMPORT_EXISTING_SOURCE",
+      "wall_seconds": 16.313
+    }
+  ]
+}

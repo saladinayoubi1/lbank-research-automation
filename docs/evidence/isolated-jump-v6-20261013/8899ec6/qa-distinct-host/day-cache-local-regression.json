@@ -1,0 +1,12 @@
+{
+  "auto_demo_promotion": false,
+  "errors": 0,
+  "failures": 0,
+  "golden_scalar_cases": 20,
+  "live_enabled": false,
+  "numpy": "2.3.5",
+  "pandas": "2.2.3",
+  "scope": "isolated core-function regression, not full-module/native QA",
+  "tests": 4,
+  "timezone_cases": 6
+}

@@ -1,0 +1,18 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T11:18:58.681107+00:00",
+  "elapsed_seconds": 3.703,
+  "lease_id": "isolated-jump-v6-20261013-8899ec6",
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "raw_files_verified": 6,
+  "research_only": true,
+  "runtime_versions": {
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "pyarrow": "21.0.0"
+  },
+  "schema": "nexus.jump-distinct-host-verification.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "status": "STAGING_EXACT_SOURCE"
+}

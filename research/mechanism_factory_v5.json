@@ -1,0 +1,131 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_peer_lead_beta_failure_reclaim",
+      "family": "peer_lead_beta_failure_reclaim",
+      "hypothesis": "When the peer has statistically led the own asset in strictly completed history, a negative lagged beta residual followed by a closed own failed-low rejection in a completed 4h range may encode delayed response rather than an ordinary standalone mean-reversion entry. The lead relation and residual are historical estimates; no peer trade, executable spread, L2, or profitable edge is asserted.",
+      "peer_required": true,
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_peer_lead_corr_96",
+          "op": "ge",
+          "value": 0.25
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.05
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "ge",
+          "value": 0.75
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.62
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.8
+        }
+      ]
+    },
+    {
+      "id": "factory_entropy_volcluster_break",
+      "family": "entropy_volatility_cluster_break",
+      "hypothesis": "A low-entropy directional path combined with lagged absolute-return persistence and independently observed lagged volume-to-absolute-return coupling may distinguish a 15-minute structural expansion in completed 4h up-market context from unconditional momentum. No hidden order book or trade-signed volume is inferred; historical results are non-pristine diagnostics only.",
+      "peer_required": false,
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.58
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.12
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.18
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ]
+    }
+  ]
+}

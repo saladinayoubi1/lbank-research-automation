@@ -1,0 +1,18 @@
+{
+  "baseline_oracle_blob_sha": "d583ed655efe64b5c0c5eb73960eb217bc7ded83",
+  "cached_oracle_blob_sha": "35488fbf90a987f83dd637db4209703eb201ea0e",
+  "cached_oracle_sha256": "5c51c9e28bb8732784194735f4fe6f01abdf5a26477e2e2291efde039e8420f7",
+  "canonical_scalar_floor_calls": 0,
+  "elapsed_seconds": 1.664731,
+  "exit_code": 0,
+  "golden_unrounded_decimal_and_fill_path_cases": 20,
+  "host": "930e395792cb",
+  "live_enabled": false,
+  "native_windows": false,
+  "object_fallback_matches_baseline": true,
+  "only_day_cache_ast_changes": true,
+  "pandas": "2.2.3",
+  "research_only": true,
+  "schema": "nexus.decimal-day-cache-regression.v1",
+  "timezone_and_dst_key_cases": 6
+}

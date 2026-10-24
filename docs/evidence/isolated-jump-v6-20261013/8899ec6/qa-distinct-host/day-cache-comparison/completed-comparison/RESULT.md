@@ -1,0 +1,17 @@
+# Complete reviewed-code numerical comparison; negative v6 strategy decision
+
+The isolated distinct-host comparison completed all 16 frozen cells at 2026-10-13T13:45:47.301275Z with native exit 0. QA digest `2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259`.
+
+Original producer source/report identity: `8899ec6bec4927fc39795f2867be91e2431178c6` / `02c7a7b1dd0a78ed13d8dbefcfec7824d11c9eedd22e3d337b5e658eb0e099b3`. Reviewed computation source: `9144f888306e12a86fb4812896b137c13a6adeb9`; engine Git blob `4c4fc599bf5dabe6c67136dcb4d711f6f47d2610`. The original clean physical checkout remained 8899ec6, with an exact Git-blob overlay and unchanged baseline dependencies. No producer receipt was relabeled.
+
+All 12 selected-candidate BTC/ETH Training, validation and inspected-test cost cells match all 14 reported backtest fields. The four additional downward-shock challenger Training cells match the five Training-ranking fields. All eight candidate Training asset/cost cells are negative, the original training aggregates/ranking match, and all four selected inspected-test cells are negative. The small ETH conservative validation gain becomes negative in its stress case. No profitable or qualified strategy resulted.
+
+The final stage reused 15 completed receipts after revalidating source/input identity, cell digest, original metrics and regenerated signal. It ran only the previously unfinished downward-shock ETH Training stress case: net return -4.66750337%, 84 closed round trips, max drawdown 5.30620316%. The native four-test day-cache regression receipt was reused, not rerun. This stage finished in 130.203 seconds; no unmeasured baseline speedup factor is claimed.
+
+Final native root: `E:\NEXUS-QA\jump-v6-day-cache-qa-final-20261013`; worker hash `e2533b0f201228b37ba9bf1cc764412fc0f853c13e62855a44fcdf6c180b01b8`, native worker PID 13572. Runtime: NumPy 2.3.5, Pandas 2.3.3, PyArrow 21.0.0. Input file bytes, six raw Parquet hashes and canonical producer digests were checked before computation; frozen producer bytes and baseline cleanliness were checked again before the final proof.
+
+Retrieved proof QA digest, all 16 cell digests, worker/config digests, every compared original metric, unique cell identities, 15 unchanged reused receipts, native exit 0 and Training aggregates passed the local readback check. The readback check performed no backtest. Native proof, source/reuse/launch bindings, final cell, terminal status, exit marker and stdout are preserved in this directory. The preceding 420-second stage retained 15 cells; its terminal failure and stdout remain in `resume-stage-1/`. The 600-, 120-, 60- and 240-second earlier failures are not retroactively PASS.
+
+This completes the reviewed-code numerical comparison only. Original-source full strict replay and independent v6 Decimal accounting remain incomplete. Shared strategy/data code and reported-precision metric equality are not an independent market-source, accounting or future-profitability proof. The historical test is already inspected; no pristine future holdout or strategy qualification is claimed.
+
+Research-only; owner Demo admission=false, auto-Demo=false, Live=false, official Coordinator advancement=false. No producer/tournament or older-v5 job was rerun, no owner installation/journal/registry was modified. See `docs/research/ISOLATED_JUMP_V6_DECISION.md` for the frozen negative-study decision and next-research boundary.

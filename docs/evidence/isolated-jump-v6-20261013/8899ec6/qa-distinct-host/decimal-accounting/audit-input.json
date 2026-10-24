@@ -1,0 +1,125 @@
+{
+  "archive_manifest_file_sha256": "81ddd82c2bbe42cf6c57dd2a5b6b2776803fa6f155fc433d8968f42354a98cb0",
+  "archive_root": "E:\\NEXUS-QA\\native-v5-independent-20261012-1604\\dataset\\canonical",
+  "attempt_id": "economic-oracle-v6-20261013",
+  "authority": {
+    "auto_demo_promotion": false,
+    "live_enabled": false,
+    "official_coordinator_advanced": false,
+    "research_only": true
+  },
+  "dataset_decoder_reference_source_sha": "5919f7dbdc1f6afcc96f53aa8243af7c2f3ba10c",
+  "decoded_input_digest": "4a4be71cfe6aef9d01266435c2a899f33a053e73be47680f7871f0e505574cdb",
+  "duplicate_work_check": "No v5 jobs, producer, tournament, backtest, completed numeric comparison or native unit run; accounting only for the v6 selected report",
+  "existing_component": "Unchanged pinned nexus_composite_fill_oracle.verify_fills over immutable v6 selected report",
+  "git_executable": "C:\\Program Files\\Git\\cmd\\git.exe",
+  "input_file_sha256": {
+    "agent-receipt.json": "17ea3ed91e32eb31146ad53e874220381af05cc351d2156c9155c954cf713ecd",
+    "novelty-ledger.json": "937741211cfccbbcd2a278f7b501679cb82c1caae10801fd419127dcb10c395f",
+    "previous-ledger.json": "f2024e077df1eae89a3534dcc7055d4dd7900d9d3983c3600074dd81f1fe5e32",
+    "research-report.json": "8386ada0f818e5c43461193c9f19d981ab648efa65374d02525905437eb62afc"
+  },
+  "lease_id": "isolated-jump-v6-20261013-8899ec6",
+  "limits": {
+    "cell_count": 12,
+    "wall_seconds": 600
+  },
+  "numeric_engine_blob_sha": "4c4fc599bf5dabe6c67136dcb4d711f6f47d2610",
+  "numeric_verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "oracle_blob_sha": "d583ed655efe64b5c0c5eb73960eb217bc7ded83",
+  "oracle_ref": "7294b2d72d2ae5a46a03a26c23242ac27a385f1a",
+  "parity": {
+    "auto_demo_promotion": false,
+    "decoded_input_digest": "4a4be71cfe6aef9d01266435c2a899f33a053e73be47680f7871f0e505574cdb",
+    "frames": [
+      {
+        "ohlcv_float64_sha256": "edb035086b943c0864eda7b2183c8b297d826fa69a2ca159fc6694f28474d596",
+        "raw_file_sha256": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+        "rows": 32136,
+        "symbol": "BTCUSDT",
+        "timeframe": "hour1",
+        "timestamp_ns_sha256": "dd07d45eef2bdab965a00aee040695e505644c88680fa5b81a052e6e8fb20a00"
+      },
+      {
+        "ohlcv_float64_sha256": "e7078c97cfd3a5cb08b8913a3c2f869fc2165b286f48f0190fa8893511169798",
+        "raw_file_sha256": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+        "rows": 8034,
+        "symbol": "BTCUSDT",
+        "timeframe": "hour4",
+        "timestamp_ns_sha256": "75b4f080d1831403be158b070fcd586f2da4493ae21bdc7a022f8004f31faf80"
+      },
+      {
+        "ohlcv_float64_sha256": "12cf858018ea5753b32a207cec1c0008d3a0f2c150676ec1524ae3a55806c60b",
+        "raw_file_sha256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+        "rows": 128544,
+        "symbol": "BTCUSDT",
+        "timeframe": "minute15",
+        "timestamp_ns_sha256": "5065e825e46a5e64f9090e2bf839d7cb7dc6e3eb7ccd360419c6c19b8b61b361"
+      },
+      {
+        "ohlcv_float64_sha256": "0f0ba0c6c4d34658929cd822ef622b85da68cb153c98c07a824c2cfa8e08df24",
+        "raw_file_sha256": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+        "rows": 32136,
+        "symbol": "ETHUSDT",
+        "timeframe": "hour1",
+        "timestamp_ns_sha256": "dd07d45eef2bdab965a00aee040695e505644c88680fa5b81a052e6e8fb20a00"
+      },
+      {
+        "ohlcv_float64_sha256": "860e960265745542807b53d3c2410bd97293a9f3ba2f792773ba5b5cfcfa7e12",
+        "raw_file_sha256": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+        "rows": 8034,
+        "symbol": "ETHUSDT",
+        "timeframe": "hour4",
+        "timestamp_ns_sha256": "75b4f080d1831403be158b070fcd586f2da4493ae21bdc7a022f8004f31faf80"
+      },
+      {
+        "ohlcv_float64_sha256": "da07147e006fbc3542d47e397a7cd6ec34175dc7537bc88d4b8624a1649f53f9",
+        "raw_file_sha256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+        "rows": 128544,
+        "symbol": "ETHUSDT",
+        "timeframe": "minute15",
+        "timestamp_ns_sha256": "5065e825e46a5e64f9090e2bf839d7cb7dc6e3eb7ccd360419c6c19b8b61b361"
+      }
+    ],
+    "lease_id": "isolated-research-v5-20261012-5919f7d",
+    "live_enabled": false,
+    "numpy": "2.3.5",
+    "official_coordinator_advanced": false,
+    "pandas": "2.3.3",
+    "producer": {
+      "host": "DESKTOP-F4SA4VL",
+      "pyarrow": "23.0.1",
+      "receipt_digest": "1f4c81a2ca12ffb2cea87ca89dca71e8a9f0e612df09df678c81a98d57f4bee2"
+    },
+    "qa": {
+      "host": "DESKTOP-1R1081M",
+      "pyarrow": "21.0.0",
+      "receipt_digest": "18084281510d20a1639c8119b755d92c5c11f4a2e0f1790b28f9211f1b6cd944"
+    },
+    "research_only": true,
+    "schema": "nexus.distinct-host-decoder-parity.v1",
+    "scope": "Parquet file bytes, UTC timestamp nanoseconds, normalized float64 OHLCV and identities; numeric report replay is a separate outstanding gate",
+    "source_sha": "5919f7dbdc1f6afcc96f53aa8243af7c2f3ba10c",
+    "status": "ALL_SIX_RAW_AND_DECODED_INPUTS_MATCH"
+  },
+  "producer_host": "DESKTOP-F4SA4VL",
+  "qa_digest": "2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259",
+  "qa_host": "DESKTOP-1R1081M",
+  "qa_proof_path": "E:\\NEXUS-QA\\jump-v6-day-cache-qa-final-20261013\\qa-evidence.json",
+  "qa_root": "E:\\NEXUS-QA\\jump-v6-independent-20261013-verify8899",
+  "report_digest": "02c7a7b1dd0a78ed13d8dbefcfec7824d11c9eedd22e3d337b5e658eb0e099b3",
+  "research_blob_sha": "918c886570040712f3b7aa83f7fa812720c927b2",
+  "runtime_pins": {
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "pyarrow": "21.0.0"
+  },
+  "schema": "nexus.existing-composite-economic-audit-input.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "system_map_nodes": [
+    "DATA-21",
+    "VAL-40",
+    "QA-41"
+  ],
+  "worker_sha256": "62b37e8ca201d9bc7afd4ef3b94f42d6aaf3f2f38467990eec8bd84c07ea9a7f"
+}
