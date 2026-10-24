@@ -1,0 +1,27 @@
+{
+  "checked_at_utc": "2026-10-13T19:58:57.300529+00:00",
+  "command": "python -m unittest discover -s tests -v",
+  "compile_exit_code": 0,
+  "exit_code": 0,
+  "file_sha256": {
+    "nexus_laptop_observations.py": "a027695e98e22279ab8ca520297c8fcd67b83576b070993e902b06a418fa529a",
+    "nexus_vps_arbiter_observer.py": "8748af615237aa3d8b0c0d4097bf8212a6dffa16c700e9f8cf3aa5064298dba8",
+    "tests/test_nexus_laptop_observations.py": "33b11704b35a44210e7f6a349d04c5b02054a45333fd789062269a73ec32cdf8"
+  },
+  "live_trading_authority": false,
+  "native_laptop_receipts_received": 0,
+  "new_runner_or_scheduler_started": false,
+  "paper_writer_grants_enabled": false,
+  "reported_seconds": 1.134,
+  "runtime": {
+    "platform": "Linux",
+    "python": "3.12.14",
+    "sqlite": "3.53.1"
+  },
+  "schema": "nexus.laptop-visibility-local-tests.v1",
+  "source_parent_sha": "ed2f16b6aabe7d0d97562fd64bb4e3609dc51b32",
+  "source_preparation_only": true,
+  "ssh_transport_identity_verified_on_real_vps": false,
+  "test_count": 23,
+  "vps_deployment_performed": false
+}
