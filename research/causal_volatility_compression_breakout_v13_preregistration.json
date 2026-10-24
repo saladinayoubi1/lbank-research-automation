@@ -1,0 +1,138 @@
+{
+  "schema": "nexus.prereg.volatility-compression-breakout-v13/v1",
+  "registered_utc": "2026-10-15",
+  "research_hypothesis": "Causal regime transition from sustained 1h range contraction to the first upward 15m closed breakout over the upper bound of six previously completed 1h candles, with strictly closed 4h trend confirmation. Different market structure from Elliott, Butterfly, ABC corrective and Spring reclaim.",
+  "mechanism_id": "research_causal_volatility_compression_expansion_v13",
+  "research_only": true,
+  "live_enabled": false,
+  "order_enabled": false,
+  "automatic_demo_promotion": false,
+  "factory_registered": false,
+  "hypothesis_count": 1,
+  "parameter_configurations": 1,
+  "independence": {
+    "branch_base": "main",
+    "prior_rejected": [
+      "abc_corrective_v11",
+      "liquidity_spring_reclaim_v12"
+    ],
+    "preregistered_before_future_data_retrieval": true,
+    "old_archive_last_bar_calendar_day": "2026-07-31",
+    "previous_market_history_unfit_as_new_unseen_holdout": true,
+    "new_evaluation_start_utc": "2026-10-16T00:00:00Z",
+    "new_evaluation_end_utc_exclusive": "2026-12-16T00:00:00Z",
+    "evaluation_bars_must_close_after_start": true,
+    "pre_start_data_allowed_only_as_warmup": true,
+    "already_published_or_previously_researched_market_data_must_not_be_labeled_unseen": true,
+    "capture_delivery_and_manifests_must_be_hashed_before_any_scoring": true,
+    "no_retrospective_candidate_edits_after_opening_first_future_bar": true,
+    "no_historical_score_for_selection": true,
+    "do_not_claim_forward_results_or_zero_trades_until_window_elapses": true
+  },
+  "venue": "Bybit",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "market_type": "spot",
+  "timeframes": [
+    "15m",
+    "1h",
+    "4h"
+  ],
+  "side": "long_only",
+  "raw_market_timestamp": "candle OPEN, timezone UTC",
+  "decision_timestamp": "15m candle CLOSE = open_time + 15m",
+  "timeframe_alignment": {
+    "only_1h_open_times_where_open_plus_60m_at_or_before_decision_close": true,
+    "only_4h_open_times_where_open_plus_240m_at_or_before_decision_close": true,
+    "no_forming_bars": true,
+    "no_fill_or_reinterpolation": true,
+    "reject_duplicate_or_gap_candles": true,
+    "require_synchronized_raw_ohlc": true
+  },
+  "compression": {
+    "tr_definition": "max(hour_high-hour_low, abs(hour_high-prior_hour_close), abs(hour_low-prior_hour_close))",
+    "recent_window_1h_closed_bars": 6,
+    "reference_window_1h_closed_bars": 48,
+    "reference_window_offset": "48 immediately preceding the most recent 6; none of the six recent bars enter the reference",
+    "comparison": "median(TR last 6 hours)/median(TR prior 48 hours) <=0.65; strictly positive finite denominator",
+    "ratio_threshold_inclusive": 0.65,
+    "selection_reason": "Mechanistic vol-contraction discriminator fixed before prospectively unseen data; no parameter grid or tuning",
+    "volatility_window_total_completed_hours": 55
+  },
+  "breakout": {
+    "upper_band": "MAX high of same 6 most recently completed 1h candles",
+    "lower_band": "MIN low of same 6 most recently completed 1h candles",
+    "fresh_first_break": "prior closed 15m close <= upper_band and current closed 15m close > upper_band",
+    "intrabar_not_sufficient": true,
+    "bullish_body": "current 15m CLOSE > current 15m OPEN",
+    "strict_momentum": "current 15m CLOSE > prior completed 15m CLOSE",
+    "h4_trend": "use unchanged parent closed-asof h4_up == 1",
+    "h1_vol_ok_not_used": "Original h1_vol_ok is an expansion volatility gate and would contradict this 1h compression hypothesis; it is explicitly not reused.",
+    "one_event_per_band_identity": "band identity is (opening UTC time of oldest and newest of the six completed 1h bars)",
+    "event_consumed_on_first_break_even_if_context_or_cost_denies": true,
+    "refractory_decision_bars_after_any_first_break": 24,
+    "refractory_means": "No subsequent event during the following 24 closed 15m decision bars, independent of cost or context; this is not an optimizable post-hoc filter.",
+    "require_candle_high_and_low_in_band_exclusion": false
+  },
+  "cost_and_risk": {
+    "fixed_cost_profiles": [
+      {
+        "name": "conservative",
+        "fee_bps_per_leg": 10,
+        "slippage_bps_per_leg": 5
+      },
+      {
+        "name": "stress",
+        "fee_bps_per_leg": 25,
+        "slippage_bps_per_leg": 15
+      }
+    ],
+    "cost_gate": "original source-bound stress_cost_screen on current completed 15m close, lagged ATR14 and prior 6h upper-lower span; same stress gate under both profiles",
+    "risk_per_trade_fraction": 0.001,
+    "max_position_fraction": 0.1,
+    "stop_atr_multiple": 1.5,
+    "target_r_multiple": 2,
+    "max_exposure_15m_bars": 64,
+    "next_open_fill": true,
+    "stop_first_if_same_bar_high_and_low_cross_exit": true,
+    "flat_market_only_single_long_position": true,
+    "initial_hypothetical_cash_usdt_per_research_cell": 10000,
+    "owner_reference_demo_usdt": 500
+  },
+  "evaluation_protocol": {
+    "run_only_after_first_unseen_future_bar_is_closed": true,
+    "source_commit_preregistration_and_data_capture_pinned_before_scoring": true,
+    "initial_warmup_only_before_forward_cutoff": true,
+    "independent_market_delivery_sha256": true,
+    "public_api_read_only_no_keys_no_credentials": true,
+    "holdout_uses_first_15m_close_after_start_as_first_eligible_bar": true,
+    "use_only_forward_bars_of_prospective_window": true,
+    "report_daily_count_sum_net_mean_drawdown_and_all_fees": true,
+    "report_monthly_count_sum_net_mean_and_separate_cost_profiles": true,
+    "independent_decimal_and_raw_candle_chronology_must_pass": true,
+    "report_samples_even_if_zero_trades": true,
+    "no_trade_count_floor": true,
+    "uncertainty_of_low_n_reported": true,
+    "no_data_driven_optimization": true,
+    "no_automatic_demo": true,
+    "not_a_statistically_independent_validation_of_multiple_hypotheses": true
+  },
+  "roadmap_roles": {
+    "research_and_capture_worker": "Laptop2 only",
+    "sole_demo_writer": "Laptop1 unchanged",
+    "GitHub": "source of truth and CI; never order runtime database",
+    "VPS": "paused by owner; no access",
+    "preserve_installed_apps_and_research_archives": true
+  },
+  "current_state": {
+    "pre_registered": true,
+    "connected_to_market_producer": false,
+    "real_forward_bars_scored": 0,
+    "financial_performance_unknown": true,
+    "simulation_orders": 0,
+    "live_orders": 0,
+    "paper_orders": 0
+  }
+}
