@@ -1,0 +1,66 @@
+{
+  "schema": "nexus-cim-free-native-qa-evidence-v1",
+  "reported_failure": "Get-NetTCPConnection: Cannot connect to CIM server. Not found",
+  "failure_phase": "Preflight before rescue directory/service/firewall/task creation",
+  "cim_required": false,
+  "source_manifest_sha256": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+  "native_results": {
+    "LAPTOP1": {
+      "schema": "nexus-cim-free-native-qa-v1",
+      "hostname": "DESKTOP-1R1081M",
+      "actual_child_exit": 0,
+      "timed_out": false,
+      "started_utc": "2026-10-14T21:46:56.2892589Z",
+      "completed_utc": "2026-10-14T21:47:27.2893660Z",
+      "runtime_seconds": 31.0731017,
+      "child_pid": 12592,
+      "manifest_sha256": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+      "launcher_sha256": "ea6e301dc7b2ae5bda5a8470da939f4a4aa802f277a6f61815c28b0a2d833bc2",
+      "desktop_launcher_updated": true,
+      "cim_required": false,
+      "windows_ssh_accepted": false,
+      "writer_authority": false,
+      "live_enabled": false
+    },
+    "LAPTOP2": {
+      "schema": "nexus-cim-free-native-qa-v1",
+      "hostname": "DESKTOP-F4SA4VL",
+      "actual_child_exit": 0,
+      "timed_out": false,
+      "started_utc": "2026-10-14T21:47:00.2680384Z",
+      "completed_utc": "2026-10-14T21:47:04.9376142Z",
+      "runtime_seconds": 4.6755740999999995,
+      "child_pid": 10772,
+      "manifest_sha256": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+      "launcher_sha256": "ea6e301dc7b2ae5bda5a8470da939f4a4aa802f277a6f61815c28b0a2d833bc2",
+      "desktop_launcher_updated": true,
+      "cim_required": false,
+      "windows_ssh_accepted": false,
+      "writer_authority": false,
+      "live_enabled": false
+    }
+  },
+  "initial_gate": {
+    "result": "FAILED_BEFORE_MUTATION",
+    "reason": "Task Scheduler returned localized SYSTEM account name for SID; checker now resolves it to S-1-5-18",
+    "attempts_per_device": 2,
+    "initial_child_exit": 1
+  },
+  "native_assertions": {
+    "owned_ephemeral_tcp_listener_and_close": true,
+    "task_definition_system_sid_and_singleton_boot": true,
+    "firewall_com_read": true,
+    "missing_service_explicit_scm_getter": true,
+    "missing_task_hresult_handled": true,
+    "bundle_readback_hashes": true,
+    "job_child_cleanup": true,
+    "non_elevated_install_inspection": true,
+    "stderr_empty_both": true
+  },
+  "ssh_service_started": false,
+  "task_registered": false,
+  "windows_ssh_accepted": false,
+  "independent_control_accepted": false,
+  "writer_authority": false,
+  "live_enabled": false
+}
