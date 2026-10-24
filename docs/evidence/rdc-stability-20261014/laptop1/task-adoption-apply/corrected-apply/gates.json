@@ -1,0 +1,278 @@
+{
+  "schema": "nexus.rdc-l1-corrected-apply-precheck.v1",
+  "recorded_at_utc": "2026-10-14T09:11:02.150Z",
+  "merged_main_sha": "0d1a0bf4b68df97fd4c1f225d6f76aefc5fc52cd",
+  "reviewed_head_sha": "3a5eb69fabec0938462410111176e6009d0eeb83",
+  "controller_source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
+  "controller_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "run_directory": "E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z",
+  "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\adopt_nexus_rdc_l1_task.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b'){throw 'Reviewed corrected controller source changed'}\nif(Test-Path -LiteralPath 'E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z'){throw 'Corrected apply directory already exists; do not replay'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 'ab27ace2df7a967192dd04e87eef749e1c90e410' --code-sha '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b' --run-dir 'E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z' --apply\n$launchExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_CORRECTED_DETACHED_LAUNCHER_EXIT='+$launchExit)\nexit $launchExit",
+  "ci_checks": [
+    {
+      "name": "pr-architecture-precheck",
+      "id": 115765662929,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "windows-desktop",
+      "id": 115765499486,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "secure-gateway-verification",
+      "id": 115765499393,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (macos-latest)",
+      "id": 115765499392,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "audit",
+      "id": 115765499361,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (ubuntu-latest)",
+      "id": 115765499302,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "validate-system-map",
+      "id": 115765499252,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "android-apk",
+      "id": 115765498997,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test (windows-latest)",
+      "id": 115765498986,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "fallback-health",
+      "id": 115765498656,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "control-plane trusted guard",
+      "id": 115765498211,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "windows_full_pytest": {
+    "job_id": 115765498986,
+    "command": "python -m pytest -q",
+    "passed": 3850,
+    "skipped": 20,
+    "subtests_passed": 282,
+    "seconds": 445.42,
+    "native_windows_fixtures_included": 5
+  },
+  "reviews": [],
+  "native_read_only": {
+    "schema": "nexus.rdc-l1-active-task-correction-checkpoint.v1",
+    "recorded_at_utc": "2026-10-14T08:48:59.914Z",
+    "status": "CORRECTED_SOURCE_NATIVE_READ_ONLY_PASS_APPLY_RETRY_NOT_SUBMITTED",
+    "source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
+    "code_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+    "baseline_merged_sha": "f4b8e208177cd9f1961d2ea89fbebdb1ff1be8fb",
+    "qa_directory": "E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z",
+    "terminal_pid": 10704,
+    "actual_terminal_exit_code": 0,
+    "actual_python_query_exit_code": 0,
+    "runtime_seconds": 87.68,
+    "read_only_submissions": 1,
+    "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\adopt_nexus_rdc_l1_task.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b'){throw 'Corrected source changed'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 'ab27ace2df7a967192dd04e87eef749e1c90e410' --code-sha '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b' --run-dir 'E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\read-only'\n$nativeExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_CORRECTED_READ_ONLY_EXIT='+$nativeExit)\nexit $nativeExit",
+    "native_receipt": {
+      "code_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+      "external_worker_os_exit_independently_captured": false,
+      "live_enabled": false,
+      "observer": {
+        "argv_json_sha256": "c4c8886236491b1b9cd0ed0b567fc46caaaa22a7bae8bb5c3cc0b935de580713",
+        "creation_filetime": "134364411391213797",
+        "exe": "C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "in_job": false,
+        "name": "python.exe",
+        "owner": "DESKTOP-1R1081M\\afaq",
+        "pid": 9656,
+        "ppid": 10704,
+        "session_id": 1
+      },
+      "phase": "READ_ONLY_PASS",
+      "source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
+      "stop_intent": false,
+      "task_run_requests": 0,
+      "updated_utc": "2026-10-14T08:46:30.426150+00:00"
+    },
+    "native_task_validation": {
+      "registered": false,
+      "validated": true
+    },
+    "task_snapshot": {
+      "state": 3,
+      "xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74",
+      "sddl": "O:BAG:S-1-5-21-29241603-1126111165-4177284829-513D:(A;ID;0x1f019f;;;BA)(A;ID;0x1f019f;;;SY)(A;ID;FA;;;BA)(A;;FR;;;S-1-5-21-29241603-1126111165-4177284829-1001)",
+      "instances": 0,
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\r\n  <RegistrationInfo>\r\n    <Description>NEXUS Remote Commander user-context recovery watchdog</Description>\r\n    <URI>\\NEXUS-Remote-Commander-Recovery</URI>\r\n  </RegistrationInfo>\r\n  <Principals>\r\n    <Principal id=\"Author\">\r\n      <UserId>S-1-5-21-29241603-1126111165-4177284829-1001</UserId>\r\n      <LogonType>InteractiveToken</LogonType>\r\n    </Principal>\r\n  </Principals>\r\n  <Settings>\r\n    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\r\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n    <RestartOnFailure>\r\n      <Count>99</Count>\r\n      <Interval>PT1M</Interval>\r\n    </RestartOnFailure>\r\n    <StartWhenAvailable>true</StartWhenAvailable>\r\n    <IdleSettings>\r\n      <Duration>PT10M</Duration>\r\n      <WaitTimeout>PT1H</WaitTimeout>\r\n      <StopOnIdleEnd>true</StopOnIdleEnd>\r\n      <RestartOnIdle>false</RestartOnIdle>\r\n    </IdleSettings>\r\n  </Settings>\r\n  <Triggers>\r\n    <LogonTrigger>\r\n      <Delay>PT1M</Delay>\r\n      <Repetition>\r\n        <Interval>PT5M</Interval>\r\n      </Repetition>\r\n      <UserId>DESKTOP-1R1081M\\afaq</UserId>\r\n    </LogonTrigger>\r\n  </Triggers>\r\n  <Actions Context=\"Author\">\r\n    <Exec>\r\n      <Command>C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe</Command>\r\n      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1\"</Arguments>\r\n    </Exec>\r\n  </Actions>\r\n</Task>",
+      "enabled": true,
+      "owner_sid": "S-1-5-21-29241603-1126111165-4177284829-1001",
+      "allow_demand": true
+    },
+    "raw_native_output": {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[Reading last 2 lines (total: 2 lines)]\n\n{\"live_enabled\": false, \"phase\": \"READ_ONLY_PASS\", \"stop_intent\": false, \"task_run_requests\": 0}\r\nACTUAL_CORRECTED_READ_ONLY_EXIT=0\r\n✅ Process completed with exit code 0 (runtime: 87.68s)"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "local_tests": {
+      "passed": 18,
+      "total": 23,
+      "windows_only_skipped": 5
+    },
+    "fresh_pings": [
+      {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "pong 2026-10-14T08:46:38.840Z"
+            },
+            {
+              "type": "text",
+              "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+            }
+          ],
+          "isError": false
+        }
+      },
+      {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "pong 2026-10-14T08:46:37.942Z"
+            },
+            {
+              "type": "text",
+              "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+            }
+          ],
+          "isError": false
+        }
+      }
+    ],
+    "real_apply_submissions": 1,
+    "corrected_apply_submitted": false,
+    "old_sdk_stopped": false,
+    "task_retargeted": false,
+    "startup_changed": false,
+    "live_enabled": false,
+    "resume": "After corrected exact-head hosted checks/native Windows task-double fixtures pass, use this corrected source ab27/code5d310 for at most one corrected apply with a new exclusive directory. Do not replay original f096/old apply folder. Source-bound independent post-handoff audit required."
+  },
+  "fresh_pings": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T09:08:32.372Z"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T09:08:32.226Z"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "active_sessions": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "No active sessions"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "No active sessions"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "first_apply_failed_before_mutation": true,
+  "planned_corrected_apply_submissions": 1,
+  "third_apply_forbidden": true,
+  "worker_rechecks_exact_guards": true,
+  "live_enabled": false,
+  "pre_execution_validation": {
+    "rejected_tool_invocation": {
+      "content": [
+        {
+          "type": "text",
+          "text": "MCP error -32602: Input validation error: Invalid arguments for tool start_process: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"object\",\n    \"path\": [\n      \"deviceId\"\n    ],\n    \"message\": \"Expected string, received object\"\n  }\n]"
+        }
+      ],
+      "structuredContent": {
+        "error_code": "INVALID_ARGUMENT"
+      },
+      "isError": true
+    },
+    "reason": "The cache entry holding the device ID was overwritten by the ping result. Input validation rejected the object before any native execution. Corrected to the exact Laptop1 ID; no native apply submitted by this rejected call.",
+    "native_execution_started": false
+  }
+}

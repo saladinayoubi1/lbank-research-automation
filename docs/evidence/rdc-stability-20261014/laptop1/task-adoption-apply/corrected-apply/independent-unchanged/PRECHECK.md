@@ -1,0 +1,3 @@
+# Read-only post-failure verification
+
+OBS-80/REL-90/SYS-00. The one corrected apply failed at original-task Enabled=false with E_ACCESSDENIED, before SDK stop intent and with zero task Run requests. Rollback also encountered E_ACCESSDENIED at Enabled=true; do not infer rollback success. This one read-only native query rechecks the original task hash/enabled/security/owner, source/legacy/Startup/backup hashes, exact old4SDK identities and one remote client/no CJS/no second launcher, plus protected console/Explorer. No mutation or third apply. The previously prepared success audit will not be invoked because adoption did not complete. Live=false.
