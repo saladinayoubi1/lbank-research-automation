@@ -41,7 +41,7 @@
       <section id="view-overview" class="view active">
         <div class="hero-grid">
           <article class="hero-card"><span>PRODUCT STATE</span><b id="productState">در حال خواندن…</b><small>Python sidecar / same-origin</small></article>
-          <article class="hero-card"><span>PAPER ENGINE</span><b id="paperState">—</b><small>Deterministic execution</small></article>
+          <article class="hero-card"><span>PAPER SESSION</span><b id="paperState">—</b><small>Account session status</small></article>
           <article class="hero-card"><span>RISK AUTHORITY</span><b>DETERMINISTIC</b><small>AI cannot bypass Risk</small></article>
           <article class="hero-card danger"><span>LIVE / MAIN</span><b id="liveState">LOCKED</b><small>Owner-controlled future stage</small></article>
         </div>
@@ -90,9 +90,10 @@
       </section>
 
       <section id="view-paper" class="view">
-        <div class="section-head"><div><span>ACTIVE STRATEGY PAPER ACCOUNT</span><h2>حساب دمو استراتژی بک‌تست‌شده</h2></div><div class="inline-actions"><button id="sharedPaperRefresh" class="small-btn accent" type="button">تازه‌سازی</button><strong id="sharedPaperFreshness" class="badge neutral">در حال بررسی…</strong><strong class="badge good">PAPER ONLY · LIVE LOCKED</strong></div></div>
+        <div class="section-head"><div><span id="paperAccountSourceCode">PAPER ACCOUNT VIEW</span><h2 id="paperAccountHeading">حساب‌های Paper</h2></div><div class="inline-actions"><button id="sharedPaperRefresh" class="small-btn accent" type="button">تازه‌سازی</button><strong id="sharedPaperFreshness" class="badge neutral">در حال بررسی…</strong><strong class="badge good">PAPER ONLY · LIVE LOCKED</strong></div></div>
+        <article class="panel" aria-label="انتخاب حساب Paper"><label for="paperAccountView">حساب نمایشی</label><select id="paperAccountView"><option value="shared">سبد خودکار</option><option value="journal">حساب Paper دستگاه</option></select><strong id="paperAccountLabel" class="badge neutral">در حال خواندن حساب…</strong><p id="paperAccountExplanation" role="status" aria-live="polite"></p></article>
         <div id="sharedTerminal"></div>
-        <article class="panel"><header><div><span>LEGACY PATH</span><h2>مسیر قدیمی آرشیو شد</h2></div><strong class="badge neutral">NOT ACTIVE</strong></header><div class="empty-state">Prospective/Manual و ماتریس قدیمی دیگر منبع حساب فعال نیستند. حساب بالا فقط از runtime استراتژی فعال و دفتر Paper جدید خوانده می‌شود.</div></article>
+        <article class="panel"><header><div><span>LEGACY PATH</span><h2>مسیر قدیمی آرشیو شد</h2></div><strong class="badge neutral">NOT ACTIVE</strong></header><div class="empty-state">سوابق قدیمی به موجودی حساب انتخاب‌شده اضافه نمی‌شوند. هر نما فقط یک حساب را نشان می‌دهد؛ انتخاب حساب دستگاه، بازیابی سبد خودکار محسوب نمی‌شود.</div></article>
         <div class="section-head" hidden><div><span>PAPER / DEMO EXECUTION</span><h2>Legacy Manual / Prospective Archive</h2></div><div class="inline-actions"><button id="autoPaper" class="small-btn accent">اجرای Auto Paper از آخرین Qualification</button><strong class="badge good">PAPER ONLY</strong></div></div>
         <div class="paper-layout" hidden>
           <article class="panel account-panel"><header><div><span>MANUAL PAPER · SEPARATE ACCOUNT</span><h2>حساب دستی مستقل</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header><div id="paperMetrics" class="metric-grid"></div><div class="control-strip"><button id="sessionOpen" class="small-btn">Session Open</button><button id="sessionClose" class="small-btn">Session Close</button><button id="killOn" class="small-btn danger-btn">Kill Switch ON</button><button id="killOff" class="small-btn">Kill Switch OFF</button></div><div class="subhead">پوزیشن‌های باز</div><div id="positions" class="table-wrap"></div></article>
