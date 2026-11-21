@@ -184,13 +184,13 @@ def test_paper_primary_surface_archives_legacy_panels_and_names_active_strategy(
     html = INDEX.read_text(encoding="utf-8")
     terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
 
-    assert "ACTIVE STRATEGY PAPER ACCOUNT" in html
-    assert "حساب دمو استراتژی بک‌تست‌شده" in html
+    assert 'id="paperAccountHeading"' in html
+    assert 'id="paperAccountView"' in html
     assert 'id="sharedPaperRefresh"' in html
     assert 'id="sharedPaperFreshness"' in html
     assert '<div class="paper-layout" hidden>' in html
     assert '<article class="panel" hidden><header><div><span>DEMO STRATEGY MATRIX</span>' in html
-    assert "Prospective/Manual و ماتریس قدیمی دیگر منبع حساب فعال نیستند" in html
+    assert "بازیابی سبد خودکار محسوب نمی‌شود" in html
     assert "Regime Consensus · بک‌تست‌شده" in terminal
     assert "حساب دمو استراتژی فعال" in terminal
     assert "مسیر قدیمی Manual/Prospective از حساب فعال جدا و آرشیو شده است" in terminal
@@ -204,8 +204,10 @@ def test_active_paper_terminal_uses_live_shared_projection_with_explicit_refresh
     assert "sharedPaperRefresh" in js
     assert "sharedPaperFreshness" in js
     assert "PAPER_UI_REFRESH_INTERVAL_MS=60*1000" in js
-    assert "window.NexusPaperTerminal?.render(shared);" in js
-    assert "activePaperTerminalSnapshot(p,state.events)" not in js[js.index("function renderPaper()"):js.index("function renderMatrix()")]
+    # The explicitly selected account is rendered alone; recovery does not merge journals.
+    assert "window.NexusPaperTerminal?.render(view.snapshot);" in js
+    assert "selectedPaperAccountView(p,state.events,state.sharedPaper,state.paperAccountChoice)" in js
+    assert "موجودی و تاریخچهٔ دو حساب ادغام نمی‌شوند" in js
     assert "MARK زنده" in js
     assert "MID زنده" in js
     assert "nexus.shared-paper-live-display.v1" in terminal
