@@ -134,7 +134,7 @@ const beforeChoice=state.paperAccountChoice;selectPaperAccountView('unknown-acco
 assert.equal(JSON.stringify(shared),originalShared);
 console.log('PAPER_ACCOUNT_VIEWS=PASS');
 """
-    result = subprocess.run([node, '-'], input=program, cwd=ROOT, text=True,
+    result = subprocess.run([node, '-'], input=program, cwd=ROOT, text=True, encoding='utf-8',
                             capture_output=True, check=False, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PAPER_ACCOUNT_VIEWS=PASS' in result.stdout
