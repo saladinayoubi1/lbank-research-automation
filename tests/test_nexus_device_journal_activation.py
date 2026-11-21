@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -229,9 +230,11 @@ Assert ($ops.Count -eq $count) 'Repeated recovery stopped a process'
 foreach($entry in $snapshot){Assert ((Hash (Join-Path $Scratch $entry.rel)) -ceq $entry.sha) 'Repeated recovery mutated files'}
 'DEVICE_JOURNAL_PROTOCOL_FAULTS=PASS'
 ''', encoding="utf-8")
+    # Let Windows PowerShell rebuild its own module path instead of inheriting PowerShell 7's.
+    child_env = {key: value for key, value in os.environ.items() if key.casefold() != "psmodulepath"}
     result = subprocess.run([powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
                              str(harness), "-Production", str(SOURCE), "-Original", str(original),
                              "-Advanced", str(advanced), "-Scratch", str(tmp_path / "fixture")],
-                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90, check=False)
+                            env=child_env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "DEVICE_JOURNAL_PROTOCOL_FAULTS=PASS" in result.stdout
