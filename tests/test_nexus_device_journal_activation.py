@@ -141,11 +141,14 @@ def test_windows_device_journal_protocol_and_faults(tmp_path):
     harness.write_text(r'''
 param([string]$Production,[string]$Original,[string]$Advanced,[string]$Scratch)
 $ErrorActionPreference='Stop';Set-StrictMode -Version Latest
+$script:HarnessCommandPath=$PSCommandPath
+if(-not $script:HarnessCommandPath){throw 'Physical fault harness must run with -File'}
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Production,[ref]$tokens,[ref]$errors)
 if(@($errors).Count){throw ($errors|Out-String)}
 foreach($f in $ast.FindAll({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst]},$true)){
-  Invoke-Expression $f.Extent.Text
+  # IEX does not retain a physical source file for the imported helper functions.
+  Invoke-Expression ($f.Extent.Text.Replace('$PSCommandPath','$script:HarnessCommandPath'))
 }
 $script:AccountSurface='DeviceJournal';$script:ExpectedSourceSha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 $script:PriorSourceSha='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';$script:expectedRepo='saladinayoubi1/lbank-research-automation'
