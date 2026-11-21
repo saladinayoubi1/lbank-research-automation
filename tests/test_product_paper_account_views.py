@@ -35,19 +35,19 @@ const rows=[
  ['signal_recorded',{}],['order_intent_recorded',{order_type:'paper_open'}],['risk_decision_recorded',{}],
  ['simulated_fill_recorded',{symbol:'XRPUSDT',side:'long',quantity:'1',price:'10'}],
  ['position_opened',{symbol:'XRPUSDT',side:'long',quantity:'1',entry_price:'10'}],
- ['fee_recorded',{amount:'0.02500833',currency:'USDT'}],
- ['slippage_recorded',{amount:'0.01250417',currency:'USDT'}],
- ['stop_registered',{}],['equity_snapshot_recorded',{cash:'499.9624875',equity:'499.9624875',unrealized_pnl:'0'}],
+ ['fee_recorded',{amount:'0.02',currency:'USDT'}],
+ ['slippage_recorded',{amount:'0.01',currency:'USDT'}],
+ ['stop_registered',{}],['equity_snapshot_recorded',{cash:'499.97',equity:'499.97',unrealized_pnl:'0'}],
  ['order_intent_recorded',{order_type:'paper_close'}],['risk_decision_recorded',{}],
- ['simulated_fill_recorded',{symbol:'XRPUSDT',side:'long',quantity:'1',price:'9.60018746'}],
- ['position_closed',{symbol:'XRPUSDT',exit_price:'9.60018746',realized_pnl:'-0.39981254'}],
- ['fee_recorded',{amount:'0.02461269',currency:'USDT'}],
- ['slippage_recorded',{amount:'0.01231254',currency:'USDT'}],
+ ['simulated_fill_recorded',{symbol:'XRPUSDT',side:'long',quantity:'1',price:'9.5'}],
+ ['position_closed',{symbol:'XRPUSDT',exit_price:'9.5',realized_pnl:'-0.5'}],
+ ['fee_recorded',{amount:'0.03',currency:'USDT'}],
+ ['slippage_recorded',{amount:'0.01',currency:'USDT'}],
  ['session_boundary_recorded',{boundary:'open'}],
- ['equity_snapshot_recorded',{cash:'499.52574973',equity:'499.52574973',unrealized_pnl:'0'}],
+ ['equity_snapshot_recorded',{cash:'499.43',equity:'499.43',unrealized_pnl:'0'}],
 ];
-const events=rows.map(([event_type,payload],i)=>({sequence:i+1,event_type,payload,aggregate_id:'nexus-demo-paper',event_id:'fixture-'+i,event_digest:'fixture-digest-'+i,correlation_id:i<12?'open':'close',occurred_at:'2026-10-05T15:29:59.999Z',provenance:{strategy_version:'fixture-strategy',kind:'automatic',source_id:'fixture-source',timeframe:'minute15'}}));
-const paper=deepFreeze({active:true,paper_only:true,live_trading_authority:false,event_count:20,client_received_at:'2026-11-21T14:34:00Z',head_event_digest:events.at(-1).event_digest,account:{aggregate_id:'nexus-demo-paper',cash:'499.52574973',equity:'499.52574973',realized_pnl:'-0.39981254',unrealized_pnl:'0',session_open:true,positions:[],stops:[],targets:[]}});
+const events=rows.map(([event_type,payload],i)=>({sequence:i+1,event_type,payload,aggregate_id:'nexus-demo-paper',event_id:'fixture-'+i,event_digest:'fixture-digest-'+i,correlation_id:i<12?'open':'close',occurred_at:'2020-01-01T00:00:00Z',provenance:{strategy_version:'fixture-strategy',kind:'automatic',source_id:'fixture-source',timeframe:'minute15'}}));
+const paper=deepFreeze({active:true,paper_only:true,live_trading_authority:false,event_count:20,client_received_at:'2026-11-21T14:34:00Z',head_event_digest:events.at(-1).event_digest,account:{aggregate_id:'nexus-demo-paper',cash:'499.43',equity:'499.43',realized_pnl:'-0.5',unrealized_pnl:'0',session_open:true,positions:[],stops:[],targets:[]}});
 const envelope=deepFreeze({total:20,events});
 Object.assign(state,{paper,events:envelope,sharedPaper:shared});
 assert.strictEqual(selectedPaperAccountView(paper,envelope,shared).snapshot,shared);
@@ -58,7 +58,7 @@ selectPaperAccountView('journal');
 assert.equal($('#paperAccountView').value,'journal');
 assert.match($('#paperAccountLabel').textContent,/حساب Paper دستگاه/);
 assert.match($('#paperAccountExplanation').textContent,/سبد خودکار بازیابی نشده/);
-assert.match($('#sharedTerminal').innerHTML,/499\.53 USDT/);
+assert.match($('#sharedTerminal').innerHTML,/499\.43 USDT/);
 assert.match($('#sharedTerminal').innerHTML,/خروجی رویدادهای دفتر حساب \(CSV\)/);
 assert.match($('#sharedTerminal').innerHTML,/۱۰۰۰ رویداد آخر/);
 assert.doesNotMatch($('#sharedTerminal').innerHTML,/خروجی CSV کامل/);
@@ -82,19 +82,19 @@ assert.match($('#paperAccountExplanation').textContent,/سبد خودکار در
 assert.match($('#sharedTerminal').innerHTML,/جدا از سبد خودکار/);
 selectPaperAccountView('shared');
 assert.match($('#sharedTerminal').innerHTML,/دادهٔ حساب مشترک در دسترس نیست/);
-assert.doesNotMatch($('#sharedTerminal').innerHTML,/499\.53 USDT|500\.00 USDT/);
+assert.doesNotMatch($('#sharedTerminal').innerHTML,/499\.43 USDT|500\.00 USDT/);
 const journal=selectedPaperAccountView(paper,envelope,null,'journal').snapshot;
-assert.equal(journal.account.balance,'499.52574973');
-assert.ok(Math.abs(journal.account.net_pnl-(-0.47425027))<1e-9);
+assert.equal(journal.account.balance,'499.43');
+assert.ok(Math.abs(journal.account.net_pnl-(-0.57))<1e-9);
 assert.equal(journal.orders.length,2);assert.equal(journal.history.length,1);
 assert.equal(journal.orders[0].side,'buy');assert.equal(journal.orders[1].side,'sell');
 assert.ok(journal.cashflows.every(row=>Number(row.amount)<0),'Fees are debits, never green cash inflows');
-assert.equal(journal.history[0].gross_pnl,'-0.39981254');
+assert.equal(journal.history[0].gross_pnl,'-0.5');
 assert.equal(journal.history[0].net_pnl,null,'Do not call an exit-fee-only figure round-trip net PnL');
 assert.equal(journal.worker_status,'unverified');assert.equal(journal.stale,null);
 assert.equal(journal.status,'journal_only');assert.equal(journal.market_live,false);
 assert.equal(journal.book_read_at,paper.client_received_at);
-assert.equal(journal.last_financial_event_at,'2026-10-05T15:29:59.999Z');
+assert.equal(journal.last_financial_event_at,'2020-01-01T00:00:00Z');
 assert.equal(journal.last_execution_utc,null,'A financial event is not a closed-candle worker receipt');
 // No opening event or missing prefix means totals cannot be invented from a partial window.
 const partial=selectedPaperAccountView({...paper,event_count:120},{total:120,events:events.slice(-6)},null,'journal').snapshot;
@@ -104,7 +104,7 @@ assert.equal(partial.account.balance,paper.account.cash);
 // A recent session event must not make the last financial event look newer.
 const trailing=[...events,{sequence:21,event_type:'session_boundary_recorded',aggregate_id:'nexus-demo-paper',occurred_at:'2026-11-21T14:00:00Z',payload:{boundary:'open'}}];
 const quiet=selectedPaperAccountView({...paper,event_count:21},{total:21,events:trailing},null,'journal').snapshot;
-assert.equal(quiet.last_financial_event_at,'2026-10-05T15:29:59.999Z');
+assert.equal(quiet.last_financial_event_at,'2020-01-01T00:00:00Z');
 const initial={...paper,event_count:2,head_event_digest:events[1].event_digest,account:{...paper.account,cash:'500',equity:'500'}};
 const empty=selectedPaperAccountView(initial,{total:2,events:events.slice(0,2)},null,'journal').snapshot;
 assert.equal(empty.account.net_pnl,0);assert.equal(empty.positions.length,0);
@@ -134,7 +134,7 @@ const beforeChoice=state.paperAccountChoice;selectPaperAccountView('unknown-acco
 assert.equal(JSON.stringify(shared),originalShared);
 console.log('PAPER_ACCOUNT_VIEWS=PASS');
 """
-    result = subprocess.run([node, '-e', program], cwd=ROOT, text=True,
+    result = subprocess.run([node, '-'], input=program, cwd=ROOT, text=True,
                             capture_output=True, check=False, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PAPER_ACCOUNT_VIEWS=PASS' in result.stdout
