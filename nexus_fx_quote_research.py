@@ -31,7 +31,17 @@ def _name(value):
 
 
 def _decimal_text(value):
-    return format(value.normalize(), "f") if value else "0"
+    if not value:
+        return "0"
+    result = format(value, "f")
+    return result.rstrip("0").rstrip(".") if "." in result else result
+
+
+def _scaled_units(value):
+    # All validated amounts have at most twelve fractional digits.
+    parts = value.as_tuple()
+    coefficient = int("".join(str(d) for d in parts.digits))
+    return coefficient * 10 ** (parts.exponent + 12)
 
 
 @dataclass(frozen=True)
@@ -49,7 +59,7 @@ class Instrument:
 
     def price(self, value):
         _amount(value, "price")
-        _require(value % self.price_step == 0, "off-grid price")
+        _require(_scaled_units(value) % _scaled_units(self.price_step) == 0, "off-grid price")
 
 
 @dataclass(frozen=True)
@@ -178,13 +188,14 @@ def observe_entry(window, intent):
     return Observation("UNRESOLVED_COVERAGE", window.binding)
 
 
-def observe_protection(window, *, entry_contact, side, stop, target):
+def observe_protection(window, *, entry_contact, intent, stop, target):
     """First exit quote contact after a bound entry observation, not a booked trade."""
     _require(type(window) is QuoteWindow and type(entry_contact) is Observation, "invalid inputs")
     _require(entry_contact.status == "ENTRY_CONTACT" and entry_contact.window_binding == window.binding,
              "entry observation not bound to window")
-    _require(entry_contact.tick in window.ticks, "entry tick absent")
-    _require(side in ("buy", "sell"), "unknown side")
+    _require(type(intent) is EntryIntent, "entry intent required")
+    _require(entry_contact == observe_entry(window, intent), "entry contact differs from replay")
+    side = intent.side
     entry = entry_contact.tick
     expected = entry.ask if side == "buy" else entry.bid
     _require(entry_contact.executable_quote == expected, "entry side mismatch")
@@ -196,7 +207,9 @@ def observe_protection(window, *, entry_contact, side, stop, target):
     # If the entry spread already crosses protection, the missing fill/activation
     # ordering is material; do not silently skip that ambiguity.
     exit_at_entry = entry.bid if side == "buy" else entry.ask
-    if (exit_at_entry <= stop or exit_at_entry >= target) if side == "buy" else (exit_at_entry >= stop or exit_at_entry <= target):
+    immediate_contact = (exit_at_entry <= stop or exit_at_entry >= target
+                         if side == "buy" else exit_at_entry >= stop or exit_at_entry <= target)
+    if immediate_contact:
         return Observation("UNRESOLVED_ENTRY_PROTECTION", window.binding)
     for t in window.ticks:
         if t.sequence <= entry.sequence:

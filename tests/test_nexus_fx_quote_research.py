@@ -1,6 +1,6 @@
 import unittest
 from dataclasses import replace
-from decimal import Decimal as D
+from decimal import Decimal as D, localcontext
 
 from nexus_fx_quote_research import (
     EntryIntent, Instrument, QuoteWindow, Tick, TickContractError,
@@ -88,31 +88,54 @@ class QuoteTests(unittest.TestCase):
 
     def test_protection_long_bid_stop(self):
         result = observe_protection(self.w, entry_contact=self.contact("buy", "market"),
-                                    side="buy", stop=D("99"), target=D("102"))
+                                    intent=EntryIntent("buy", "market", 0, 40), stop=D("99"), target=D("102"))
         self.assertEqual((result.status, result.tick.sequence), ("STOP_CONTACT", 2))
 
     def test_protection_short_ask_target(self):
         result = observe_protection(self.w, entry_contact=self.contact("sell", "market"),
-                                    side="sell", stop=D("102"), target=D("99"))
+                                    intent=EntryIntent("sell", "market", 0, 40), stop=D("102"), target=D("99"))
         self.assertEqual((result.status, result.tick.sequence), ("TARGET_CONTACT", 2))
 
     def test_protection_same_time_sequence(self):
         w = window(tick(0, 0, "99", "100"), tick(10, 1, "100", "101"),
                    tick(10, 2, "103", "104"), tick(20, 3, "98", "99"))
         e = observe_entry(w, EntryIntent("buy", "market", 0, 30))
-        r = observe_protection(w, entry_contact=e, side="buy", stop=D("99"), target=D("103"))
+        r = observe_protection(w, entry_contact=e, intent=EntryIntent("buy", "market", 0, 30), stop=D("99"), target=D("103"))
         self.assertEqual((r.status, r.tick.sequence), ("TARGET_CONTACT", 2))
 
     def test_entry_spread_ambiguity(self):
         result = observe_protection(self.w, entry_contact=self.contact("buy", "market"),
-                                    side="buy", stop=D("100"), target=D("103"))
+                                    intent=EntryIntent("buy", "market", 0, 40), stop=D("100"), target=D("103"))
         self.assertEqual(result.status, "UNRESOLVED_ENTRY_PROTECTION")
 
     def test_wrong_window_rejected(self):
         with self.assertRaises(TickContractError):
             observe_protection(replace(self.w, source_revision="different"),
                                entry_contact=self.contact("buy", "market"),
-                               side="buy", stop=D("99"), target=D("103"))
+                               intent=EntryIntent("buy", "market", 0, 40), stop=D("99"), target=D("103"))
+
+    def test_forged_entry_rejected(self):
+        intent = EntryIntent("buy", "market", 0, 40)
+        actual = observe_entry(self.w, intent)
+        forged = replace(actual, tick=self.w.ticks[2], executable_quote=D("99"))
+        with self.assertRaises(TickContractError):
+            observe_protection(self.w, entry_contact=forged, intent=intent,
+                               stop=D("97"), target=D("103"))
+
+    def test_wrong_intent_rejected(self):
+        with self.assertRaises(TickContractError):
+            observe_protection(self.w, entry_contact=self.contact("buy", "market"),
+                               intent=EntryIntent("buy", "limit", 0, 40, D("100")),
+                               stop=D("97"), target=D("103"))
+
+    def test_decimal_context_independence(self):
+        ts = (tick(0, 0, "1234.56", "1234.57"), tick(10, 1, "1234.58", "1234.59"))
+        normal = window(*ts)
+        with localcontext() as ctx:
+            ctx.prec = 3
+            low = window(*ts)
+            self.assertEqual(low.binding, normal.binding)
+            self.assertEqual(observe_entry(low, EntryIntent("buy", "market", 0, 20)).executable_quote, D("1234.59"))
 
     def test_replay(self):
         self.assertEqual(self.contact("sell", "stop", D("99")), self.contact("sell", "stop", D("99")))
