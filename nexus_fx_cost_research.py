@@ -59,28 +59,41 @@ class EntryCostScenario:
     research_only: bool = True
 
 
-def model_entry_cost(window, intent, contact, profile, lots):
-    """Calculate a scenario on a replayed quote contact, never a realized fill.
-    Limit violations fail closed instead of clipping an adverse price.
-    """
-    _require(type(window) is QuoteWindow and type(intent) is EntryIntent
-             and type(contact) is Observation and type(profile) is CostProfile,
-             "invalid contract types")
+def _validate_profile_binding(window, profile, lots):
+    _require(type(window) is QuoteWindow and type(profile) is CostProfile,
+             "invalid cost contract types")
     _require((profile.instrument, profile.source_id, profile.source_revision) ==
              (window.instrument, window.source_id, window.source_revision),
              "cost profile not bound to source/instrument")
     profile.validate_lots(lots)
+
+
+def _scenario_terms(profile, side, reference, lots):
+    """Shared exact-decimal cost model, not fill evidence."""
+    with localcontext(Context(prec=96)):
+        slip = profile.instrument.price_step * profile.slippage_ticks
+        price = reference + slip if side == "buy" else reference - slip
+        profile.instrument.price(price)
+        units = lots * profile.instrument.contract_size
+        return (units, price, units * price, lots * profile.commission_per_lot,
+                units * slip)
+
+
+def _limit_allows(intent, price):
+    return (intent.kind != "limit" or
+            (price <= intent.level if intent.side == "buy" else price >= intent.level))
+
+
+def model_entry_cost(window, intent, contact, profile, lots):
+    """Calculate a scenario on a replayed quote contact, never a realized fill.
+    Limit violations fail closed instead of clipping an adverse price.
+    """
+    _require(type(intent) is EntryIntent and type(contact) is Observation,
+             "invalid contract types")
+    _validate_profile_binding(window, profile, lots)
     _require(contact.status == "ENTRY_CONTACT" and contact == observe_entry(window, intent),
              "entry contact not verified by replay")
-    with localcontext(Context(prec=96)):
-        reference = contact.executable_quote
-        slip = profile.instrument.price_step * profile.slippage_ticks
-        price = reference + slip if intent.side == "buy" else reference - slip
-        profile.instrument.price(price)
-        if intent.kind == "limit":
-            _require(price <= intent.level if intent.side == "buy" else price >= intent.level,
-                     "adverse scenario violates limit price")
-        units = lots * profile.instrument.contract_size
-        return EntryCostScenario(window.binding, profile, intent, contact, lots, units, price,
-                                 units * price, lots * profile.commission_per_lot,
-                                 units * slip, profile.instrument.quote_currency)
+    terms = _scenario_terms(profile, intent.side, contact.executable_quote, lots)
+    _require(_limit_allows(intent, terms[1]), "adverse scenario violates limit price")
+    return EntryCostScenario(window.binding, profile, intent, contact, lots, *terms,
+                             profile.instrument.quote_currency)
