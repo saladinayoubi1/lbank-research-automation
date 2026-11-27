@@ -92,6 +92,42 @@ class BoundedBatchTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ResearchJob("../unsafe", "a" * 64, "b" * 64, "c" * 64)
 
+    def test_orphan_artifact_blocks_reexecution(self):
+        with tempfile.TemporaryDirectory() as folder:
+            job = sample("orphan")
+            (Path(folder) / "orphan.json").write_text("partial", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unreceipted artifact"):
+                run_research_batch([job], verified_worker,
+                                   output_root=folder, memory_probe=lambda: 2048)
+            self.assertFalse((Path(folder) / ".receipts" / "orphan.json").exists())
+
+    def test_output_root_symlink_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "actual"
+            target.mkdir()
+            alias = Path(folder) / "linked"
+            try:
+                alias.symlink_to(target, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unavailable")
+            with self.assertRaisesRegex(ValueError, "symlink output"):
+                run_research_batch([sample("linked")], verified_worker,
+                                   output_root=alias, memory_probe=lambda: 2048)
+            self.assertFalse((target / "linked.json").exists())
+
+    def test_dangling_receipt_symlink_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            receipts = Path(folder) / ".receipts"
+            receipts.mkdir()
+            path = receipts / "one.json"
+            try:
+                path.symlink_to(receipts / "missing.json")
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unavailable")
+            with self.assertRaisesRegex(ValueError, "unsafe checkpoint"):
+                run_research_batch([sample("one")], verified_worker,
+                                   output_root=folder, memory_probe=lambda: 2048)
+
     def test_active_lease_fails_closed(self):
         with tempfile.TemporaryDirectory() as folder:
             lock = Path(folder) / ".fx-research-batch.lock"
