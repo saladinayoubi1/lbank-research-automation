@@ -119,8 +119,11 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
     inputs = [(t.source_sha256, t.code_sha256, t.config_sha256) for t in tasks]
     if len(set(inputs)) != len(inputs):
         raise ValueError("duplicate research input fingerprint")
-    root = Path(output_root).resolve(strict=True)
-    if not root.is_dir() or root.is_symlink():
+    raw_root = Path(output_root)
+    if raw_root.is_symlink():
+        raise ValueError("symlink output directory not allowed")
+    root = raw_root.resolve(strict=True)
+    if not root.is_dir():
         raise ValueError("existing private output directory required")
     probe = _available_memory_mib if memory_probe is None else memory_probe
     if not callable(probe):
@@ -137,13 +140,18 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
         pending = []
         for job in tasks:
             path = receipts / (job.job_id + ".json")
+            if path.is_symlink():
+                raise ValueError("unsafe checkpoint")
             if path.exists():
-                if path.is_symlink():
-                    raise ValueError("unsafe checkpoint")
                 raw = json.loads(path.read_text(encoding="utf-8"))
                 _validate_receipt(VerifiedReceipt(**raw), job, root)
                 outcome["skipped"].append(job.job_id)
             else:
+                # An artifact without a receipt may be an interrupted run.
+                # Never silently rerun, overwrite or infer that it is valid.
+                artifact = root / (job.job_id + ".json")
+                if artifact.is_symlink() or artifact.exists():
+                    raise ValueError("unreceipted artifact requires operator review")
                 pending.append(job)
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -172,6 +180,8 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
                         try:
                             with tmp.open("x", encoding="utf-8") as stream:
                                 json.dump(asdict(receipt), stream, sort_keys=True)
+                                stream.flush()
+                                os.fsync(stream.fileno())
                             tmp.replace(path)
                         finally:
                             tmp.unlink(missing_ok=True)
