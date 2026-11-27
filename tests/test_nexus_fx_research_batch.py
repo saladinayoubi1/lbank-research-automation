@@ -63,17 +63,20 @@ class BoundedBatchTests(unittest.TestCase):
             run_research_batch([job], verified_worker, output_root=folder,
                                memory_probe=lambda: 2048)
             (Path(folder) / "original.json").write_text("tampered", encoding="utf-8")
-            with self.assertRaises(ValueError):
-                run_research_batch([job], verified_worker, output_root=folder,
-                                   memory_probe=lambda: 2048)
+            outcome = run_research_batch([job], verified_worker, output_root=folder,
+                                         memory_probe=lambda: 2048)
+            self.assertEqual(outcome["blocked_integrity"],
+                             [{"job_id": "original", "type": "ValueError"}])
+            self.assertEqual((Path(folder) / "original.json").read_text(), "tampered")
 
     def test_changed_config_does_not_reuse_receipt(self):
         with tempfile.TemporaryDirectory() as folder:
             run_research_batch([sample("one")], verified_worker, output_root=folder,
                                memory_probe=lambda: 2048)
-            with self.assertRaises(ValueError):
-                run_research_batch([sample("one", "d")], verified_worker,
-                                   output_root=folder, memory_probe=lambda: 2048)
+            outcome = run_research_batch([sample("one", "d")], verified_worker,
+                                         output_root=folder, memory_probe=lambda: 2048)
+            self.assertEqual(outcome["blocked_integrity"],
+                             [{"job_id": "one", "type": "ValueError"}])
 
     def test_duplicate_and_invalid_jobs_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -96,9 +99,11 @@ class BoundedBatchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             job = sample("orphan")
             (Path(folder) / "orphan.json").write_text("partial", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "unreceipted artifact"):
-                run_research_batch([job], verified_worker,
-                                   output_root=folder, memory_probe=lambda: 2048)
+            outcome = run_research_batch([job], verified_worker,
+                                         output_root=folder, memory_probe=lambda: 2048)
+            self.assertEqual(outcome["blocked_integrity"],
+                             [{"job_id": "orphan", "type": "ValueError"}])
+            self.assertEqual((Path(folder) / "orphan.json").read_text(), "partial")
             self.assertFalse((Path(folder) / ".receipts" / "orphan.json").exists())
 
     def test_output_root_symlink_rejected(self):
@@ -124,9 +129,28 @@ class BoundedBatchTests(unittest.TestCase):
                 path.symlink_to(receipts / "missing.json")
             except (OSError, NotImplementedError):
                 self.skipTest("symlink creation unavailable")
-            with self.assertRaisesRegex(ValueError, "unsafe checkpoint"):
-                run_research_batch([sample("one")], verified_worker,
-                                   output_root=folder, memory_probe=lambda: 2048)
+            outcome = run_research_batch([sample("one")], verified_worker,
+                                         output_root=folder, memory_probe=lambda: 2048)
+            self.assertEqual(outcome["blocked_integrity"],
+                             [{"job_id": "one", "type": "ValueError"}])
+
+    def test_corrupt_job_stays_blocked_while_fresh_job_executes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            bad = sample("bad")
+            good = sample("good")
+            (Path(folder) / "bad.json").write_text("untrusted", encoding="utf-8")
+            outcome = run_research_batch([bad, good], verified_worker,
+                                         output_root=folder, max_workers=2,
+                                         memory_probe=lambda: 2048)
+            self.assertEqual(outcome["blocked_integrity"],
+                             [{"job_id": "bad", "type": "ValueError"}])
+            self.assertEqual(outcome["verified"], ["good"])
+            self.assertEqual((Path(folder) / "bad.json").read_text(), "untrusted")
+            again = run_research_batch([bad, good], verified_worker,
+                                       output_root=folder, memory_probe=lambda: 2048)
+            self.assertEqual(again["skipped"], ["good"])
+            self.assertEqual(again["blocked_integrity"],
+                             [{"job_id": "bad", "type": "ValueError"}])
 
     def test_active_lease_fails_closed(self):
         with tempfile.TemporaryDirectory() as folder:
