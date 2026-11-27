@@ -8,8 +8,10 @@ import unittest
 from nexus_fx_research_batch import ResearchJob, VerifiedReceipt, run_research_batch
 
 
-def sample(name, config="c"):
-    return ResearchJob(name, "a" * 64, "b" * 64, config * 64)
+def sample(name, config=None):
+    scenario = name if config is None else config
+    return ResearchJob(name, "a" * 64, "b" * 64,
+                       hashlib.sha256(scenario.encode("utf-8")).hexdigest())
 
 
 def verified_worker(job, root):
@@ -78,6 +80,12 @@ class BoundedBatchTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 run_research_batch([sample("one"), sample("one")], verified_worker,
                                    output_root=folder)
+            with self.assertRaises(ValueError):
+                run_research_batch([sample("one"), sample("ONE")], verified_worker,
+                                   output_root=folder)
+            with self.assertRaises(ValueError):
+                run_research_batch([sample("one", "same"), sample("two", "same")],
+                                   verified_worker, output_root=folder)
             with self.assertRaises(ValueError):
                 run_research_batch([sample("one")], verified_worker,
                                    output_root=folder, max_workers=3)
