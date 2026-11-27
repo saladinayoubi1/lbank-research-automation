@@ -113,9 +113,12 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
     tasks = tuple(jobs)
     if not 1 <= len(tasks) <= 64 or any(type(t) is not ResearchJob for t in tasks):
         raise ValueError("bounded validated job list required")
-    ids = [t.job_id for t in tasks]
+    ids = [t.job_id.casefold() for t in tasks]
     if len(set(ids)) != len(ids):
-        raise ValueError("duplicate research job key")
+        raise ValueError("duplicate research job key (case-insensitive filesystem)")
+    inputs = [(t.source_sha256, t.code_sha256, t.config_sha256) for t in tasks]
+    if len(set(inputs)) != len(inputs):
+        raise ValueError("duplicate research input fingerprint")
     root = Path(output_root).resolve(strict=True)
     if not root.is_dir() or root.is_symlink():
         raise ValueError("existing private output directory required")
