@@ -136,23 +136,30 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
         if receipts.is_symlink():
             raise ValueError("unsafe receipt directory")
         receipts.mkdir(exist_ok=True)
-        outcome = {"verified": [], "skipped": [], "failed": [], "blocked_memory": []}
+        outcome = {"verified": [], "skipped": [], "failed": [],
+                   "blocked_memory": [], "blocked_integrity": []}
         pending = []
         for job in tasks:
             path = receipts / (job.job_id + ".json")
-            if path.is_symlink():
-                raise ValueError("unsafe checkpoint")
-            if path.exists():
-                raw = json.loads(path.read_text(encoding="utf-8"))
-                _validate_receipt(VerifiedReceipt(**raw), job, root)
-                outcome["skipped"].append(job.job_id)
-            else:
-                # An artifact without a receipt may be an interrupted run.
-                # Never silently rerun, overwrite or infer that it is valid.
-                artifact = root / (job.job_id + ".json")
-                if artifact.is_symlink() or artifact.exists():
-                    raise ValueError("unreceipted artifact requires operator review")
-                pending.append(job)
+            try:
+                if path.is_symlink():
+                    raise ValueError("unsafe checkpoint")
+                if path.exists():
+                    raw = json.loads(path.read_text(encoding="utf-8"))
+                    _validate_receipt(VerifiedReceipt(**raw), job, root)
+                    outcome["skipped"].append(job.job_id)
+                else:
+                    # An artifact without a receipt may be an interrupted run.
+                    # Never silently rerun, overwrite or infer that it is valid.
+                    artifact = root / (job.job_id + ".json")
+                    if artifact.is_symlink() or artifact.exists():
+                        raise ValueError("unreceipted artifact requires operator review")
+                    pending.append(job)
+            except (ValueError, TypeError, OSError) as exc:
+                # A corrupt receipt must not be trusted, replaced or retried.
+                # Other independent jobs remain eligible for research.
+                outcome["blocked_integrity"].append({
+                    "job_id": job.job_id, "type": type(exc).__name__})
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = {}
