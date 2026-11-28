@@ -142,6 +142,9 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
         for job in tasks:
             path = receipts / (job.job_id + ".json")
             try:
+                tmp = receipts / (job.job_id + ".tmp")
+                if tmp.is_symlink() or tmp.exists():
+                    raise ValueError("uncommitted receipt requires operator review")
                 if path.is_symlink():
                     raise ValueError("unsafe checkpoint")
                 if path.exists():
@@ -184,14 +187,17 @@ def run_research_batch(jobs, worker, *, output_root, max_workers=2,
                         receipt = _validate_receipt(future.result(), job, root)
                         path = receipts / (job.job_id + ".json")
                         tmp = receipts / (job.job_id + ".tmp")
+                        owned_tmp = False
                         try:
                             with tmp.open("x", encoding="utf-8") as stream:
+                                owned_tmp = True
                                 json.dump(asdict(receipt), stream, sort_keys=True)
                                 stream.flush()
                                 os.fsync(stream.fileno())
                             tmp.replace(path)
                         finally:
-                            tmp.unlink(missing_ok=True)
+                            if owned_tmp:
+                                tmp.unlink(missing_ok=True)
                         outcome["verified"].append(job.job_id)
                     except Exception as exc:
                         outcome["failed"].append({"job_id": job.job_id, "type": type(exc).__name__})

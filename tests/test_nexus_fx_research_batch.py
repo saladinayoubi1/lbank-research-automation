@@ -152,6 +152,26 @@ class BoundedBatchTests(unittest.TestCase):
             self.assertEqual(again["blocked_integrity"],
                              [{"job_id": "bad", "type": "ValueError"}])
 
+    def test_preexisting_tmp_preserved_and_independent_job_runs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            receipts = root / ".receipts"
+            receipts.mkdir()
+            tmp = receipts / "bad.tmp"
+            tmp.write_text("prior receipt", encoding="utf-8")
+            jobs = [sample("bad"), sample("good")]
+            outcome = run_research_batch(jobs, verified_worker, output_root=root,
+                                         memory_probe=lambda: 2048)
+            self.assertEqual(outcome["verified"], ["good"])
+            self.assertEqual(outcome["blocked_integrity"], [{"job_id": "bad", "type": "ValueError"}])
+            self.assertEqual(tmp.read_text(), "prior receipt")
+            self.assertFalse((root / "bad.json").exists())
+            self.assertFalse(outcome["failed"])
+            again = run_research_batch(jobs, verified_worker, output_root=root,
+                                       memory_probe=lambda: 2048)
+            self.assertEqual(again["skipped"], ["good"])
+            self.assertEqual(again["blocked_integrity"], outcome["blocked_integrity"])
+
     def test_active_lease_fails_closed(self):
         with tempfile.TemporaryDirectory() as folder:
             lock = Path(folder) / ".fx-research-batch.lock"
